@@ -215,89 +215,6 @@ export function MobileDashboard() {
     ]
   };
 
-  // Map real events to display format with live participant counts
-  const mapEventsToDisplay = (events: any[]) => {
-    const eventMap: { [key: string]: any[] } = {
-      "DAY-01": [],
-      "DAY-02": [],
-      "DAY-03": [],
-      "DAY-04": []
-    };
-
-    // Sports events with their assigned days
-    const sportsEvents = [
-      { sport: "🏸 BADMINTON TOURNAMENT", day: "DAY-01", image: "https://images.unsplash.com/photo-1544717684-7ba720c2b5ea?w=400&h=200&fit=crop" },
-      { sport: "🏀 BASKETBALL CHAMPIONSHIP", day: "DAY-01", image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&h=200&fit=crop" },
-      { sport: "⚽ FOOTBALL MATCH", day: "DAY-01", image: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=400&h=200&fit=crop" },
-      { sport: "🏐 VOLLEYBALL LEAGUE", day: "DAY-02", image: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=400&h=200&fit=crop" },
-      { sport: "🏏 CRICKET TOURNAMENT", day: "DAY-02", image: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=400&h=200&fit=crop" },
-      { sport: "🏃 ATHLETICS MEET", day: "DAY-03", image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=200&fit=crop" },
-      { sport: "🥋 KARATE CHAMPIONSHIP", day: "DAY-03", image: "https://images.unsplash.com/photo-1555597673-b21d5c935865?w=400&h=200&fit=crop" },
-      { sport: "🥊 BOXING COMPETITION", day: "DAY-03", image: "https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=400&h=200&fit=crop" },
-      { sport: "🧗 ROCK CLIMBING CHALLENGE", day: "DAY-04", image: "https://images.unsplash.com/photo-1522163182402-834f871fd851?w=400&h=200&fit=crop" },
-      { sport: "🏓 TABLE TENNIS TOURNAMENT", day: "DAY-04", image: "https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?w=400&h=200&fit=crop" }
-    ];
-
-    // Map real events to sports events with live data
-    events?.forEach((event, index) => {
-      const sportEvent = sportsEvents[index % sportsEvents.length];
-      if (sportEvent) {
-        const mappedEvent = {
-          id: event._id,
-          title: sportEvent.sport,
-          day: sportEvent.day,
-          time: new Date(event.startDate).toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          }),
-          date: new Date(event.startDate).toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric' 
-          }),
-          status: event.currentParticipants >= (event.maxParticipants || 50) ? "Event Full" : "Registration Open",
-          image: sportEvent.image,
-          participants: event.currentParticipants,
-          maxParticipants: event.maxParticipants || 50,
-          registrationDeadline: event.startDate - (24 * 60 * 60 * 1000) // 1 day before event
-        };
-        eventMap[sportEvent.day].push(mappedEvent);
-      }
-    });
-
-    return eventMap;
-  };
-
-  const eventsByDay = mapEventsToDisplay(liveEvents || []);
-
-  // Get events for selected day with live data
-  const getEventsForDay = (day: string) => {
-    if (day === "ALL") {
-      return Object.values(eventsByDay).flat();
-    }
-    return eventsByDay[day as keyof typeof eventsByDay] || [];
-  };
-
-  const sampleEvents = getEventsForDay(selectedFilter);
-
-  const completedSampleEvents = [
-    {
-      id: 1,
-      title: "AI SUMMIT 2024",
-      date: "Nov 20",
-      time: "10:00 AM",
-      image: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&h=200&fit=crop",
-      hasCertificate: true
-    },
-    {
-      id: 2,
-      title: "WEB DEV BOOTCAMP",
-      date: "Nov 15",
-      time: "02:00 PM",
-      image: "https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?w=400&h=200&fit=crop",
-      hasCertificate: true
-    }
-  ];
-
   // Countdown Timer Component
   const CountdownTimer = ({ deadline }: { deadline: number }) => {
     const [timeLeft, setTimeLeft] = useState(deadline - Date.now());
@@ -347,6 +264,44 @@ export function MobileDashboard() {
     { title: "Upcoming Events", icon: Calendar },
     { title: "Completed Events", icon: Trophy },
     { title: "Generate Certificate", icon: Award }
+  ];
+
+  // Get events for selected day
+  const getEventsForDay = (day: string) => {
+    if (day === "ALL") {
+      return Object.values(allEvents).flat();
+    }
+    return allEvents[day as keyof typeof allEvents] || [];
+  };
+
+  const sampleEvents = getEventsForDay(selectedFilter);
+
+  // Completed events sample data
+  const completedSampleEvents = [
+    {
+      id: 101,
+      title: "🏸 BADMINTON CHAMPIONSHIP",
+      time: "09:00 AM",
+      date: "Nov 15",
+      image: "https://images.unsplash.com/photo-1544717684-7ba720c2b5ea?w=400&h=200&fit=crop",
+      hasCertificate: true
+    },
+    {
+      id: 102,
+      title: "🏀 BASKETBALL FINALS",
+      time: "02:00 PM", 
+      date: "Nov 20",
+      image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&h=200&fit=crop",
+      hasCertificate: true
+    },
+    {
+      id: 103,
+      title: "⚽ FOOTBALL TOURNAMENT",
+      time: "05:00 PM",
+      date: "Nov 25", 
+      image: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=400&h=200&fit=crop",
+      hasCertificate: false
+    }
   ];
 
   return (
@@ -587,7 +542,7 @@ export function MobileDashboard() {
                             <Button 
                               size="sm" 
                               className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full font-medium text-xs py-1"
-                              onClick={() => handleRegisterForEvent(event.id)}
+                              onClick={() => handleRegisterForEvent(event.id.toString())}
                               disabled={event.participants >= event.maxParticipants}
                             >
                               {event.participants >= event.maxParticipants ? "Event Full" : "Register Now"}
