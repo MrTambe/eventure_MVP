@@ -32,12 +32,40 @@ const schema = defineSchema(
       role: v.optional(roleValidator), // role of the user. do not remove
     }).index("email", ["email"]), // index for the email. do not remove or modify
 
-    // add other tables here
+    // Events table
+    events: defineTable({
+      name: v.string(),
+      description: v.string(),
+      venue: v.string(),
+      startDate: v.number(), // timestamp
+      endDate: v.number(), // timestamp
+      maxParticipants: v.optional(v.number()),
+      createdBy: v.id("users"),
+      status: v.union(v.literal("active"), v.literal("cancelled"), v.literal("completed")),
+    }).index("by_creator", ["createdBy"])
+      .index("by_start_date", ["startDate"])
+      .index("by_status", ["status"]),
 
-    // tableName: defineTable({
-    //   ...
-    //   // table fields
-    // }).index("by_field", ["field"])
+    // Event registrations table
+    eventRegistrations: defineTable({
+      eventId: v.id("events"),
+      userId: v.id("users"),
+      registrationDate: v.number(), // timestamp
+      status: v.union(v.literal("registered"), v.literal("attended"), v.literal("cancelled")),
+    }).index("by_event", ["eventId"])
+      .index("by_user", ["userId"])
+      .index("by_user_and_event", ["userId", "eventId"]),
+
+    // Certificates table
+    certificates: defineTable({
+      eventId: v.id("events"),
+      userId: v.id("users"),
+      certificateUrl: v.optional(v.string()),
+      issuedDate: v.number(), // timestamp
+      certificateNumber: v.string(),
+    }).index("by_user", ["userId"])
+      .index("by_event", ["eventId"])
+      .index("by_user_and_event", ["userId", "eventId"]),
   },
   {
     schemaValidation: false,
