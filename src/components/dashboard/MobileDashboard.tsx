@@ -273,7 +273,7 @@ export function MobileDashboard() {
                   <div className="space-y-4">
                     {/* Filter Buttons */}
                     <div className="flex gap-2 overflow-x-auto pb-2">
-                      {["ALL", "TECH", "CREATIVE", "BUSINESS"].map((filter) => (
+                      {["DAY-01", "DAY-02", "DAY-03", "DAY-04"].map((filter) => (
                         <Button
                           key={filter}
                           variant={selectedFilter === filter ? "default" : "outline"}
