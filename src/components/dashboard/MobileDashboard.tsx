@@ -279,17 +279,17 @@ export function MobileDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20">
       {/* Mobile Container */}
-      <div className="max-w-sm mx-auto bg-white dark:bg-gray-900 min-h-screen shadow-2xl relative">
+      <div className="max-w-sm mx-auto bg-card min-h-screen shadow-2xl relative border-x border-border">
         
         {/* Status Bar */}
-        <div className="h-8 bg-black rounded-t-3xl flex items-center justify-center relative">
-          <div className="w-16 h-1 bg-white rounded-full"></div>
+        <div className="h-8 bg-primary rounded-t-3xl flex items-center justify-center relative">
+          <div className="w-16 h-1 bg-primary-foreground rounded-full"></div>
           <div className="absolute right-4 flex items-center gap-1">
-            <div className="w-1 h-1 bg-white rounded-full"></div>
-            <div className="w-1 h-1 bg-white rounded-full"></div>
-            <div className="w-1 h-1 bg-white rounded-full"></div>
+            <div className="w-1 h-1 bg-primary-foreground rounded-full"></div>
+            <div className="w-1 h-1 bg-primary-foreground rounded-full"></div>
+            <div className="w-1 h-1 bg-primary-foreground rounded-full"></div>
           </div>
         </div>
 
@@ -299,13 +299,13 @@ export function MobileDashboard() {
           {/* Header Section */}
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+              <h1 className="text-3xl font-black text-foreground tracking-tight">
                 HELLO,
               </h1>
-              <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300">
+              <h2 className="text-xl font-bold text-muted-foreground">
                 {user?.name?.toUpperCase() || "GUEST"}
               </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 {new Date().toLocaleDateString('en-US', { 
                   weekday: 'long', 
                   month: 'short', 
@@ -319,7 +319,7 @@ export function MobileDashboard() {
               <button
                 onClick={toggleTheme}
                 className={`w-8 h-8 rounded-full transition-all duration-300 flex items-center justify-center ${
-                  isDarkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-200 text-gray-600'
+                  isDarkMode ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground'
                 }`}
               >
                 {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -331,26 +331,26 @@ export function MobileDashboard() {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg"
+                    className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg"
                   >
-                    <User className="h-5 w-5 text-white" />
+                    <User className="h-5 w-5 text-primary-foreground" />
                   </motion.button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-gray-800 border-0 shadow-xl rounded-2xl">
-                  <DropdownMenuItem className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl">
+                <DropdownMenuContent align="end" className="w-48 bg-card border-border shadow-xl rounded-2xl">
+                  <DropdownMenuItem className="flex items-center gap-3 p-4 hover:bg-accent/10 rounded-xl">
                     <User className="h-4 w-4" />
                     View Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl">
+                  <DropdownMenuItem className="flex items-center gap-3 p-4 hover:bg-accent/10 rounded-xl">
                     <Calendar className="h-4 w-4" />
                     My Events
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl">
+                  <DropdownMenuItem className="flex items-center gap-3 p-4 hover:bg-accent/10 rounded-xl">
                     <Award className="h-4 w-4" />
                     Certificates
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    className="flex items-center gap-3 p-4 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl"
+                    className="flex items-center gap-3 p-4 text-destructive hover:bg-destructive/10 rounded-xl"
                     onClick={handleSignOut}
                   >
                     <LogOut className="h-4 w-4" />
@@ -365,7 +365,7 @@ export function MobileDashboard() {
           <div className="flex gap-3">
             <motion.div 
               whileHover={{ scale: 1.02 }}
-              className="bg-gradient-to-br from-blue-500 to-blue-600 px-3 py-2 rounded-xl text-white flex items-center gap-2 flex-1"
+              className="bg-gradient-to-br from-primary to-accent px-3 py-2 rounded-xl text-primary-foreground flex items-center gap-2 flex-1"
             >
               <Trophy className="h-4 w-4 opacity-80" />
               <div>
@@ -375,7 +375,7 @@ export function MobileDashboard() {
             </motion.div>
             <motion.div 
               whileHover={{ scale: 1.02 }}
-              className="bg-gradient-to-br from-purple-500 to-purple-600 px-3 py-2 rounded-xl text-white flex items-center gap-2 flex-1"
+              className="bg-gradient-to-br from-accent to-secondary px-3 py-2 rounded-xl text-accent-foreground flex items-center gap-2 flex-1"
             >
               <Award className="h-4 w-4 opacity-80" />
               <div>
@@ -390,17 +390,17 @@ export function MobileDashboard() {
             {/* Section Header with Navigation */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gray-900 dark:bg-white rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   {sections[selectedIndex] && (() => {
                     const IconComponent = sections[selectedIndex].icon;
-                    return <IconComponent className="h-4 w-4 text-white dark:text-gray-900" />;
+                    return <IconComponent className="h-4 w-4 text-primary-foreground" />;
                   })()}
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white">
+                  <h3 className="font-bold text-foreground">
                     {sections[selectedIndex]?.title || "Upcoming Events"}
                   </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-muted-foreground">
                     {selectedIndex + 1} of {sections.length}
                   </p>
                 </div>
@@ -411,7 +411,7 @@ export function MobileDashboard() {
                   variant="outline"
                   size="sm" 
                   onClick={scrollPrev}
-                  className="w-8 h-8 p-0 rounded-full"
+                  className="w-8 h-8 p-0 rounded-full border-border"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -419,7 +419,7 @@ export function MobileDashboard() {
                   variant="outline"
                   size="sm" 
                   onClick={scrollNext}
-                  className="w-8 h-8 p-0 rounded-full"
+                  className="w-8 h-8 p-0 rounded-full border-border"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -443,8 +443,8 @@ export function MobileDashboard() {
                           onClick={() => setSelectedFilter(filter)}
                           className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
                             selectedFilter === filter 
-                              ? "bg-gray-900 text-white hover:bg-gray-800" 
-                              : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                              ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                              : "bg-card border-border text-foreground hover:bg-accent/10"
                           }`}
                         >
                           {filter}
@@ -458,7 +458,7 @@ export function MobileDashboard() {
                         <motion.div
                           key={event.id}
                           whileHover={{ scale: 1.02 }}
-                          className="relative overflow-hidden rounded-3xl shadow-lg"
+                          className="relative overflow-hidden rounded-3xl shadow-lg border border-border"
                         >
                           <div 
                             className="relative h-32 bg-cover bg-center" 
@@ -468,8 +468,8 @@ export function MobileDashboard() {
                             
                             {/* Status Badge */}
                             <div className="absolute top-3 left-3">
-                              <div className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full">
-                                <span className="text-xs font-semibold text-gray-900">
+                              <div className="bg-card/90 backdrop-blur-sm px-2 py-1 rounded-full border border-border">
+                                <span className="text-xs font-semibold text-foreground">
                                   {event.status}
                                 </span>
                               </div>
@@ -503,17 +503,17 @@ export function MobileDashboard() {
                           </div>
 
                           {/* Action Buttons */}
-                          <div className="bg-white dark:bg-gray-800 p-3 flex gap-2">
+                          <div className="bg-card p-3 flex gap-2">
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              className="flex-1 rounded-full font-medium border-gray-200 hover:bg-gray-50 text-xs py-1"
+                              className="flex-1 rounded-full font-medium border-border hover:bg-accent/10 text-xs py-1"
                             >
                               View Details
                             </Button>
                             <Button 
                               size="sm" 
-                              className="flex-1 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium text-xs py-1"
+                              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full font-medium text-xs py-1"
                             >
                               Register Now
                             </Button>
@@ -656,7 +656,7 @@ export function MobileDashboard() {
                 <button
                   key={index}
                   className={`w-2 h-2 rounded-full transition-all ${
-                    index === selectedIndex ? 'bg-gray-900 dark:bg-white' : 'bg-gray-300 dark:bg-gray-600'
+                    index === selectedIndex ? 'bg-primary' : 'bg-muted'
                   }`}
                   onClick={() => emblaApi?.scrollTo(index)}
                 />
