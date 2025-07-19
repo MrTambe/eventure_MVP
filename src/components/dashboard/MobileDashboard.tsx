@@ -98,7 +98,7 @@ export function MobileDashboard() {
         </div>
 
         {/* Main Content */}
-        <div className="px-6 py-8 space-y-8">
+        <div className="px-6 py-6 space-y-6">
           
           {/* Header Section */}
           <div className="flex items-start justify-between">
@@ -118,97 +118,92 @@ export function MobileDashboard() {
               </p>
             </div>
             
-            {/* Profile Menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg"
-                >
-                  <User className="h-6 w-6 text-white" />
-                </motion.button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-gray-800 border-0 shadow-xl rounded-2xl">
-                <DropdownMenuItem className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl">
-                  <User className="h-4 w-4" />
-                  View Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl">
-                  <Calendar className="h-4 w-4" />
-                  My Events
-                </DropdownMenuItem>
-                <DropdownMenuItem className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl">
-                  <Award className="h-4 w-4" />
-                  Certificates
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  className="flex items-center gap-3 p-4 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl"
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 gap-4">
-            <motion.div 
-              whileHover={{ scale: 1.02 }}
-              className="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-2xl text-white"
-            >
-              <Trophy className="h-6 w-6 mb-2 opacity-80" />
-              <p className="text-2xl font-bold">{userStats?.totalEventsJoined || 0}</p>
-              <p className="text-sm opacity-80">Events Joined</p>
-            </motion.div>
-            <motion.div 
-              whileHover={{ scale: 1.02 }}
-              className="bg-gradient-to-br from-purple-500 to-purple-600 p-4 rounded-2xl text-white"
-            >
-              <Award className="h-6 w-6 mb-2 opacity-80" />
-              <p className="text-2xl font-bold">{userStats?.totalCertificates || 0}</p>
-              <p className="text-sm opacity-80">Certificates</p>
-            </motion.div>
-          </div>
-
-          {/* Theme Toggle */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl">
             <div className="flex items-center gap-3">
-              <Sun className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Theme</span>
-            </div>
-            <button
-              onClick={toggleTheme}
-              className={`w-14 h-7 rounded-full transition-all duration-300 ${
-                isDarkMode ? 'bg-blue-500' : 'bg-gray-300'
-              } relative`}
-            >
-              <div
-                className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-transform duration-300 ${
-                  isDarkMode ? 'translate-x-7' : 'translate-x-1'
+              {/* Compact Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                className={`w-8 h-8 rounded-full transition-all duration-300 flex items-center justify-center ${
+                  isDarkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-200 text-gray-600'
                 }`}
-              />
-            </button>
-            <Moon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              >
+                {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
+
+              {/* Profile Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg"
+                  >
+                    <User className="h-5 w-5 text-white" />
+                  </motion.button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-gray-800 border-0 shadow-xl rounded-2xl">
+                  <DropdownMenuItem className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl">
+                    <User className="h-4 w-4" />
+                    View Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl">
+                    <Calendar className="h-4 w-4" />
+                    My Events
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl">
+                    <Award className="h-4 w-4" />
+                    Certificates
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="flex items-center gap-3 p-4 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          {/* Compact Stats Cards */}
+          <div className="flex gap-3">
+            <motion.div 
+              whileHover={{ scale: 1.02 }}
+              className="bg-gradient-to-br from-blue-500 to-blue-600 px-3 py-2 rounded-xl text-white flex items-center gap-2 flex-1"
+            >
+              <Trophy className="h-4 w-4 opacity-80" />
+              <div>
+                <p className="text-lg font-bold">{userStats?.totalEventsJoined || 0}</p>
+                <p className="text-xs opacity-80">Events</p>
+              </div>
+            </motion.div>
+            <motion.div 
+              whileHover={{ scale: 1.02 }}
+              className="bg-gradient-to-br from-purple-500 to-purple-600 px-3 py-2 rounded-xl text-white flex items-center gap-2 flex-1"
+            >
+              <Award className="h-4 w-4 opacity-80" />
+              <div>
+                <p className="text-lg font-bold">{userStats?.totalCertificates || 0}</p>
+                <p className="text-xs opacity-80">Certificates</p>
+              </div>
+            </motion.div>
           </div>
 
           {/* Events Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-900 dark:bg-white rounded-xl flex items-center justify-center">
-                  <Calendar className="h-5 w-5 text-white dark:text-gray-900" />
+                <div className="w-8 h-8 bg-gray-900 dark:bg-white rounded-lg flex items-center justify-center">
+                  <Calendar className="h-4 w-4 text-white dark:text-gray-900" />
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900 dark:text-white">Upcoming Events</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Discover & Join</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Discover & Join</p>
                 </div>
               </div>
               <Button 
                 size="sm" 
-                className="bg-gray-900 hover:bg-gray-800 text-white rounded-full px-4"
+                className="bg-gray-900 hover:bg-gray-800 text-white rounded-full px-3 py-1 text-xs"
               >
                 View All
               </Button>
@@ -222,7 +217,7 @@ export function MobileDashboard() {
                   variant={selectedFilter === filter ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedFilter(filter)}
-                  className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap ${
+                  className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
                     selectedFilter === filter 
                       ? "bg-gray-900 text-white hover:bg-gray-800" 
                       : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
@@ -242,14 +237,14 @@ export function MobileDashboard() {
                   className="relative overflow-hidden rounded-3xl shadow-lg"
                 >
                   <div 
-                    className="relative h-40 bg-cover bg-center" 
+                    className="relative h-32 bg-cover bg-center" 
                     style={{ backgroundImage: `url(${event.image})` }}
                   >
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                     
                     {/* Status Badge */}
-                    <div className="absolute top-4 left-4">
-                      <div className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
+                    <div className="absolute top-3 left-3">
+                      <div className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full">
                         <span className="text-xs font-semibold text-gray-900">
                           {event.status}
                         </span>
@@ -257,21 +252,21 @@ export function MobileDashboard() {
                     </div>
 
                     {/* Event Info */}
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <h4 className="text-white font-bold text-lg mb-2 tracking-wide">
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <h4 className="text-white font-bold text-base mb-1 tracking-wide">
                         {event.title}
                       </h4>
-                      <div className="flex items-center gap-4 text-white/80 text-sm">
+                      <div className="flex items-center gap-3 text-white/80 text-xs">
                         <div className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
+                          <Clock className="h-3 w-3" />
                           {event.time}
                         </div>
                         <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
+                          <Calendar className="h-3 w-3" />
                           {event.date}
                         </div>
                         <div className="flex items-center gap-1">
-                          <Users className="h-4 w-4" />
+                          <Users className="h-3 w-3" />
                           {event.participants}/{event.maxParticipants}
                         </div>
                       </div>
@@ -279,17 +274,17 @@ export function MobileDashboard() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="bg-white dark:bg-gray-800 p-4 flex gap-3">
+                  <div className="bg-white dark:bg-gray-800 p-3 flex gap-2">
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="flex-1 rounded-full font-medium border-gray-200 hover:bg-gray-50"
+                      className="flex-1 rounded-full font-medium border-gray-200 hover:bg-gray-50 text-xs py-1"
                     >
                       View Details
                     </Button>
                     <Button 
                       size="sm" 
-                      className="flex-1 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium"
+                      className="flex-1 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium text-xs py-1"
                     >
                       Register Now
                     </Button>
