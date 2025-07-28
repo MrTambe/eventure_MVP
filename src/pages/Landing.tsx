@@ -7,7 +7,7 @@ export default function Landing() {
     <div className="min-h-screen">
       <HeroGeometric 
         badge="EventHub"
-        title1="Manage Events"
+        title1="One App. Every Event."
         title2="Effortlessly"
       />
       
