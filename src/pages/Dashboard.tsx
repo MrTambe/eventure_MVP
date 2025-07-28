@@ -1,7 +1,7 @@
 import { Protected } from "@/lib/protected-page";
 import { NavBar } from "@/components/ui/tubelight-navbar";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher-1";
-import { Home, Calendar, Trophy, User, Settings, Bike, Dribbble, Swords } from "lucide-react";
+import { Home, Calendar, Trophy, User, Settings, Bike, Dribbble, Swords, Zap, Circle, Target, Users, Footprints, Square, Crown, CircleDot, Flag } from "lucide-react";
 import { BrutalistSportsCard } from "@/components/ui/brutalist-sports-card";
 
 export default function Dashboard() {
@@ -37,6 +37,78 @@ export default function Dashboard() {
       time: "10:00 AM",
       venue: "Knights Hall",
       icon: <Swords />,
+    },
+    {
+      sport: "Badminton",
+      title: "Inter-College Badminton Championship",
+      date: "2024-08-25",
+      time: "08:00 AM",
+      venue: "Sports Complex Hall A",
+      icon: <Zap />,
+    },
+    {
+      sport: "Table Tennis",
+      title: "State Level Ping Pong Tournament",
+      date: "2024-09-05",
+      time: "11:00 AM",
+      venue: "Indoor Sports Center",
+      icon: <Circle />,
+    },
+    {
+      sport: "Tennis",
+      title: "Open Tennis Championship",
+      date: "2024-09-10",
+      time: "07:00 AM",
+      venue: "Central Tennis Courts",
+      icon: <Target />,
+    },
+    {
+      sport: "Cricket",
+      title: "T20 Cricket League Finals",
+      date: "2024-09-15",
+      time: "02:00 PM",
+      venue: "Stadium Cricket Ground",
+      icon: <CircleDot />,
+    },
+    {
+      sport: "Athletics",
+      title: "Track & Field Championship",
+      date: "2024-09-20",
+      time: "06:00 AM",
+      venue: "Athletic Stadium",
+      icon: <Footprints />,
+    },
+    {
+      sport: "Carrom",
+      title: "National Carrom Competition",
+      date: "2024-09-25",
+      time: "01:00 PM",
+      venue: "Community Hall",
+      icon: <Square />,
+    },
+    {
+      sport: "Chess",
+      title: "Grand Master Chess Tournament",
+      date: "2024-09-30",
+      time: "10:00 AM",
+      venue: "Conference Center",
+      icon: <Crown />,
+    },
+    {
+      sport: "Football",
+      title: "Inter-City Football Cup",
+      date: "2024-10-05",
+      time: "04:00 PM",
+      venue: "Main Football Stadium",
+      icon: <Users />,
+    },
+    {
+      sport: "Golf",
+      title: "Professional Golf Championship",
+      date: "2024-10-10",
+      time: "08:00 AM",
+      venue: "Greenwood Golf Course",
+      icon: <Flag />,
     },
   ];
 
