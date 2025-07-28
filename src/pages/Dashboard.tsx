@@ -1,10 +1,10 @@
 import { Protected } from "@/lib/protected-page";
-import { MobileDashboard } from "@/components/dashboard/MobileDashboard";
+import { BackgroundPaths } from "@/components/ui/background-paths";
 
 export default function Dashboard() {
   return (
     <Protected>
-      <MobileDashboard />
+      <BackgroundPaths title="Event Dashboard" />
     </Protected>
   );
 }
