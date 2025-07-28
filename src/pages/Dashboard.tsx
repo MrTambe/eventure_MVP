@@ -1,6 +1,7 @@
 import { Protected } from "@/lib/protected-page";
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { NavBar } from "@/components/ui/tubelight-navbar";
+import { ThemeSwitcher } from "@/components/ui/theme-switcher-1";
 import { Home, Calendar, Trophy, User, Settings } from "lucide-react";
 
 export default function Dashboard() {
@@ -15,6 +16,12 @@ export default function Dashboard() {
   return (
     <Protected>
       <NavBar items={navItems} />
+      
+      {/* Theme Switcher positioned in top-right corner, aligned with navbar */}
+      <div className="fixed top-0 right-6 z-50 pt-6">
+        <ThemeSwitcher />
+      </div>
+      
       <BackgroundPaths title="Event Dashboard" />
     </Protected>
   );
