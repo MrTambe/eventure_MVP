@@ -10,6 +10,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import "./index.css";
 import Dashboard from "./pages/Dashboard.tsx";
+import Events from "./pages/Events.tsx";
 import Landing from "./pages/Landing.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -50,6 +51,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/events" element={<Events />} />
             <Route path="/event/:eventId" element={<EventInfo />} />
           </Routes>
         </BrowserRouter>
