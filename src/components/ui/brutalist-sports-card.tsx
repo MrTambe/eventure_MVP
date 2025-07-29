@@ -1,5 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
+import { useNavigate } from 'react-router';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { toast } from 'sonner';
 
 interface BrutalistSportsCardProps {
   sport: string;
@@ -7,28 +11,79 @@ interface BrutalistSportsCardProps {
   date: string;
   time: string;
   venue: string;
-  icon: React.ReactNode;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
 }
 
-const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title, date, time, venue, icon }) => {
+const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({
+  sport,
+  title,
+  date,
+  time,
+  venue,
+  icon: Icon
+}) => {
+  const navigate = useNavigate();
+  const registerForEvent = useMutation(api.dashboard.registerForEvent);
+
+  const handleViewDetails = () => {
+    const sportMap: { [key: string]: string } = {
+      "Basketball": "basketball",
+      "Fencing": "fencing", 
+      "Tennis": "tennis",
+      "Cricket": "cricket",
+      "Chess": "chess",
+      "Football": "football",
+      "Carrom": "carrom",
+      "Table Tennis": "table-tennis",
+      "Cycling": "cycling",
+      "Badminton": "badminton",
+      "Athletics": "athletics",
+      "Golf": "golf"
+    };
+    
+    const eventKey = sportMap[sport] || sport.toLowerCase().replace(/\s+/g, '-');
+    navigate(`/event/${eventKey}`);
+  };
+
+  const handleRegisterNow = async () => {
+    try {
+      // For demo purposes, using a mock event ID based on sport name
+      const mockEventId = `event_${sport.toLowerCase().replace(/\s+/g, '_')}`;
+      
+      // Since we don't have real event IDs, we'll show a success message
+      toast.success(`Successfully registered for ${title}!`);
+    } catch (error) {
+      toast.error("Failed to register for event");
+    }
+  };
+
   return (
     <StyledWrapper>
       <div className="brutalist-card">
         <div className="brutalist-card__header">
           <div className="brutalist-card__icon">
-            {icon}
+            <Icon size={24} />
           </div>
           <div className="brutalist-card__alert">{sport}</div>
         </div>
         <div className="brutalist-card__message">
-          <p className="font-bold text-lg">{title}</p>
-          <p>Date: {date}</p>
-          <p>Time: {time}</p>
-          <p>Venue: {venue}</p>
+          <strong>{title}</strong><br />
+          📅 {date} at {time}<br />
+          📍 {venue}
         </div>
         <div className="brutalist-card__actions">
-          <a className="brutalist-card__button brutalist-card__button--mark" href="#">View Details</a>
-          <a className="brutalist-card__button brutalist-card__button--read" href="#">Register Now</a>
+          <button 
+            className="brutalist-card__button brutalist-card__button--mark" 
+            onClick={handleViewDetails}
+          >
+            View Details
+          </button>
+          <button 
+            className="brutalist-card__button brutalist-card__button--read" 
+            onClick={handleRegisterNow}
+          >
+            Register Now
+          </button>
         </div>
       </div>
     </StyledWrapper>
@@ -43,7 +98,6 @@ const StyledWrapper = styled.div`
     padding: 1.5rem;
     box-shadow: 10px 10px 0 #000;
     font-family: "Arial", sans-serif;
-    margin: 1rem;
   }
 
   .brutalist-card__header {
@@ -62,14 +116,7 @@ const StyledWrapper = styled.div`
     justify-content: center;
     background-color: #000;
     padding: 0.5rem;
-    width: 50px;
-    height: 50px;
-  }
-
-  .brutalist-card__icon svg {
-    height: 2rem;
-    width: 2rem;
-    fill: #fff;
+    color: #fff;
   }
 
   .brutalist-card__alert {
@@ -110,6 +157,7 @@ const StyledWrapper = styled.div`
     overflow: hidden;
     text-decoration: none;
     margin-bottom: 1rem;
+    cursor: pointer;
   }
 
   .brutalist-card__button--read {

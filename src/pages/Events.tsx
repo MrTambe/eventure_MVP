@@ -1,8 +1,19 @@
 import { Protected } from "@/lib/protected-page";
 import { NavBar } from "@/components/ui/tubelight-navbar";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher-1";
-import { Home, Calendar, Trophy, User, Settings, Bike, Dribbble, Swords, Zap, Circle, Target, Users, Footprints, Square, Crown, CircleDot, Flag } from "lucide-react";
+import { Home, Calendar, Trophy, User, Settings } from "lucide-react";
 import { BrutalistSportsCard } from "@/components/ui/brutalist-sports-card";
+import {
+  Bike,
+  Circle,
+  Sword,
+  Zap,
+  Target,
+  Crown,
+  Gamepad2,
+  CircleDot,
+  Flag
+} from "lucide-react";
 
 export default function Events() {
   const navItems = [
@@ -15,101 +26,113 @@ export default function Events() {
 
   const events = [
     {
+      id: 1,
       sport: "Cycling",
-      title: "Mountain Bike Championship",
-      date: "2024-08-15",
-      time: "09:00 AM",
-      venue: "Pine Ridge Trail",
-      icon: <Bike />,
+      title: "INTER-COLLEGE CYCLING CHAMPIONSHIP",
+      date: "Dec 15, 2024",
+      time: "8:00 AM",
+      venue: "Sports Complex Track",
+      icon: Bike
     },
     {
+      id: 2,
       sport: "Basketball",
-      title: "Summer Slam 3v3",
-      date: "2024-08-20",
-      time: "02:00 PM",
-      venue: "City Center Arena",
-      icon: <Dribbble />,
+      title: "ANNUAL BASKETBALL TOURNAMENT",
+      date: "Dec 16, 2024",
+      time: "10:00 AM",
+      venue: "Main Basketball Court",
+      icon: Circle
     },
     {
+      id: 3,
       sport: "Fencing",
-      title: "Regional Epee Tournament",
-      date: "2024-09-01",
-      time: "10:00 AM",
-      venue: "Knights Hall",
-      icon: <Swords />,
+      title: "COLLEGIATE FENCING CHAMPIONSHIP",
+      date: "Dec 17, 2024",
+      time: "2:00 PM",
+      venue: "Indoor Sports Hall",
+      icon: Sword
     },
     {
+      id: 4,
       sport: "Badminton",
-      title: "Inter-College Badminton Championship",
-      date: "2024-08-25",
-      time: "08:00 AM",
-      venue: "Sports Complex Hall A",
-      icon: <Zap />,
+      title: "BADMINTON SINGLES & DOUBLES",
+      date: "Dec 18, 2024",
+      time: "9:00 AM",
+      venue: "Badminton Courts 1-4",
+      icon: Zap
     },
     {
+      id: 5,
       sport: "Table Tennis",
-      title: "State Level Ping Pong Tournament",
-      date: "2024-09-05",
+      title: "PING PONG CHAMPIONSHIP",
+      date: "Dec 19, 2024",
       time: "11:00 AM",
-      venue: "Indoor Sports Center",
-      icon: <Circle />,
+      venue: "Recreation Center",
+      icon: Target
     },
     {
+      id: 6,
       sport: "Tennis",
-      title: "Open Tennis Championship",
-      date: "2024-09-10",
-      time: "07:00 AM",
-      venue: "Central Tennis Courts",
-      icon: <Target />,
+      title: "TENNIS OPEN TOURNAMENT",
+      date: "Dec 20, 2024",
+      time: "7:00 AM",
+      venue: "Tennis Courts A-D",
+      icon: Circle
     },
     {
+      id: 7,
       sport: "Cricket",
-      title: "T20 Cricket League Finals",
-      date: "2024-09-15",
-      time: "02:00 PM",
-      venue: "Stadium Cricket Ground",
-      icon: <CircleDot />,
+      title: "INTER-DEPARTMENT CRICKET LEAGUE",
+      date: "Dec 21, 2024",
+      time: "1:00 PM",
+      venue: "Cricket Ground",
+      icon: Target
     },
     {
+      id: 8,
       sport: "Athletics",
-      title: "Track & Field Championship",
-      date: "2024-09-20",
-      time: "06:00 AM",
+      title: "TRACK & FIELD CHAMPIONSHIP",
+      date: "Dec 22, 2024",
+      time: "6:00 AM",
       venue: "Athletic Stadium",
-      icon: <Footprints />,
+      icon: Crown
     },
     {
+      id: 9,
       sport: "Carrom",
-      title: "National Carrom Competition",
-      date: "2024-09-25",
-      time: "01:00 PM",
-      venue: "Community Hall",
-      icon: <Square />,
+      title: "CARROM BOARD COMPETITION",
+      date: "Dec 23, 2024",
+      time: "3:00 PM",
+      venue: "Student Activity Center",
+      icon: Target
     },
     {
+      id: 10,
       sport: "Chess",
-      title: "Grand Master Chess Tournament",
-      date: "2024-09-30",
+      title: "STRATEGIC CHESS TOURNAMENT",
+      date: "Dec 24, 2024",
       time: "10:00 AM",
-      venue: "Conference Center",
-      icon: <Crown />,
+      venue: "Library Conference Room",
+      icon: Gamepad2
     },
     {
+      id: 11,
       sport: "Football",
-      title: "Inter-City Football Cup",
-      date: "2024-10-05",
-      time: "04:00 PM",
-      venue: "Main Football Stadium",
-      icon: <Users />,
+      title: "FOOTBALL CHAMPIONSHIP CUP",
+      date: "Dec 25, 2024",
+      time: "4:00 PM",
+      venue: "Main Football Field",
+      icon: CircleDot
     },
     {
+      id: 12,
       sport: "Golf",
-      title: "Professional Golf Championship",
-      date: "2024-10-10",
-      time: "08:00 AM",
-      venue: "Greenwood Golf Course",
-      icon: <Flag />,
-    },
+      title: "COLLEGIATE GOLF TOURNAMENT",
+      date: "Dec 26, 2024",
+      time: "8:00 AM",
+      venue: "University Golf Course",
+      icon: Flag
+    }
   ];
 
   return (
@@ -128,10 +151,10 @@ export default function Events() {
         </div>
       </div>
 
-      <div className="pt-48 flex flex-wrap justify-center">
-        {events.map((event, index) => (
+      <div className="pt-48 flex flex-wrap justify-center gap-6">
+        {events.map((event) => (
           <BrutalistSportsCard
-            key={index}
+            key={event.id}
             sport={event.sport}
             title={event.title}
             date={event.date}
