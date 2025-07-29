@@ -14,6 +14,7 @@ import {
   CircleDot,
   Flag
 } from "lucide-react";
+import { Id } from "@/convex/_generated/dataModel";
 
 export default function Events() {
   const navItems = [
@@ -27,6 +28,7 @@ export default function Events() {
   const events = [
     {
       id: 1,
+      eventId: "1" as Id<"events">,
       sport: "Cycling",
       title: "INTER-COLLEGE CYCLING CHAMPIONSHIP",
       date: "Dec 15, 2024",
@@ -36,6 +38,7 @@ export default function Events() {
     },
     {
       id: 2,
+      eventId: "2" as Id<"events">,
       sport: "Basketball",
       title: "ANNUAL BASKETBALL TOURNAMENT",
       date: "Dec 16, 2024",
@@ -45,6 +48,7 @@ export default function Events() {
     },
     {
       id: 3,
+      eventId: "3" as Id<"events">,
       sport: "Fencing",
       title: "COLLEGIATE FENCING CHAMPIONSHIP",
       date: "Dec 17, 2024",
@@ -54,6 +58,7 @@ export default function Events() {
     },
     {
       id: 4,
+      eventId: "4" as Id<"events">,
       sport: "Badminton",
       title: "BADMINTON SINGLES & DOUBLES",
       date: "Dec 18, 2024",
@@ -63,6 +68,7 @@ export default function Events() {
     },
     {
       id: 5,
+      eventId: "5" as Id<"events">,
       sport: "Table Tennis",
       title: "PING PONG CHAMPIONSHIP",
       date: "Dec 19, 2024",
@@ -72,6 +78,7 @@ export default function Events() {
     },
     {
       id: 6,
+      eventId: "6" as Id<"events">,
       sport: "Tennis",
       title: "TENNIS OPEN TOURNAMENT",
       date: "Dec 20, 2024",
@@ -81,6 +88,7 @@ export default function Events() {
     },
     {
       id: 7,
+      eventId: "7" as Id<"events">,
       sport: "Cricket",
       title: "INTER-DEPARTMENT CRICKET LEAGUE",
       date: "Dec 21, 2024",
@@ -90,6 +98,7 @@ export default function Events() {
     },
     {
       id: 8,
+      eventId: "8" as Id<"events">,
       sport: "Athletics",
       title: "TRACK & FIELD CHAMPIONSHIP",
       date: "Dec 22, 2024",
@@ -99,6 +108,7 @@ export default function Events() {
     },
     {
       id: 9,
+      eventId: "9" as Id<"events">,
       sport: "Carrom",
       title: "CARROM BOARD COMPETITION",
       date: "Dec 23, 2024",
@@ -108,6 +118,7 @@ export default function Events() {
     },
     {
       id: 10,
+      eventId: "10" as Id<"events">,
       sport: "Chess",
       title: "STRATEGIC CHESS TOURNAMENT",
       date: "Dec 24, 2024",
@@ -117,6 +128,7 @@ export default function Events() {
     },
     {
       id: 11,
+      eventId: "11" as Id<"events">,
       sport: "Football",
       title: "FOOTBALL CHAMPIONSHIP CUP",
       date: "Dec 25, 2024",
@@ -126,6 +138,7 @@ export default function Events() {
     },
     {
       id: 12,
+      eventId: "12" as Id<"events">,
       sport: "Golf",
       title: "COLLEGIATE GOLF TOURNAMENT",
       date: "Dec 26, 2024",
@@ -139,10 +152,12 @@ export default function Events() {
     <Protected>
       <NavBar items={navItems} />
       
+      {/* Theme Switcher positioned in top-right corner, aligned with navbar */}
       <div className="fixed top-0 right-6 z-50 pt-6">
         <ThemeSwitcher />
       </div>
       
+      {/* All Events title */}
       <div className="absolute top-20 sm:top-24 left-1/2 -translate-x-1/2 z-40">
         <div className="text-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-neutral-900 to-neutral-700/80 dark:from-white dark:to-white/80">
@@ -161,6 +176,7 @@ export default function Events() {
             time={event.time}
             venue={event.venue}
             icon={event.icon}
+            eventId={event.eventId}
           />
         ))}
       </div>

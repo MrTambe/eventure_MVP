@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { toast } from 'sonner';
+import { Id } from '@/convex/_generated/dataModel';
 
 interface BrutalistSportsCardProps {
   sport: string;
@@ -12,6 +13,7 @@ interface BrutalistSportsCardProps {
   time: string;
   venue: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
+  eventId: Id<"events">;
 }
 
 const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({
@@ -20,24 +22,25 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({
   date,
   time,
   venue,
-  icon: Icon
+  icon: Icon,
+  eventId,
 }) => {
   const navigate = useNavigate();
   const registerForEvent = useMutation(api.dashboard.registerForEvent);
 
   const handleViewDetails = () => {
     const sportMap: { [key: string]: string } = {
+      "Cycling": "cycling",
       "Basketball": "basketball",
-      "Fencing": "fencing", 
+      "Fencing": "fencing",
+      "Badminton": "badminton",
+      "Table Tennis": "table-tennis",
       "Tennis": "tennis",
       "Cricket": "cricket",
+      "Athletics": "athletics",
+      "Carrom": "carrom",
       "Chess": "chess",
       "Football": "football",
-      "Carrom": "carrom",
-      "Table Tennis": "table-tennis",
-      "Cycling": "cycling",
-      "Badminton": "badminton",
-      "Athletics": "athletics",
       "Golf": "golf"
     };
     
@@ -47,11 +50,12 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({
 
   const handleRegisterNow = async () => {
     try {
-      // For demo purposes, using a mock event ID based on sport name
-      const mockEventId = `event_${sport.toLowerCase().replace(/\s+/g, '_')}`;
-      
-      // Since we don't have real event IDs, we'll show a success message
-      toast.success(`Successfully registered for ${title}!`);
+      const result = await registerForEvent({ eventId });
+      if (result.success) {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
     } catch (error) {
       toast.error("Failed to register for event");
     }
