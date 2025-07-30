@@ -88,6 +88,9 @@
   --ds-gray-700: hsla(0, 0%, 56%, 1);
   --ds-gray-1000: hsla(0, 0%, 9%, 1);
   --ds-shadow: rgba(0, 0, 0, 0.08);
+  
+  /* Tiles hover effect */
+  --tile: rgba(255, 255, 255, 0.05);
 }
 
 .dark {
@@ -126,6 +129,9 @@
   --ds-gray-700: hsla(0, 0%, 56%, 1);
   --ds-gray-1000: hsla(0, 0%, 93%, 1);
   --ds-shadow: rgba(255, 255, 255, 0.145);
+  
+  /* Tiles hover effect for dark mode */
+  --tile: rgba(255, 255, 255, 0.08);
 }
 
 @layer base {
