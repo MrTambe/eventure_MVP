@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Calendar, Plus, User, Clock, MapPin, Users, Target, CheckSquare, Square } from 'lucide-react';
+import { Calendar, Plus, User, Clock, MapPin, Users, Target, CheckSquare, Square, Home, Settings, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { MenuBar } from '@/components/ui/glow-menu';
+import { ThemeProvider, useTheme } from 'next-themes';
 
 // Dummy data
 const currentEvent = {
@@ -41,10 +43,47 @@ const calendarEvents = [
   { date: 25, name: "SEMINAR", type: "scheduled" }
 ];
 
-export default function AdminDashboard() {
+const menuItems = [
+  {
+    icon: Home,
+    label: "Dashboard",
+    href: "#",
+    gradient:
+      "radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.06) 50%, rgba(29,78,216,0) 100%)",
+    iconColor: "text-blue-500",
+  },
+  {
+    icon: Bell,
+    label: "Notifications",
+    href: "#",
+    gradient:
+      "radial-gradient(circle, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.06) 50%, rgba(194,65,12,0) 100%)",
+    iconColor: "text-orange-500",
+  },
+  {
+    icon: Settings,
+    label: "Settings",
+    href: "#",
+    gradient:
+      "radial-gradient(circle, rgba(34,197,94,0.15) 0%, rgba(22,163,74,0.06) 50%, rgba(21,128,61,0) 100%)",
+    iconColor: "text-green-500",
+  },
+  {
+    icon: User,
+    label: "Profile",
+    href: "#",
+    gradient:
+      "radial-gradient(circle, rgba(239,68,68,0.15) 0%, rgba(220,38,38,0.06) 50%, rgba(185,28,28,0) 100%)",
+    iconColor: "text-red-500",
+  },
+];
+
+function AdminDashboardContent() {
   const [todoList, setTodoList] = useState(todos);
   const [newTodo, setNewTodo] = useState("");
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
+  const [activeMenuItem, setActiveMenuItem] = useState("Dashboard");
+  const { theme, setTheme } = useTheme();
 
   const toggleTodo = (id: number) => {
     setTodoList(prev => prev.map(todo => 
@@ -73,24 +112,32 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-black font-mono">
+    <div className="min-h-screen bg-white text-black font-mono dark:bg-black dark:text-white">
       {/* Header Section */}
-      <header className="border-b-2 border-black p-6">
+      <header className="border-b-2 border-black dark:border-white/20 p-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold tracking-tight">EVENT ADMIN DASHBOARD</h1>
-          <div className="flex items-center gap-6">
-            <div className="text-right">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">EVENT ADMIN DASHBOARD</h1>
+          <div className="flex items-center gap-4 md:gap-6">
+            <div className="text-right hidden md:block">
               <div className="text-sm font-bold">{getCurrentDate()}</div>
-              <div className="text-xs text-gray-600">ADMIN PANEL</div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">ADMIN PANEL</div>
             </div>
-            <div className="w-12 h-12 bg-black text-white flex items-center justify-center font-bold text-lg">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-lg">
               AB
             </div>
+            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 border-2 border-black dark:border-white">
+              {theme === 'dark' ? 'Light' : 'Dark'}
+            </button>
           </div>
         </div>
       </header>
 
-      <div className="p-6 space-y-6">
+      {/* Floating Navbar */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+        <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={setActiveMenuItem} />
+      </div>
+
+      <div className="p-4 md:p-6 space-y-6">
         {/* Section 1: Current & Upcoming Events */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Current Event */}
@@ -336,4 +383,12 @@ export default function AdminDashboard() {
       </div>
     </div>
   );
+}
+
+export default function AdminDashboard() {
+  return (
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <AdminDashboardContent />
+    </ThemeProvider>
+  )
 }
