@@ -1,9 +1,12 @@
 'use client'
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router';
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
-import { Mail, Lock, Eye, EyeClosed, ArrowRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { Tiles } from "@/components/ui/tiles";
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { toast } from 'sonner';
 
 import { cn } from "@/lib/utils"
 
@@ -29,31 +32,33 @@ export function Component() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  
+  const navigate = useNavigate();
+  const adminLogin = useMutation(api.admin.adminLogin);
 
-  // For 3D card effect - increased rotation range for more pronounced 3D effect
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const rotateX = useTransform(mouseY, [-300, 300], [10, -10]); // Increased from 5/-5 to 10/-10
-  const rotateY = useTransform(mouseX, [-300, 300], [-10, 10]); // Increased from -5/5 to -10/10
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    mouseX.set(e.clientX - rect.left - rect.width / 2);
-    mouseY.set(e.clientY - rect.top - rect.height / 2);
-    setMousePosition({ x: e.clientX, y: e.clientY });
-  };
-
-  const handleMouseLeave = () => {
-    mouseX.set(0);
-    mouseY.set(0);
-  };
-
-  const handleSubmit = (event: React.MouseEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 2000);
+    
+    try {
+      const result = await adminLogin({ email, password });
+
+      if (result.success) {
+        toast.success(result.message);
+        // Store admin info in session storage for simple session management
+        if (result.admin) {
+          sessionStorage.setItem("adminUser", JSON.stringify(result.admin));
+        }
+        navigate("/dashboard");
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred. Please try again.");
+      console.error("Admin login error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -74,9 +79,6 @@ export function Component() {
       >
         <motion.div
           className="relative"
-          style={{ rotateX, rotateY }}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
           whileHover={{ z: 10 }}
         >
           <div className="relative group">
@@ -323,7 +325,7 @@ export function Component() {
                 </div>
 
                 {/* Login form */}
-                <form onSubmit={(e) => { e.preventDefault(); setIsLoading(true); setTimeout(() => setIsLoading(false), 2000); }} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
                   <motion.div className="space-y-3">
                     {/* Email input */}
                     <motion.div 
@@ -347,6 +349,7 @@ export function Component() {
                           onFocus={() => setFocusedInput("email")}
                           onBlur={() => setFocusedInput(null)}
                           className="w-full bg-white/5 border-transparent focus:border-white/20 text-white placeholder:text-white/30 h-10 transition-all duration-300 pl-10 pr-3 focus:bg-white/10"
+                          required
                         />
                         
                         {/* Input highlight effect */}
@@ -385,6 +388,7 @@ export function Component() {
                           onFocus={() => setFocusedInput("password")}
                           onBlur={() => setFocusedInput(null)}
                           className="w-full bg-white/5 border-transparent focus:border-white/20 text-white placeholder:text-white/30 h-10 transition-all duration-300 pl-10 pr-10 focus:bg-white/10"
+                          required
                         />
                         
                         {/* Toggle password visibility */}
@@ -395,7 +399,7 @@ export function Component() {
                           {showPassword ? (
                             <Eye className="w-4 h-4 text-white/40 hover:text-white transition-colors duration-300" />
                           ) : (
-                            <EyeClosed className="w-4 h-4 text-white/40 hover:text-white transition-colors duration-300" />
+                            <EyeOff className="w-4 h-4 text-white/40 hover:text-white transition-colors duration-300" />
                           )}
                         </div>
                         
@@ -414,35 +418,8 @@ export function Component() {
                     </motion.div>
                   </motion.div>
 
-                  {/* Remember me & Forgot password */}
-                  <div className="flex items-center justify-between pt-1">
-                    <div className="flex items-center space-x-2">
-                      <div className="relative">
-                        <input
-                          id="remember-me"
-                          name="remember-me"
-                          type="checkbox"
-                          checked={rememberMe}
-                          onChange={() => setRememberMe(!rememberMe)}
-                          className="appearance-none h-4 w-4 rounded border border-white/20 bg-white/5 checked:bg-white checked:border-white focus:outline-none focus:ring-1 focus:ring-white/30 transition-all duration-200"
-                        />
-                        {rememberMe && (
-                          <motion.div 
-                            initial={{ opacity: 0, scale: 0.5 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="absolute inset-0 flex items-center justify-center text-black pointer-events-none"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                          </motion.div>
-                        )}
-                      </div>
-                      <label htmlFor="remember-me" className="text-xs text-white/60 hover:text-white/80 transition-colors duration-200">
-                        Remember me
-                      </label>
-                    </div>
-                    
+                  {/* Forgot password link */}
+                  <div className="flex items-center justify-end pt-1">
                     <div className="text-xs relative group/link">
                       <Link to="/forgot-password" className="text-white/60 hover:text-white transition-colors duration-200">
                         Forgot password?
@@ -520,35 +497,6 @@ export function Component() {
                     </motion.span>
                     <div className="flex-grow border-t border-white/5"></div>
                   </div>
-
-                  {/* Google Sign In */}
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    type="button"
-                    className="w-full relative group/google"
-                  >
-                    <div className="absolute inset-0 bg-white/5 rounded-lg blur opacity-0 group-hover/google:opacity-70 transition-opacity duration-300" />
-                    
-                    <div className="relative overflow-hidden bg-white/5 text-white font-medium h-10 rounded-lg border border-white/10 hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 flex items-center justify-center text-white/80 group-hover/google:text-white transition-colors duration-300">G</div>
-                      
-                      <span className="text-white/80 group-hover/google:text-white transition-colors text-xs">
-                        Sign in with Google
-                      </span>
-                      
-                      {/* Button hover effect */}
-                      <motion.div 
-                        className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0"
-                        initial={{ x: '-100%' }}
-                        whileHover={{ x: '100%' }}
-                        transition={{ 
-                          duration: 1, 
-                          ease: "easeInOut"
-                        }}
-                      />
-                    </div>
-                  </motion.button>
 
                 {/* Sign up link */}
                 <motion.p 

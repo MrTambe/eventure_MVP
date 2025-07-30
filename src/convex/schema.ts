@@ -39,6 +39,15 @@ const schema = defineSchema(
       mobileNumber: v.optional(v.string()),
     })
       .index("email", ["email"]),
+
+    // Admin credentials table
+    admins: defineTable({
+      email: v.string(),
+      password: v.string(), // In production, this should be hashed
+      name: v.optional(v.string()),
+      isActive: v.boolean(),
+      lastLogin: v.optional(v.number()),
+    }).index("by_email", ["email"]),
   
     // Events table
     events: defineTable({
