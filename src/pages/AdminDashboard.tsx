@@ -78,11 +78,21 @@ const menuItems = [
   },
 ];
 
+const availableVolunteers = [
+  { id: 1, name: "Alice Johnson", email: "alice@example.com" },
+  { id: 2, name: "Bob Smith", email: "bob@example.com" },
+  { id: 3, name: "Carol Davis", email: "carol@example.com" },
+  { id: 4, name: "David Wilson", email: "david@example.com" },
+  { id: 5, name: "Emma Brown", email: "emma@example.com" },
+  { id: 6, name: "Frank Miller", email: "frank@example.com" },
+];
+
 function AdminDashboardContent() {
   const [todoList, setTodoList] = useState(todos);
   const [newTodo, setNewTodo] = useState("");
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const [activeMenuItem, setActiveMenuItem] = useState("Dashboard");
+  const [selectedVolunteers, setSelectedVolunteers] = useState<number[]>([]);
   const { theme, setTheme } = useTheme();
 
   const toggleTodo = (id: number) => {
@@ -109,6 +119,22 @@ function AdminDashboardContent() {
       month: 'long',
       day: 'numeric'
     }).toUpperCase();
+  };
+
+  const toggleVolunteer = (volunteerId: number) => {
+    setSelectedVolunteers(prev => 
+      prev.includes(volunteerId) 
+        ? prev.filter(id => id !== volunteerId)
+        : [...prev, volunteerId]
+    );
+  };
+
+  const handleCreateEvent = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Handle form submission here
+    console.log("Selected volunteers:", selectedVolunteers);
+    setIsCreateEventOpen(false);
+    setSelectedVolunteers([]);
   };
 
   return (
@@ -216,75 +242,140 @@ function AdminDashboardContent() {
         </section>
 
         {/* Section 3: Create New Event */}
-        <section className="border-2 border-black p-6">
+        <section className="border-2 border-black dark:border-white/20 p-4 md:p-6">
+          <h2 className="text-xl font-bold mb-4 tracking-tight">CREATE NEW EVENT</h2>
           <Dialog open={isCreateEventOpen} onOpenChange={setIsCreateEventOpen}>
             <DialogTrigger asChild>
               <Button 
-                className="bg-black text-white hover:bg-gray-800 font-bold text-lg px-8 py-4 border-0"
+                className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-lg px-8 py-4 border-2 border-black dark:border-white"
                 size="lg"
               >
-                <Plus className="w-6 h-6 mr-2" />
+                <Plus className="mr-2 h-5 w-5" />
                 CREATE NEW EVENT
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl border-2 border-black bg-white font-mono">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-black border-2 border-black dark:border-white font-mono">
               <DialogHeader>
-                <DialogTitle className="text-2xl font-bold">CREATE NEW EVENT</DialogTitle>
+                <DialogTitle className="text-2xl font-bold tracking-tight">CREATE NEW EVENT</DialogTitle>
               </DialogHeader>
-              <div className="space-y-6 mt-6">
-                <div>
-                  <Label className="text-sm font-bold mb-2 block">EVENT NAME</Label>
-                  <Input 
-                    className="border-2 border-black font-mono text-lg p-3" 
-                    placeholder="ENTER EVENT NAME"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+              <form onSubmit={handleCreateEvent} className="space-y-6 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-bold mb-2 block">START DATE</Label>
+                    <Label htmlFor="eventName" className="text-sm font-bold mb-2 block">EVENT NAME</Label>
                     <Input 
-                      type="date" 
-                      className="border-2 border-black font-mono p-3"
+                      id="eventName"
+                      className="border-2 border-black dark:border-white font-mono text-base p-3"
+                      placeholder="Enter event name"
+                      required
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-bold mb-2 block">END DATE</Label>
+                    <Label htmlFor="venue" className="text-sm font-bold mb-2 block">VENUE</Label>
                     <Input 
-                      type="date" 
-                      className="border-2 border-black font-mono p-3"
+                      id="venue"
+                      className="border-2 border-black dark:border-white font-mono text-base p-3"
+                      placeholder="Enter venue"
+                      required
                     />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="eventDate" className="text-sm font-bold mb-2 block">EVENT DATE</Label>
+                    <Input 
+                      id="eventDate"
+                      type="date"
+                      className="border-2 border-black dark:border-white font-mono text-base p-3"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="eventTime" className="text-sm font-bold mb-2 block">START TIME</Label>
+                    <Input 
+                      id="eventTime"
+                      type="time"
+                      className="border-2 border-black dark:border-white font-mono text-base p-3"
+                      required
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <Label className="text-sm font-bold mb-2 block">LOCATION</Label>
+                  <Label htmlFor="maxParticipants" className="text-sm font-bold mb-2 block">MAX PARTICIPANTS</Label>
                   <Input 
-                    className="border-2 border-black font-mono text-lg p-3" 
-                    placeholder="ENTER VENUE"
+                    id="maxParticipants"
+                    type="number"
+                    className="border-2 border-black dark:border-white font-mono text-base p-3"
+                    placeholder="Enter maximum participants"
+                    min="1"
                   />
                 </div>
+
                 <div>
-                  <Label className="text-sm font-bold mb-2 block">DESCRIPTION</Label>
+                  <Label htmlFor="description" className="text-sm font-bold mb-2 block">DESCRIPTION</Label>
                   <Textarea 
-                    className="border-2 border-black font-mono p-3 min-h-[100px]" 
-                    placeholder="EVENT DESCRIPTION"
+                    id="description"
+                    className="border-2 border-black dark:border-white font-mono text-base p-3 min-h-[100px]"
+                    placeholder="Enter event description"
+                    required
                   />
                 </div>
-                <div className="flex gap-4">
+
+                <div>
+                  <Label className="text-sm font-bold mb-3 block">ASSIGN VOLUNTEERS</Label>
+                  <div className="border-2 border-black dark:border-white p-4 max-h-48 overflow-y-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {availableVolunteers.map((volunteer) => (
+                        <div key={volunteer.id} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800">
+                          <button
+                            type="button"
+                            onClick={() => toggleVolunteer(volunteer.id)}
+                            className="flex-shrink-0"
+                          >
+                            {selectedVolunteers.includes(volunteer.id) ? (
+                              <CheckSquare className="h-5 w-5 text-black dark:text-white" />
+                            ) : (
+                              <Square className="h-5 w-5 text-gray-400" />
+                            )}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-bold truncate">{volunteer.name}</div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400 truncate">{volunteer.email}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {selectedVolunteers.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-300 dark:border-gray-600">
+                        <div className="text-sm font-bold">
+                          SELECTED: {selectedVolunteers.length} volunteer{selectedVolunteers.length !== 1 ? 's' : ''}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-4 pt-4">
                   <Button 
-                    className="bg-black text-white hover:bg-gray-800 font-bold px-8 py-3 border-0"
-                    onClick={() => setIsCreateEventOpen(false)}
+                    type="submit"
+                    className="flex-1 bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-base py-3 border-2 border-black dark:border-white"
                   >
                     CREATE EVENT
                   </Button>
                   <Button 
-                    variant="outline" 
-                    className="border-2 border-black font-bold px-8 py-3"
-                    onClick={() => setIsCreateEventOpen(false)}
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsCreateEventOpen(false);
+                      setSelectedVolunteers([]);
+                    }}
+                    className="flex-1 border-2 border-black dark:border-white font-mono text-base py-3 hover:bg-gray-100 dark:hover:bg-gray-800"
                   >
                     CANCEL
                   </Button>
                 </div>
-              </div>
+              </form>
             </DialogContent>
           </Dialog>
         </section>
