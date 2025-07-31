@@ -57,7 +57,7 @@ const schema = defineSchema(
       startDate: v.number(), // timestamp
       endDate: v.number(), // timestamp
       maxParticipants: v.optional(v.number()),
-      createdBy: v.id("users"),
+      createdBy: v.union(v.id("users"), v.id("admins")),
       status: v.union(v.literal("active"), v.literal("cancelled"), v.literal("completed")),
     }).index("by_creator", ["createdBy"])
       .index("by_start_date", ["startDate"])

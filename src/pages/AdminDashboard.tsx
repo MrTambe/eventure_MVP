@@ -1,16 +1,38 @@
 import React, { useState } from 'react';
-import { Calendar, Plus, User, Clock, MapPin, Users, Target, CheckSquare, Square, Home, Settings, Bell } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { MenuBar } from '@/components/ui/glow-menu';
-import { ThemeProvider, useTheme } from 'next-themes';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose
+} from "@/components/ui/dialog";
+import {
+  Calendar as CalendarIcon,
+  Clock,
+  MapPin,
+  Users,
+  Target,
+  User,
+  Plus,
+  CheckSquare,
+  Square,
+  Settings,
+  Bell,
+  LayoutDashboard,
+  Home
+} from "lucide-react";
+import { toast } from "sonner";
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { toast } from 'sonner';
 import { Id } from '@/convex/_generated/dataModel';
+import { MenuBar } from '@/components/ui/glow-menu';
+import { ThemeProvider, useTheme } from 'next-themes';
 
 // Dummy data
 const currentEvent = {
@@ -47,77 +69,111 @@ const calendarEvents = [
   { date: 25, name: "SEMINAR", type: "scheduled" }
 ];
 
-const menuItems = [
-  {
-    icon: Home,
-    label: "Dashboard",
-    href: "#",
-    gradient:
-      "radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.06) 50%, rgba(29,78,216,0) 100%)",
-    iconColor: "text-blue-500",
-  },
-  {
-    icon: Bell,
-    label: "Notifications",
-    href: "#",
-    gradient:
-      "radial-gradient(circle, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.06) 50%, rgba(194,65,12,0) 100%)",
-    iconColor: "text-orange-500",
-  },
-  {
-    icon: Settings,
-    label: "Settings",
-    href: "#",
-    gradient:
-      "radial-gradient(circle, rgba(34,197,94,0.15) 0%, rgba(22,163,74,0.06) 50%, rgba(21,128,61,0) 100%)",
-    iconColor: "text-green-500",
-  },
-  {
-    icon: User,
-    label: "Profile",
-    href: "#",
-    gradient:
-      "radial-gradient(circle, rgba(239,68,68,0.15) 0%, rgba(220,38,38,0.06) 50%, rgba(185,28,28,0) 100%)",
-    iconColor: "text-red-500",
-  },
-];
-
-const availableVolunteers = [
-  { id: 1, name: "Alice Johnson", email: "alice@example.com" },
-  { id: 2, name: "Bob Smith", email: "bob@example.com" },
-  { id: 3, name: "Carol Davis", email: "carol@example.com" },
-  { id: 4, name: "David Wilson", email: "david@example.com" },
-  { id: 5, name: "Emma Brown", email: "emma@example.com" },
-  { id: 6, name: "Frank Miller", email: "frank@example.com" },
-];
-
 function AdminDashboardContent() {
+  const { theme, setTheme } = useTheme();
+  const allUsers = useQuery(api.users.listAll);
+  const availableVolunteers = allUsers || [];
+
   const [todoList, setTodoList] = useState(todos);
   const [newTodo, setNewTodo] = useState("");
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const [activeMenuItem, setActiveMenuItem] = useState("Dashboard");
-  const [selectedVolunteers, setSelectedVolunteers] = useState<number[]>([]);
+  const [selectedVolunteers, setSelectedVolunteers] = useState<Id<"users">[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { theme, setTheme } = useTheme();
 
-  // Backend mutations and queries
-  const createEvent = useMutation(api.events.createEvent);
-  const events = useQuery(api.events.getAllEvents);
-  const upcomingEvents = useQuery(api.events.getUpcomingEvents);
+  const createEventAsAdmin = useMutation(api.events.createEventAsAdmin);
 
-  const toggleTodo = (id: number) => {
-    setTodoList(prev => prev.map(todo => 
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    ));
+  const toggleVolunteer = (volunteerId: Id<"users">) => {
+    setSelectedVolunteers(prev =>
+      prev.includes(volunteerId)
+        ? prev.filter(id => id !== volunteerId)
+        : [...prev, volunteerId]
+    );
   };
 
   const addTodo = () => {
     if (newTodo.trim()) {
-      setTodoList(prev => [...prev, {
-        id: Date.now(),
-        text: newTodo.toUpperCase(),
+      const newTodoItem = {
+        id: todoList.length + 1,
+        text: newTodo,
         completed: false
-      }]);
+      };
+      setTodoList([...todoList, newTodoItem]);
+      setNewTodo("");
+    }
+  };
+
+  const toggleTodo = (id: number) => {
+    setTodoList(todoList.map(todo =>
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    ));
+  };
+
+  const handleCreateEvent = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.currentTarget);
+    const eventName = formData.get("eventName") as string;
+    const venue = formData.get("venue") as string;
+    const eventDate = formData.get("eventDate") as string;
+    const eventTime = formData.get("eventTime") as string;
+    const description = formData.get("description") as string;
+    const maxParticipants = formData.get("maxParticipants") as string;
+
+    if (!eventName?.trim() || !venue?.trim() || !eventDate || !eventTime) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      const adminData = sessionStorage.getItem("adminUser");
+      if (!adminData) {
+        toast.error("Admin session expired. Please sign in again.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const admin = JSON.parse(adminData);
+      
+      const volunteerIds = selectedVolunteers;
+
+      const result = await createEventAsAdmin({
+        name: eventName,
+        description: description || "",
+        venue: venue,
+        eventDate: eventDate,
+        eventTime: eventTime,
+        maxParticipants: maxParticipants ? parseInt(maxParticipants) : undefined,
+        volunteerIds,
+        adminEmail: admin.email,
+      });
+
+      if (result.success) {
+        toast.success(result.message);
+        e.currentTarget.reset();
+        setSelectedVolunteers([]);
+        setIsCreateEventOpen(false);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error("Event creation error:", error);
+      toast.error("Failed to create event. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleAddTodo = () => {
+    if (newTodo.trim()) {
+      const newTodoItem = {
+        id: todoList.length + 1,
+        text: newTodo,
+        completed: false
+      };
+      setTodoList([...todoList, newTodoItem]);
       setNewTodo("");
     }
   };
@@ -131,48 +187,13 @@ function AdminDashboardContent() {
     }).toUpperCase();
   };
 
-  const toggleVolunteer = (volunteerId: number) => {
-    setSelectedVolunteers(prev => 
-      prev.includes(volunteerId) 
-        ? prev.filter(id => id !== volunteerId)
-        : [...prev, volunteerId]
-    );
-  };
-
-  const handleCreateEvent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    const formData = new FormData(e.target as HTMLFormElement);
-    const eventData = {
-      name: formData.get('eventName') as string,
-      description: formData.get('description') as string,
-      venue: formData.get('venue') as string,
-      eventDate: formData.get('eventDate') as string,
-      eventTime: formData.get('eventTime') as string,
-      maxParticipants: formData.get('maxParticipants') ? 
-        parseInt(formData.get('maxParticipants') as string) : undefined,
-      volunteerIds: selectedVolunteers.map(id => `user_${id}` as Id<"users">), // Convert to proper IDs
-    };
-
-    try {
-      const result = await createEvent(eventData);
-      
-      if (result.success) {
-        toast.success(result.message);
-        setIsCreateEventOpen(false);
-        setSelectedVolunteers([]);
-        (e.target as HTMLFormElement).reset();
-      } else {
-        toast.error(result.message);
-      }
-    } catch (error) {
-      console.error('Event creation error:', error);
-      toast.error('Failed to create event. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const menuItems = [
+    { name: "Dashboard", icon: LayoutDashboard, label: "Dashboard", href: "#", gradient: "from-blue-500 to-purple-600", iconColor: "text-blue-400" },
+    { name: "Events", icon: CalendarIcon, label: "Events", href: "#", gradient: "from-green-500 to-cyan-600", iconColor: "text-green-400" },
+    { name: "Users", icon: Users, label: "Users", href: "#", gradient: "from-red-500 to-orange-600", iconColor: "text-red-400" },
+    { name: "Settings", icon: Settings, label: "Settings", href: "#", gradient: "from-yellow-500 to-amber-600", iconColor: "text-yellow-400" },
+    { name: "Notifications", icon: Bell, label: "Notifications", href: "#", gradient: "from-pink-500 to-rose-600", iconColor: "text-pink-400" },
+  ];
 
   return (
     <div className="min-h-screen bg-white text-black font-mono dark:bg-black dark:text-white">
@@ -373,36 +394,27 @@ function AdminDashboardContent() {
 
                 <div>
                   <Label className="text-sm font-bold mb-3 block">ASSIGN VOLUNTEERS</Label>
-                  <div className="border-2 border-black dark:border-white p-4 max-h-48 overflow-y-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {availableVolunteers.map((volunteer) => (
-                        <div key={volunteer.id} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800">
-                          <button
-                            type="button"
-                            onClick={() => toggleVolunteer(volunteer.id)}
-                            className="flex-shrink-0"
-                            disabled={isSubmitting}
-                          >
-                            {selectedVolunteers.includes(volunteer.id) ? (
-                              <CheckSquare className="h-5 w-5 text-black dark:text-white" />
-                            ) : (
-                              <Square className="h-5 w-5 text-gray-400" />
-                            )}
-                          </button>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-bold truncate">{volunteer.name}</div>
-                            <div className="text-xs text-gray-600 dark:text-gray-400 truncate">{volunteer.email}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {selectedVolunteers.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-300 dark:border-gray-600">
-                        <div className="text-sm font-bold">
-                          SELECTED: {selectedVolunteers.length} volunteer{selectedVolunteers.length !== 1 ? 's' : ''}
+                  <div className="space-y-2 max-h-48 overflow-y-auto border-2 border-black dark:border-white p-2">
+                    {availableVolunteers.map((volunteer) => (
+                      <div key={volunteer._id} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <button
+                          type="button"
+                          onClick={() => toggleVolunteer(volunteer._id)}
+                          className="flex-shrink-0"
+                          disabled={isSubmitting}
+                        >
+                          {selectedVolunteers.includes(volunteer._id) ? (
+                            <CheckSquare className="h-5 w-5 text-black dark:text-white" />
+                          ) : (
+                            <Square className="h-5 w-5 text-black dark:text-white" />
+                          )}
+                        </button>
+                        <div>
+                          <div className="font-bold">{volunteer.name}</div>
+                          <div className="text-sm text-gray-500">{volunteer.email}</div>
                         </div>
                       </div>
-                    )}
+                    ))}
                   </div>
                 </div>
 
@@ -437,7 +449,7 @@ function AdminDashboardContent() {
           {/* Calendar */}
           <div className="border-2 border-black p-6">
             <div className="flex items-center gap-2 mb-6">
-              <Calendar className="w-6 h-6" />
+              <CalendarIcon className="w-6 h-6" />
               <h2 className="text-xl font-bold">CALENDAR</h2>
             </div>
             <div className="grid grid-cols-7 gap-1 mb-4">

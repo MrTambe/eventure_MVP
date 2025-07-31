@@ -69,6 +69,84 @@ export const createEvent = mutation({
   },
 });
 
+// Admin-specific event creation function
+export const createEventAsAdmin = mutation({
+  args: {
+    name: v.string(),
+    description: v.string(),
+    venue: v.string(),
+    eventDate: v.string(), // ISO date string
+    eventTime: v.string(), // HH:MM format
+    maxParticipants: v.optional(v.number()),
+    volunteerIds: v.array(v.id("users")),
+    adminEmail: v.string(), // Admin email for verification
+  },
+  returns: v.object({
+    success: v.boolean(),
+    message: v.string(),
+    eventId: v.optional(v.id("events")),
+  }),
+  handler: async (ctx, args) => {
+    try {
+      // Verify admin exists
+      const admin = await ctx.db
+        .query("admins")
+        .withIndex("by_email", (q) => q.eq("email", args.adminEmail))
+        .first();
+
+      if (!admin || !admin.isActive) {
+        return { success: false, message: "Admin not found or inactive" };
+      }
+
+      // Combine date and time to create timestamps
+      const eventDateTime = new Date(`${args.eventDate}T${args.eventTime}`);
+      const startDate = eventDateTime.getTime();
+      
+      // Set end date to 2 hours after start (can be customized)
+      const endDate = startDate + (2 * 60 * 60 * 1000);
+
+      // Create the event
+      const eventId = await ctx.db.insert("events", {
+        name: args.name,
+        description: args.description,
+        venue: args.venue,
+        startDate,
+        endDate,
+        maxParticipants: args.maxParticipants,
+        createdBy: admin._id, // Using admin ID as creator
+        status: "active",
+      });
+
+      // Assign volunteers to the event (only if volunteers exist)
+      const assignedDate = Date.now();
+      for (const volunteerId of args.volunteerIds) {
+        // Verify volunteer exists before assigning
+        const volunteer = await ctx.db.get(volunteerId);
+        if (volunteer) {
+          await ctx.db.insert("eventVolunteers", {
+            eventId,
+            userId: volunteerId,
+            assignedDate,
+            status: "assigned",
+          });
+        }
+      }
+      
+      return { 
+        success: true, 
+        message: `Event created successfully with ${args.volunteerIds.length} volunteers assigned!`, 
+        eventId 
+      };
+    } catch (error) {
+      console.error("Admin event creation error:", error);
+      return { 
+        success: false, 
+        message: "Failed to create event. Please try again." 
+      };
+    }
+  },
+});
+
 export const getAllEvents = query({
   args: {},
   returns: v.array(v.object({
@@ -80,7 +158,7 @@ export const getAllEvents = query({
     startDate: v.number(),
     endDate: v.number(),
     maxParticipants: v.optional(v.number()),
-    createdBy: v.id("users"),
+    createdBy: v.union(v.id("users"), v.id("admins")),
     status: v.union(v.literal("active"), v.literal("cancelled"), v.literal("completed")),
   })),
   handler: async (ctx) => {
@@ -106,7 +184,7 @@ export const getEventsByStatus = query({
     startDate: v.number(),
     endDate: v.number(),
     maxParticipants: v.optional(v.number()),
-    createdBy: v.id("users"),
+    createdBy: v.union(v.id("users"), v.id("admins")),
     status: v.union(v.literal("active"), v.literal("cancelled"), v.literal("completed")),
   })),
   handler: async (ctx, args) => {
@@ -131,7 +209,7 @@ export const getUpcomingEvents = query({
     startDate: v.number(),
     endDate: v.number(),
     maxParticipants: v.optional(v.number()),
-    createdBy: v.id("users"),
+    createdBy: v.union(v.id("users"), v.id("admins")),
     status: v.union(v.literal("active"), v.literal("cancelled"), v.literal("completed")),
   })),
   handler: async (ctx) => {
