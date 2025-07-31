@@ -35,13 +35,6 @@ import { MenuBar } from '@/components/ui/glow-menu';
 import { ThemeProvider, useTheme } from 'next-themes';
 import { BackgroundPaths } from "@/components/ui/background-paths";
 
-const todos = [
-  { id: 1, text: "Review event proposals", completed: false },
-  { id: 2, text: "Update venue bookings", completed: true },
-  { id: 3, text: "Send participant confirmations", completed: false },
-  { id: 4, text: "Prepare certificates", completed: false }
-];
-
 function AdminDashboardContent() {
   const { theme, setTheme } = useTheme();
   const allUsers = useQuery(api.users.listAll);
@@ -66,8 +59,6 @@ function AdminDashboardContent() {
     { title: "UPCOMING EVENTS", value: upcomingEventsCount.toString(), icon: Clock, color: "bg-red-400" }
   ];
 
-  const [todoList, setTodoList] = useState(todos);
-  const [newTodo, setNewTodo] = useState("");
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const [activeMenuItem, setActiveMenuItem] = useState("Dashboard");
   const [selectedVolunteers, setSelectedVolunteers] = useState<Id<"users">[]>([]);
@@ -81,24 +72,6 @@ function AdminDashboardContent() {
         ? prev.filter(id => id !== volunteerId)
         : [...prev, volunteerId]
     );
-  };
-
-  const addTodo = () => {
-    if (newTodo.trim()) {
-      const newTodoItem = {
-        id: todoList.length + 1,
-        text: newTodo,
-        completed: false
-      };
-      setTodoList([...todoList, newTodoItem]);
-      setNewTodo("");
-    }
-  };
-
-  const toggleTodo = (id: number) => {
-    setTodoList(todoList.map(todo =>
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    ));
   };
 
   const handleCreateEvent = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -155,18 +128,6 @@ function AdminDashboardContent() {
       toast.error("Failed to create event. Please try again.");
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleAddTodo = () => {
-    if (newTodo.trim()) {
-      const newTodoItem = {
-        id: todoList.length + 1,
-        text: newTodo,
-        completed: false
-      };
-      setTodoList([...todoList, newTodoItem]);
-      setNewTodo("");
     }
   };
 
@@ -504,53 +465,6 @@ function AdminDashboardContent() {
                       </div>
                     );
                   })}
-                </div>
-              </div>
-
-              {/* Todo List */}
-              <div className="border-2 border-black p-6 bg-card/80 backdrop-blur-sm">
-                <div className="flex items-center gap-2 mb-6">
-                  <CheckSquare className="w-6 h-6" />
-                  <h2 className="text-xl font-bold">TODO LIST</h2>
-                </div>
-                
-                {/* Add new todo */}
-                <div className="flex gap-2 mb-6">
-                  <Input 
-                    value={newTodo}
-                    onChange={(e) => setNewTodo(e.target.value)}
-                    className="border-2 border-black font-mono flex-1"
-                    placeholder="ADD NEW TASK"
-                    onKeyPress={(e) => e.key === 'Enter' && addTodo()}
-                  />
-                  <Button 
-                    onClick={addTodo}
-                    className="bg-black text-white hover:bg-gray-800 font-bold px-4 border-0"
-                  >
-                    ADD
-                  </Button>
-                </div>
-
-                {/* Todo items */}
-                <div className="space-y-3">
-                  {todoList.map(todo => (
-                    <div 
-                      key={todo.id} 
-                      className={`flex items-center gap-3 p-3 border border-black cursor-pointer hover:bg-gray-100 ${
-                        todo.completed ? 'bg-gray-50 text-gray-600' : ''
-                      }`}
-                      onClick={() => toggleTodo(todo.id)}
-                    >
-                      <div className="w-5 h-5 border-2 border-black flex items-center justify-center">
-                        {todo.completed ? (
-                          <div className="w-3 h-3 bg-black"></div>
-                        ) : null}
-                      </div>
-                      <span className={`font-bold text-sm ${todo.completed ? 'line-through' : ''}`}>
-                        {todo.text}
-                      </span>
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>
