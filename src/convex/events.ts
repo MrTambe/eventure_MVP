@@ -1,6 +1,8 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUser } from "./users";
+import { internal } from "./_generated/api";
+import { Doc } from "./_generated/dataModel";
 
 export const createEvent = mutation({
   args: {
@@ -148,26 +150,45 @@ export const createEventAsAdmin = mutation({
 });
 
 export const getAllEvents = query({
-  args: {},
-  returns: v.array(v.object({
-    _id: v.id("events"),
-    _creationTime: v.number(),
-    name: v.string(),
-    description: v.string(),
-    venue: v.string(),
-    startDate: v.number(),
-    endDate: v.number(),
-    maxParticipants: v.optional(v.number()),
-    createdBy: v.union(v.id("users"), v.id("admins")),
-    status: v.union(v.literal("active"), v.literal("cancelled"), v.literal("completed")),
-  })),
   handler: async (ctx) => {
-    const events = await ctx.db
-      .query("events")
-      .order("desc")
-      .collect();
-    
+    const events = await ctx.db.query("events").order("desc").collect();
     return events;
+  },
+});
+
+export const getAllEventsWithDetails = query({
+  handler: async (ctx) => {
+    const events = await ctx.db.query("events").order("desc").collect();
+
+    const eventsWithDetails = await Promise.all(
+      events.map(async (event) => {
+        const registrations = await ctx.db
+          .query("eventRegistrations")
+          .withIndex("by_event", (q) => q.eq("eventId", event._id))
+          .collect();
+
+        const volunteerAssignments = await ctx.db
+          .query("eventVolunteers")
+          .withIndex("by_event", (q) => q.eq("eventId", event._id))
+          .collect();
+        
+        const volunteerIds = volunteerAssignments.map(va => va.userId);
+        const volunteers = await Promise.all(
+            volunteerIds.map(id => ctx.db.get(id))
+        );
+
+        const creator = await ctx.db.get(event.createdBy);
+
+        return {
+          ...event,
+          registrations,
+          volunteers: volunteers.filter(Boolean) as Doc<"users">[],
+          creator,
+        };
+      })
+    );
+
+    return eventsWithDetails;
   },
 });
 

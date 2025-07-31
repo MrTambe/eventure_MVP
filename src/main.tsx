@@ -14,6 +14,7 @@ import AdminSignIn from "./pages/AdminSignIn.tsx";
 import Auth from "./pages/Auth.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AdminDashboard from "./pages/AdminDashboard.tsx";
+import AdminEvents from "./pages/AdminEvents.tsx";
 
 import "./index.css";
 
@@ -32,6 +33,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/event/:slug" element={<EventInfo />} />
             <Route path="/admin-signIn" element={<AdminSignIn />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/admin-events" element={<AdminEvents />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
