@@ -49,7 +49,7 @@ export function Component() {
         if (result.admin) {
           sessionStorage.setItem("adminUser", JSON.stringify(result.admin));
         }
-        navigate("/dashboard");
+        navigate("/admin-dashboard");
       } else {
         toast.error(result.message);
       }
