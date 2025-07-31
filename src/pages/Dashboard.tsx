@@ -2,7 +2,7 @@ import { Protected } from "@/lib/protected-page";
 import { NavBar } from "@/components/ui/tubelight-navbar";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher-1";
 import { Home, Calendar, Trophy, User, Settings } from "lucide-react";
-import { BentoCard, BentoGrid } from "@/components/ui/bento-grid";
+import { BentoGrid, BentoItem } from "@/components/ui/bento-grid";
 import {
   BellIcon,
   CalendarIcon,
@@ -11,52 +11,40 @@ import {
   InputIcon,
 } from "@radix-ui/react-icons";
 
-const features = [
+const bentoItems: BentoItem[] = [
   {
-    Icon: FileTextIcon,
-    name: "Save your files",
+    icon: <FileTextIcon />,
+    title: "Save your files",
     description: "We automatically save your files as you type.",
-    href: "/",
     cta: "Learn more",
-    background: <img className="absolute -right-20 -top-20 opacity-60" />,
-    className: "lg:row-start-1 lg:row-end-4 lg:col-start-2 lg:col-end-3",
+    colSpan: 2,
+    hasPersistentHover: true,
   },
   {
-    Icon: InputIcon,
-    name: "Full text search",
+    icon: <InputIcon />,
+    title: "Full text search",
     description: "Search through all your files in one place.",
-    href: "/",
     cta: "Learn more",
-    background: <img className="absolute -right-20 -top-20 opacity-60" />,
-    className: "lg:col-start-1 lg:col-end-2 lg:row-start-1 lg:row-end-3",
   },
   {
-    Icon: GlobeIcon,
-    name: "Multilingual",
+    icon: <GlobeIcon />,
+    title: "Multilingual",
     description: "Supports 100+ languages and counting.",
-    href: "/",
     cta: "Learn more",
-    background: <img className="absolute -right-20 -top-20 opacity-60" />,
-    className: "lg:col-start-1 lg:col-end-2 lg:row-start-3 lg:row-end-4",
   },
   {
-    Icon: CalendarIcon,
-    name: "Calendar",
+    icon: <CalendarIcon />,
+    title: "Calendar",
     description: "Use the calendar to filter your files by date.",
-    href: "/",
     cta: "Learn more",
-    background: <img className="absolute -right-20 -top-20 opacity-60" />,
-    className: "lg:col-start-3 lg:col-end-3 lg:row-start-1 lg:row-end-2",
   },
   {
-    Icon: BellIcon,
-    name: "Notifications",
+    icon: <BellIcon />,
+    title: "Notifications",
     description:
       "Get notified when someone shares a file or mentions you in a comment.",
-    href: "/",
     cta: "Learn more",
-    background: <img className="absolute -right-20 -top-20 opacity-60" />,
-    className: "lg:col-start-3 lg:col-end-3 lg:row-start-2 lg:row-end-4",
+    colSpan: 2,
   },
 ];
 
@@ -88,11 +76,7 @@ export default function Dashboard() {
       </div>
 
       <div className="pt-48 flex flex-wrap justify-center">
-        <BentoGrid className="lg:grid-rows-3">
-          {features.map((feature) => (
-            <BentoCard key={feature.name} {...feature} />
-          ))}
-        </BentoGrid>
+        <BentoGrid items={bentoItems} />
       </div>
     </Protected>
   );
