@@ -1,4 +1,4 @@
 import { BrutalistCard } from "@/components/ui/brutalist-card";
 
 // Use in any component
-<BrutalistCard />
+<MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={setActiveMenuItem} />
