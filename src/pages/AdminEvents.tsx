@@ -13,21 +13,52 @@ import {
   Trash2,
   Plus,
   Loader2,
+  X,
+  Save,
 } from 'lucide-react';
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { ThemeProvider, useTheme } from 'next-themes';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
+import { Id } from '@/convex/_generated/dataModel';
+
+interface EventData {
+  _id: Id<"events">;
+  name: string;
+  description: string;
+  venue: string;
+  startDate: number;
+  endDate: number;
+  maxParticipants?: number;
+  status: "active" | "cancelled" | "completed";
+  volunteers?: Array<{ _id: Id<"users">; name?: string; email?: string; }>;
+  registrations?: Array<any>;
+}
 
 function AdminEventsContent() {
   const { theme, setTheme } = useTheme();
   const [activeMenuItem, setActiveMenuItem] = useState("Events");
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedVolunteers, setSelectedVolunteers] = useState<Id<"users">[]>([]);
 
-  // Fetch all events from the database
+  // Fetch all events and users from the database
   const allEvents = useQuery(api.events.getAllEventsWithDetails);
+  const allUsers = useQuery(api.users.listAll);
+  
+  // Mutations
+  const updateEvent = useMutation(api.events.updateEventAsAdmin);
+  const deleteEvent = useMutation(api.events.deleteEventAsAdmin);
 
   const menuItems = [
     { name: "Dashboard", icon: LayoutDashboard, label: "Dashboard", href: "/admin-dashboard", gradient: "from-blue-500 to-purple-600", iconColor: "text-blue-400" },
@@ -53,6 +84,12 @@ function AdminEventsContent() {
     return { eventDate, eventTime };
   };
 
+  // Format date for input field
+  const formatDateForInput = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM format
+  };
+
   // Get status badge color
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -64,6 +101,98 @@ function AdminEventsContent() {
         return 'bg-red-500/20 text-red-600 border-red-500/30';
       default:
         return 'bg-gray-500/20 text-gray-600 border-gray-500/30';
+    }
+  };
+
+  // Handle edit button click
+  const handleEditClick = (event: EventData) => {
+    setSelectedEvent(event);
+    setSelectedVolunteers(event.volunteers?.map(v => v._id) || []);
+    setEditModalOpen(true);
+  };
+
+  // Handle delete button click
+  const handleDeleteClick = (event: EventData) => {
+    setSelectedEvent(event);
+    setDeleteModalOpen(true);
+  };
+
+  // Toggle volunteer selection
+  const toggleVolunteer = (userId: Id<"users">) => {
+    setSelectedVolunteers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  // Handle edit form submission
+  const handleEditSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedEvent) return;
+
+    setIsSubmitting(true);
+    const formData = new FormData(event.currentTarget);
+    
+    const startDateTime = new Date(formData.get('startDate') as string).getTime();
+    const endDateTime = new Date(formData.get('endDate') as string).getTime();
+
+    try {
+      const adminUser = JSON.parse(sessionStorage.getItem("adminUser") || "{}");
+      
+      const result = await updateEvent({
+        eventId: selectedEvent._id,
+        adminEmail: adminUser.email,
+        name: formData.get('name') as string,
+        description: formData.get('description') as string,
+        venue: formData.get('venue') as string,
+        startDate: startDateTime,
+        endDate: endDateTime,
+        maxParticipants: parseInt(formData.get('maxParticipants') as string) || undefined,
+        volunteerIds: selectedVolunteers,
+      });
+
+      if (result.success) {
+        toast.success("Event updated successfully!");
+        setEditModalOpen(false);
+        setSelectedEvent(null);
+        setSelectedVolunteers([]);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      toast.error("Failed to update event. Please try again.");
+      console.error("Update event error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle delete confirmation
+  const handleDeleteConfirm = async () => {
+    if (!selectedEvent) return;
+
+    setIsSubmitting(true);
+    try {
+      const adminUser = JSON.parse(sessionStorage.getItem("adminUser") || "{}");
+      
+      const result = await deleteEvent({
+        eventId: selectedEvent._id,
+        adminEmail: adminUser.email,
+      });
+
+      if (result.success) {
+        toast.success("Event deleted successfully!");
+        setDeleteModalOpen(false);
+        setSelectedEvent(null);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      toast.error("Failed to delete event. Please try again.");
+      console.error("Delete event error:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -145,10 +274,20 @@ function AdminEventsContent() {
                           {event.status.toUpperCase()}
                         </Badge>
                         <div className="flex gap-1">
-                          <Button variant="outline" size="sm" className="border-2 border-black dark:border-white">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="border-2 border-black dark:border-white hover:bg-blue-50 dark:hover:bg-blue-950"
+                            onClick={() => handleEditClick(event)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="outline" size="sm" className="border-2 border-black dark:border-white text-red-600 hover:bg-red-50">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="border-2 border-black dark:border-white text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                            onClick={() => handleDeleteClick(event)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -223,6 +362,204 @@ function AdminEventsContent() {
             })}
           </div>
         </div>
+
+        {/* Edit Event Modal */}
+        <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff]">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black tracking-tighter">
+                EDIT EVENT
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedEvent && (
+              <form onSubmit={handleEditSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name" className="font-bold">EVENT NAME</Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      defaultValue={selectedEvent.name}
+                      className="border-2 border-black dark:border-white font-mono"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="venue" className="font-bold">VENUE</Label>
+                    <Input
+                      id="venue"
+                      name="venue"
+                      defaultValue={selectedEvent.venue}
+                      className="border-2 border-black dark:border-white font-mono"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="description" className="font-bold">DESCRIPTION</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    defaultValue={selectedEvent.description}
+                    className="border-2 border-black dark:border-white font-mono"
+                    rows={3}
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="startDate" className="font-bold">START DATE & TIME</Label>
+                    <Input
+                      id="startDate"
+                      name="startDate"
+                      type="datetime-local"
+                      defaultValue={formatDateForInput(selectedEvent.startDate)}
+                      className="border-2 border-black dark:border-white font-mono"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="endDate" className="font-bold">END DATE & TIME</Label>
+                    <Input
+                      id="endDate"
+                      name="endDate"
+                      type="datetime-local"
+                      defaultValue={formatDateForInput(selectedEvent.endDate)}
+                      className="border-2 border-black dark:border-white font-mono"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="maxParticipants" className="font-bold">MAX PARTICIPANTS</Label>
+                  <Input
+                    id="maxParticipants"
+                    name="maxParticipants"
+                    type="number"
+                    defaultValue={selectedEvent.maxParticipants || ''}
+                    className="border-2 border-black dark:border-white font-mono"
+                    min="1"
+                  />
+                </div>
+
+                {/* Volunteer Selection */}
+                <div>
+                  <Label className="font-bold mb-3 block">ASSIGN VOLUNTEERS</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto border-2 border-black dark:border-white p-3 rounded">
+                    {allUsers?.map((user) => (
+                      <div key={user._id} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`volunteer-${user._id}`}
+                          checked={selectedVolunteers.includes(user._id)}
+                          onChange={() => toggleVolunteer(user._id)}
+                          className="rounded border-2 border-black dark:border-white"
+                        />
+                        <label 
+                          htmlFor={`volunteer-${user._id}`} 
+                          className="text-sm font-medium cursor-pointer"
+                        >
+                          {user.name || user.email}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <DialogFooter className="gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditModalOpen(false)}
+                    className="border-2 border-black dark:border-white font-bold"
+                    disabled={isSubmitting}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    CANCEL
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold border-2 border-black dark:border-white shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff]"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        UPDATING...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        UPDATE EVENT
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Modal */}
+        <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+          <DialogContent className="max-w-md border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff]">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black tracking-tighter text-red-600">
+                DELETE EVENT
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="py-4">
+              <p className="text-foreground font-medium mb-2">
+                Are you sure you want to delete this event?
+              </p>
+              {selectedEvent && (
+                <p className="text-muted-foreground text-sm">
+                  <strong>"{selectedEvent.name}"</strong> will be permanently deleted along with all associated data (volunteers, registrations, certificates).
+                </p>
+              )}
+              <p className="text-red-600 font-bold text-sm mt-3">
+                This action cannot be undone.
+              </p>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDeleteModalOpen(false)}
+                className="border-2 border-black dark:border-white font-bold"
+                disabled={isSubmitting}
+              >
+                CANCEL
+              </Button>
+              <Button
+                type="button"
+                onClick={handleDeleteConfirm}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold border-2 border-black dark:border-white shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff]"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    DELETING...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    CONFIRM DELETE
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

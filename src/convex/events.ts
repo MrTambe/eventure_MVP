@@ -149,6 +149,170 @@ export const createEventAsAdmin = mutation({
   },
 });
 
+export const updateEventAsAdmin = mutation({
+  args: {
+    eventId: v.id("events"),
+    adminEmail: v.string(),
+    name: v.string(),
+    description: v.string(),
+    venue: v.string(),
+    startDate: v.number(),
+    endDate: v.number(),
+    maxParticipants: v.optional(v.number()),
+    volunteerIds: v.array(v.id("users")),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    message: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    try {
+      // Verify admin exists and is active
+      const admin = await ctx.db
+        .query("admins")
+        .withIndex("by_email", (q) => q.eq("email", args.adminEmail))
+        .unique();
+
+      if (!admin || !admin.isActive) {
+        return {
+          success: false,
+          message: "Admin not found or inactive",
+        };
+      }
+
+      // Check if event exists
+      const existingEvent = await ctx.db.get(args.eventId);
+      if (!existingEvent) {
+        return {
+          success: false,
+          message: "Event not found",
+        };
+      }
+
+      // Update the event
+      await ctx.db.patch(args.eventId, {
+        name: args.name,
+        description: args.description,
+        venue: args.venue,
+        startDate: args.startDate,
+        endDate: args.endDate,
+        maxParticipants: args.maxParticipants,
+      });
+
+      // Remove existing volunteer assignments for this event
+      const existingVolunteers = await ctx.db
+        .query("eventVolunteers")
+        .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+        .collect();
+
+      for (const volunteer of existingVolunteers) {
+        await ctx.db.delete(volunteer._id);
+      }
+
+      // Add new volunteer assignments
+      for (const volunteerId of args.volunteerIds) {
+        await ctx.db.insert("eventVolunteers", {
+          eventId: args.eventId,
+          userId: volunteerId,
+          assignedDate: Date.now(),
+          status: "assigned",
+        });
+      }
+
+      return {
+        success: true,
+        message: "Event updated successfully",
+      };
+    } catch (error) {
+      console.error("Update event error:", error);
+      return {
+        success: false,
+        message: "Failed to update event",
+      };
+    }
+  },
+});
+
+export const deleteEventAsAdmin = mutation({
+  args: {
+    eventId: v.id("events"),
+    adminEmail: v.string(),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    message: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    try {
+      // Verify admin exists and is active
+      const admin = await ctx.db
+        .query("admins")
+        .withIndex("by_email", (q) => q.eq("email", args.adminEmail))
+        .unique();
+
+      if (!admin || !admin.isActive) {
+        return {
+          success: false,
+          message: "Admin not found or inactive",
+        };
+      }
+
+      // Check if event exists
+      const existingEvent = await ctx.db.get(args.eventId);
+      if (!existingEvent) {
+        return {
+          success: false,
+          message: "Event not found",
+        };
+      }
+
+      // Delete related volunteer assignments
+      const eventVolunteers = await ctx.db
+        .query("eventVolunteers")
+        .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+        .collect();
+
+      for (const volunteer of eventVolunteers) {
+        await ctx.db.delete(volunteer._id);
+      }
+
+      // Delete related registrations
+      const eventRegistrations = await ctx.db
+        .query("eventRegistrations")
+        .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+        .collect();
+
+      for (const registration of eventRegistrations) {
+        await ctx.db.delete(registration._id);
+      }
+
+      // Delete related certificates
+      const eventCertificates = await ctx.db
+        .query("certificates")
+        .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+        .collect();
+
+      for (const certificate of eventCertificates) {
+        await ctx.db.delete(certificate._id);
+      }
+
+      // Finally, delete the event
+      await ctx.db.delete(args.eventId);
+
+      return {
+        success: true,
+        message: "Event deleted successfully",
+      };
+    } catch (error) {
+      console.error("Delete event error:", error);
+      return {
+        success: false,
+        message: "Failed to delete event",
+      };
+    }
+  },
+});
+
 export const getAllEvents = query({
   handler: async (ctx) => {
     const events = await ctx.db.query("events").order("desc").collect();
