@@ -1,66 +1,48 @@
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { CountdownTimer } from "@/components/ui/countdown-timer";
-import { BentoGrid, BentoItem } from "@/components/ui/bento-grid";
-import { Calendar } from "lucide-react";
+import React, { useState } from 'react';
+import { MenuBar } from '@/components/ui/glow-menu';
+import {
+  LayoutDashboard,
+  Calendar as CalendarIcon,
+  Users,
+  Settings,
+  Bell,
+} from 'lucide-react';
+import { BackgroundPaths } from "@/components/ui/background-paths";
+import { ThemeProvider, useTheme } from 'next-themes';
 
-export default function AdminEvents() {
-  const events = useQuery(api.events.getAllEventsWithDetails);
+function AdminEventsContent() {
+  const { theme, setTheme } = useTheme();
+  const [activeMenuItem, setActiveMenuItem] = useState("Events");
 
-  if (events === undefined) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        Loading...
-      </div>
-    );
-  }
-
-  const bentoItems: BentoItem[] = events.map((event, index) => {
-    const eventDate = new Date(event.startDate);
-    const now = new Date();
-    let displayStatus: string = event.status;
-
-    if (event.status === 'active' && eventDate.getTime() < now.getTime() && new Date(event.endDate).getTime() > now.getTime()) {
-        displayStatus = 'ongoing';
-    } else if (event.status === 'active' && eventDate.getTime() > now.getTime()) {
-        displayStatus = 'upcoming';
-    }
-
-    return {
-      title: event.name,
-      description: (
-        <div>
-          <p className="mb-2">{event.description}</p>
-          <div className="font-bold text-sm">
-            <CountdownTimer targetDate={event.startDate} />
-          </div>
-        </div>
-      ),
-      icon: <Calendar className="w-4 h-4 text-neutral-500" />,
-      status: displayStatus,
-      meta: eventDate.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      }),
-      tags: [
-        `${event.registrations.length} Participants`,
-        `${event.volunteers.length} Volunteers`,
-        `Team: ${event.creator?.name || 'N/A'}`,
-      ],
-      cta: "View Details",
-      colSpan: index === 0 || index === 3 ? 2 : 1,
-      hasPersistentHover: index === 0,
-    };
-  });
+  const menuItems = [
+    { name: "Dashboard", icon: LayoutDashboard, label: "Dashboard", href: "/admin-dashboard", gradient: "from-blue-500 to-purple-600", iconColor: "text-blue-400" },
+    { name: "Events", icon: CalendarIcon, label: "Events", href: "/admin-events", gradient: "from-green-500 to-cyan-600", iconColor: "text-green-400" },
+    { name: "Users", icon: Users, label: "Users", href: "#", gradient: "from-red-500 to-orange-600", iconColor: "text-red-400" },
+    { name: "Settings", icon: Settings, label: "Settings", href: "#", gradient: "from-yellow-500 to-amber-600", iconColor: "text-yellow-400" },
+    { name: "Notifications", icon: Bell, label: "Notifications", href: "#", gradient: "from-pink-500 to-rose-600", iconColor: "text-pink-400" },
+  ];
 
   return (
-    <div className="bg-background min-h-screen p-8 font-mono">
-      <header className="text-center mb-12">
-        <h1 className="text-5xl font-bold tracking-tighter">ADMIN EVENTS</h1>
-        <p className="text-muted-foreground mt-2">Centralized dashboard for all events.</p>
-      </header>
-      <BentoGrid items={bentoItems} />
+    <div className="min-h-screen bg-background text-foreground font-mono relative">
+      <div className="absolute inset-0 z-0">
+        <BackgroundPaths />
+      </div>
+      <div className="relative z-10">
+        <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={setActiveMenuItem} />
+        
+        <div className="container mx-auto px-4 py-8 pt-20">
+          <h1 className="text-3xl font-bold tracking-tighter mb-6">Admin Events</h1>
+          {/* Add event management content here */}
+        </div>
+      </div>
     </div>
+  );
+}
+
+export default function AdminEvents() {
+  return (
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+      <AdminEventsContent />
+    </ThemeProvider>
   );
 }
