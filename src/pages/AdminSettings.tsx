@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MenuBar } from "@/components/ui/glow-menu";
 import { motion } from "framer-motion";
+import { Home, Calendar, Users, Settings } from "lucide-react";
 
 interface AdminUser {
   _id: Id<"admins">;
@@ -32,6 +33,7 @@ function AdminSettingsContent() {
     email: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [activeMenuItem, setActiveMenuItem] = useState("Settings");
 
   // Get admin profile data
   const adminProfile = useQuery(
@@ -153,17 +155,21 @@ function AdminSettingsContent() {
   };
 
   const menuItems = [
-    { name: 'Dashboard', href: '/admin-dashboard', icon: '🏠' },
-    { name: 'Events', href: '/admin-events', icon: '📅' },
-    { name: 'Team', href: '/admin-team', icon: '👥' },
-    { name: 'Settings', href: '/admin-settings', icon: '⚙️' }
+    { name: 'Dashboard', label: 'Dashboard', href: '/admin-dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500', iconColor: 'text-blue-500' },
+    { name: 'Events', label: 'Events', href: '/admin-events', icon: Calendar, gradient: 'from-green-500 to-emerald-500', iconColor: 'text-green-500' },
+    { name: 'Team', label: 'Team', href: '/admin-team', icon: Users, gradient: 'from-purple-500 to-violet-500', iconColor: 'text-purple-500' },
+    { name: 'Settings', label: 'Settings', href: '/admin-settings', icon: Settings, gradient: 'from-red-500 to-orange-500', iconColor: 'text-red-500' }
   ];
 
   return (
     <div className="min-h-screen bg-white text-black font-mono">
       {/* Menu Bar */}
       <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
-        <MenuBar items={menuItems} />
+        <MenuBar 
+          items={menuItems} 
+          activeItem={activeMenuItem}
+          onItemClick={setActiveMenuItem}
+        />
       </div>
 
       {/* Main Content */}
