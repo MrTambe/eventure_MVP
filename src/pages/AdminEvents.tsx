@@ -42,6 +42,16 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Id } from '@/convex/_generated/dataModel';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Download } from "lucide-react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 function AdminEventsContent() {
   const [activeMenuItem, setActiveMenuItem] = useState("Events");
@@ -187,6 +197,53 @@ function AdminEventsContent() {
     }
   };
 
+  const handleExport = (format: "pdf" | "xlsx" | "csv") => {
+    if (!allEvents || allEvents.length === 0) {
+      toast.error("No events to export.");
+      return;
+    }
+
+    const data = allEvents.map(event => ({
+      name: event.name,
+      venue: event.venue,
+      startDate: new Date(event.startDate).toLocaleString(),
+      endDate: new Date(event.endDate).toLocaleString(),
+      status: event.status,
+      participants: event.registrations.length,
+    }));
+
+    if (format === "pdf") {
+      const doc = new jsPDF();
+      doc.text("Event Report", 14, 16);
+      (doc as any).autoTable({
+        head: [['Name', 'Venue', 'Start Date', 'End Date', 'Status', 'Participants']],
+        body: data.map(Object.values),
+        startY: 20,
+      });
+      doc.save("events.pdf");
+      toast.success("Exported as PDF!");
+    } else if (format === "xlsx") {
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Events");
+      XLSX.writeFile(workbook, "events.xlsx");
+      toast.success("Exported as Excel!");
+    } else if (format === "csv") {
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const csv = XLSX.utils.sheet_to_csv(worksheet);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", "events.csv");
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Exported as CSV!");
+    }
+  };
+
   const menuItems = [
     { name: "Dashboard", icon: LayoutDashboard, label: "Dashboard", href: "/admin-dashboard", gradient: "from-blue-500 to-purple-600", iconColor: "text-blue-400" },
     { name: "Events", icon: CalendarIcon, label: "Events", href: "#", gradient: "from-green-500 to-cyan-600", iconColor: "text-green-400" },
@@ -204,14 +261,39 @@ function AdminEventsContent() {
         {/* Header Section */}
         <header className="border-b-2 border-black dark:border-white/20 p-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">EVENT MANAGEMENT</h1>
-            <Button
-              onClick={() => setCreateModalOpen(true)}
-              className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-lg px-6 py-3 border-2 border-black dark:border-white"
-            >
-              <Plus className="mr-2 h-5 w-5" />
-              CREATE EVENT
-            </Button>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">EVENT ADMIN DASHBOARD</h1>
+            <div className="flex items-center gap-4 md:gap-6">
+              <Button 
+                className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-lg px-8 py-4 border-2 border-black dark:border-white"
+                size="lg"
+                onClick={() => setCreateModalOpen(true)}
+              >
+                <Plus className="mr-2 h-5 w-5" />
+                CREATE EVENT
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-lg px-8 py-4 border-2 border-black dark:border-white"
+                    size="lg"
+                  >
+                    <Download className="mr-2 h-5 w-5" />
+                    EXPORT
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  <DropdownMenuItem onClick={() => handleExport('pdf')}>
+                    Export as PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('xlsx')}>
+                    Export as Excel (.xlsx)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('csv')}>
+                    Export as CSV (.csv)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </header>
 
