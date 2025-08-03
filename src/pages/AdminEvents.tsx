@@ -13,6 +13,7 @@ import {
   Trash2,
   Plus,
   Loader2,
+  Info,
   X,
   Save,
 } from 'lucide-react';
@@ -29,6 +30,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Id } from '@/convex/_generated/dataModel';
+import { ContributorsOverviewTable } from '@/components/ui/contributors-overview-table';
 
 interface EventData {
   _id: Id<"events">;
@@ -51,6 +53,8 @@ function AdminEventsContent() {
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedVolunteers, setSelectedVolunteers] = useState<Id<"users">[]>([]);
+  const [infoModalOpen, setInfoModalOpen] = useState(false);
+  const [participants, setParticipants] = useState<any[]>([]);
 
   // Fetch all events and users from the database
   const allEvents = useQuery(api.events.getAllEventsWithDetails);
@@ -59,6 +63,11 @@ function AdminEventsContent() {
   // Mutations
   const updateEvent = useMutation(api.events.updateEventAsAdmin);
   const deleteEvent = useMutation(api.events.deleteEventAsAdmin);
+
+  const getEventParticipants = useQuery(
+    api.events.getEventParticipants,
+    selectedEvent ? { eventId: selectedEvent._id } : "skip"
+  );
 
   const menuItems = [
     { name: "Dashboard", icon: LayoutDashboard, label: "Dashboard", href: "/admin-dashboard", gradient: "from-blue-500 to-purple-600", iconColor: "text-blue-400" },
@@ -102,6 +111,12 @@ function AdminEventsContent() {
       default:
         return 'bg-gray-500/20 text-gray-600 border-gray-500/30';
     }
+  };
+
+  // Handle info button click
+  const handleInfoClick = async (event: EventData) => {
+    setSelectedEvent(event);
+    setInfoModalOpen(true);
   };
 
   // Handle edit button click
@@ -274,6 +289,14 @@ function AdminEventsContent() {
                           {event.status.toUpperCase()}
                         </Badge>
                         <div className="flex gap-1">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="border-2 border-black dark:border-white hover:bg-gray-50 dark:hover:bg-gray-950"
+                            onClick={() => handleInfoClick(event)}
+                          >
+                            <Info className="h-4 w-4" />
+                          </Button>
                           <Button 
                             variant="outline" 
                             size="sm" 
@@ -556,6 +579,51 @@ function AdminEventsContent() {
                     CONFIRM DELETE
                   </>
                 )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Info Modal */}
+        <Dialog open={infoModalOpen} onOpenChange={setInfoModalOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff]">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black tracking-tighter">
+                PARTICIPANT INFORMATION
+              </DialogTitle>
+              {selectedEvent && (
+                <p className="text-muted-foreground font-medium">
+                  {selectedEvent.name}
+                </p>
+              )}
+            </DialogHeader>
+            
+            {getEventParticipants === undefined && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mr-3" />
+                <span className="text-lg font-mono">Loading participants...</span>
+              </div>
+            )}
+
+            {getEventParticipants && getEventParticipants.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No participants have registered for this event yet.</p>
+              </div>
+            )}
+
+            {getEventParticipants && getEventParticipants.length > 0 && (
+              <ContributorsOverviewTable participants={getEventParticipants} />
+            )}
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setInfoModalOpen(false)}
+                className="border-2 border-black dark:border-white font-bold"
+              >
+                <X className="h-4 w-4 mr-2" />
+                CLOSE
               </Button>
             </DialogFooter>
           </DialogContent>

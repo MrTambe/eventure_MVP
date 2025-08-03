@@ -506,3 +506,47 @@ export const getNextUpcomingEvent = query({
     return upcomingEvent;
   },
 });
+
+// Get participants for a specific event
+export const getEventParticipants = query({
+  args: {
+    eventId: v.id("events"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("users"),
+      name: v.optional(v.string()),
+      rollNo: v.optional(v.string()),
+      branch: v.optional(v.string()),
+      mobileNumber: v.optional(v.string()),
+      email: v.optional(v.string()),
+      registrationDate: v.number(),
+      paymentStatus: v.union(v.literal("Completed"), v.literal("Pending")),
+    })
+  ),
+  handler: async (ctx, args) => {
+    const registrations = await ctx.db
+      .query("eventRegistrations")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .collect();
+
+    const participants = [];
+    for (const registration of registrations) {
+      const user = await ctx.db.get(registration.userId);
+      if (user) {
+        participants.push({
+          _id: user._id,
+          name: user.name,
+          rollNo: user.rollNo,
+          branch: user.branch,
+          mobileNumber: user.mobileNumber,
+          email: user.email,
+          registrationDate: registration.registrationDate,
+          // Assuming payment status is part of the registration, defaulting to "Completed" for now
+          paymentStatus: "Completed" as const,
+        });
+      }
+    }
+    return participants;
+  },
+});
