@@ -247,46 +247,72 @@ function AdminEventsContent() {
   };
 
   const handleParticipantExport = (format: "pdf" | "xlsx" | "csv") => {
-    if (!participants || participants.length === 0) {
-      toast.error("No participants to export.");
+    if (!selectedEvent) {
+      toast.error("No event selected for export.");
       return;
     }
 
-    const data = participants.map(participant => ({
-      name: participant.name || 'N/A',
-      rollNo: participant.rollNo || 'N/A',
-      branch: participant.branch || 'N/A',
-      mobileNumber: participant.mobileNumber || 'N/A',
-      email: participant.email || 'N/A',
-      paymentStatus: participant.paymentStatus,
-      registrationDate: new Date(participant.registrationDate).toLocaleDateString(),
-    }));
+    // Prepare event details data
+    const eventData = {
+      'Event Name': selectedEvent.name,
+      'Description': selectedEvent.description || 'N/A',
+      'Venue/Location': selectedEvent.venue,
+      'Start Date': new Date(selectedEvent.startDate).toLocaleDateString(),
+      'Start Time': new Date(selectedEvent.startDate).toLocaleTimeString(),
+      'End Date': new Date(selectedEvent.endDate).toLocaleDateString(),
+      'End Time': new Date(selectedEvent.endDate).toLocaleTimeString(),
+      'Status': selectedEvent.status.toUpperCase(),
+      'Max Participants': selectedEvent.maxParticipants || 'Unlimited',
+      'Current Participants': participants?.length || 0,
+      'Created Date': new Date(selectedEvent._creationTime).toLocaleDateString(),
+    };
 
-    const eventName = selectedEvent?.name || 'Event';
-    const fileName = `${eventName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_participants`;
+    const eventName = selectedEvent.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const fileName = `${eventName}_details`;
 
     if (format === "pdf") {
       const doc = new jsPDF();
-      doc.text(`${eventName} - Participants`, 14, 16);
-      (doc as any).autoTable({
-        head: [['Name', 'Roll No', 'Branch', 'Mobile Number', 'Email', 'Payment Status', 'Registration Date']],
-        body: data.map(Object.values),
-        startY: 25,
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [0, 0, 0] },
+      
+      // Title
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text(selectedEvent.name, 14, 20);
+      
+      // Event Details
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      let yPosition = 35;
+      
+      Object.entries(eventData).forEach(([key, value]) => {
+        doc.setFont("helvetica", "bold");
+        doc.text(`${key}:`, 14, yPosition);
+        doc.setFont("helvetica", "normal");
+        doc.text(String(value), 70, yPosition);
+        yPosition += 10;
       });
+      
       doc.save(`${fileName}.pdf`);
-      toast.success("Participants exported as PDF!");
+      toast.success("Event details exported as PDF!");
+      
     } else if (format === "xlsx") {
-      const worksheet = XLSX.utils.json_to_sheet(data);
+      // Create data in key-value format for Excel
+      const worksheetData = Object.entries(eventData).map(([key, value]) => ({
+        'Field': key,
+        'Value': value
+      }));
+      
+      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Participants");
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Event Details");
       XLSX.writeFile(workbook, `${fileName}.xlsx`);
-      toast.success("Participants exported as Excel!");
+      toast.success("Event details exported as Excel!");
+      
     } else if (format === "csv") {
-      const worksheet = XLSX.utils.json_to_sheet(data);
-      const csv = XLSX.utils.sheet_to_csv(worksheet);
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      // Create CSV with field names and values
+      const csvData = Object.entries(eventData).map(([key, value]) => `"${key}","${value}"`).join('\n');
+      const csvContent = 'Field,Value\n' + csvData;
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
       link.setAttribute("href", url);
@@ -295,7 +321,7 @@ function AdminEventsContent() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast.success("Participants exported as CSV!");
+      toast.success("Event details exported as CSV!");
     }
   };
 
