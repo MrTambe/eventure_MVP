@@ -32,6 +32,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { toast } from "sonner";
 import { Id } from '@/convex/_generated/dataModel';
 
@@ -50,6 +58,12 @@ function AdminEventsContent() {
   const updateEventAsAdmin = useMutation(api.events.updateEventAsAdmin);
   const deleteEventAsAdmin = useMutation(api.events.deleteEventAsAdmin);
 
+  // Get participants for the selected event
+  const participants = useQuery(
+    api.events.getEventParticipants,
+    selectedEvent ? { eventId: selectedEvent._id } : "skip"
+  );
+
   const toggleVolunteer = (volunteerId: Id<"users">) => {
     setSelectedVolunteers(prev =>
       prev.includes(volunteerId)
@@ -58,16 +72,16 @@ function AdminEventsContent() {
     );
   };
 
-  const menuItems = [
-    { name: "Dashboard", icon: LayoutDashboard, label: "Dashboard", href: "/admin-dashboard", gradient: "from-blue-500 to-purple-600", iconColor: "text-blue-400" },
-    { name: "Events", icon: CalendarIcon, label: "Events", href: "/admin-events", gradient: "from-green-500 to-cyan-600", iconColor: "text-green-400" },
-    { name: "Users", icon: Users, label: "Users", href: "#", gradient: "from-red-500 to-orange-600", iconColor: "text-red-400" },
-    { name: "Settings", icon: Settings, label: "Settings", href: "#", gradient: "from-yellow-500 to-amber-600", iconColor: "text-yellow-400" },
-    { name: "Notifications", icon: Bell, label: "Notifications", href: "#", gradient: "from-pink-500 to-rose-600", iconColor: "text-pink-400" },
-  ];
+  const handleInfoClick = (event: any) => {
+    setSelectedEvent(event);
+    setInfoModalOpen(true);
+  };
 
   const handleEditClick = (event: any) => {
     setSelectedEvent(event);
+    // Pre-populate volunteers for editing
+    const eventVolunteerIds = event.volunteers?.map((v: any) => v._id) || [];
+    setSelectedVolunteers(eventVolunteerIds);
     setEditModalOpen(true);
   };
 
@@ -76,24 +90,25 @@ function AdminEventsContent() {
     setDeleteModalOpen(true);
   };
 
-  const handleInfoClick = (event: any) => {
-    setSelectedEvent(event);
-    setInfoModalOpen(true);
-  };
-
   const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedEvent) return;
 
     const formData = new FormData(e.currentTarget);
-    const name = formData.get("eventName") as string;
-    const description = formData.get("description") as string;
+    const eventName = formData.get("eventName") as string;
     const venue = formData.get("venue") as string;
-    const startDate = new Date(formData.get("eventDate") as string).getTime();
-    const endDate = new Date(formData.get("eventDate") as string).getTime() + 2 * 60 * 60 * 1000;
-    const maxParticipants = formData.get("maxParticipants") ? parseInt(formData.get("maxParticipants") as string) : undefined;
-    
+    const eventDate = formData.get("eventDate") as string;
+    const eventTime = formData.get("eventTime") as string;
+    const description = formData.get("description") as string;
+    const maxParticipants = formData.get("maxParticipants") as string;
+
+    if (!eventName?.trim() || !venue?.trim() || !eventDate || !eventTime) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
     setIsSubmitting(true);
+
     try {
       const adminData = sessionStorage.getItem("adminUser");
       if (!adminData) {
@@ -101,23 +116,31 @@ function AdminEventsContent() {
         setIsSubmitting(false);
         return;
       }
+
       const admin = JSON.parse(adminData);
+      
+      // Combine date and time to create timestamps
+      const eventDateTime = new Date(`${eventDate}T${eventTime}`);
+      const startDate = eventDateTime.getTime();
+      const endDate = startDate + (2 * 60 * 60 * 1000); // 2 hours later
 
       const result = await updateEventAsAdmin({
         eventId: selectedEvent._id,
         adminEmail: admin.email,
-        name,
-        description,
-        venue,
-        startDate,
-        endDate,
-        maxParticipants,
-        volunteerIds: selectedEvent.volunteers.map((v: any) => v._id),
+        name: eventName,
+        description: description || "",
+        venue: venue,
+        startDate: startDate,
+        endDate: endDate,
+        maxParticipants: maxParticipants ? parseInt(maxParticipants) : undefined,
+        volunteerIds: selectedVolunteers,
       });
 
       if (result.success) {
         toast.success(result.message);
         setEditModalOpen(false);
+        setSelectedEvent(null);
+        setSelectedVolunteers([]);
       } else {
         toast.error(result.message);
       }
@@ -133,6 +156,7 @@ function AdminEventsContent() {
     if (!selectedEvent) return;
 
     setIsSubmitting(true);
+
     try {
       const adminData = sessionStorage.getItem("adminUser");
       if (!adminData) {
@@ -140,6 +164,7 @@ function AdminEventsContent() {
         setIsSubmitting(false);
         return;
       }
+
       const admin = JSON.parse(adminData);
 
       const result = await deleteEventAsAdmin({
@@ -150,6 +175,7 @@ function AdminEventsContent() {
       if (result.success) {
         toast.success(result.message);
         setDeleteModalOpen(false);
+        setSelectedEvent(null);
       } else {
         toast.error(result.message);
       }
@@ -161,93 +187,109 @@ function AdminEventsContent() {
     }
   };
 
+  const menuItems = [
+    { name: "Dashboard", icon: LayoutDashboard, label: "Dashboard", href: "/admin-dashboard", gradient: "from-blue-500 to-purple-600", iconColor: "text-blue-400" },
+    { name: "Events", icon: CalendarIcon, label: "Events", href: "#", gradient: "from-green-500 to-cyan-600", iconColor: "text-green-400" },
+    { name: "Users", icon: Users, label: "Users", href: "#", gradient: "from-red-500 to-orange-600", iconColor: "text-red-400" },
+    { name: "Settings", icon: Settings, label: "Settings", href: "#", gradient: "from-yellow-500 to-amber-600", iconColor: "text-yellow-400" },
+    { name: "Notifications", icon: Bell, label: "Notifications", href: "#", gradient: "from-pink-500 to-rose-600", iconColor: "text-pink-400" },
+  ];
+
   return (
     <div className="min-h-screen bg-background text-foreground font-mono relative">
       <div className="absolute inset-0 z-0">
         <BackgroundPaths />
       </div>
       <div className="relative z-10">
-        <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={setActiveMenuItem} />
-        
-        <div className="container mx-auto px-4 py-8 pt-20">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tighter mb-2">
-                EVENT MANAGEMENT
-              </h1>
-              <p className="text-muted-foreground font-medium">
-                Manage all events, volunteers, and registrations
-              </p>
-            </div>
-            <Button 
+        {/* Header Section */}
+        <header className="border-b-2 border-black dark:border-white/20 p-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">EVENT MANAGEMENT</h1>
+            <Button
               onClick={() => setCreateModalOpen(true)}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold border-2 border-black dark:border-white shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff] hover:shadow-[6px_6px_0px_#000] dark:hover:shadow-[6px_6px_0px_#fff] hover:-translate-x-1 hover:-translate-y-1 transition-all"
+              className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-lg px-6 py-3 border-2 border-black dark:border-white"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="mr-2 h-5 w-5" />
               CREATE EVENT
             </Button>
           </div>
+        </header>
 
-          <div className="grid gap-6">
-            {allEvents === undefined && (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mr-3" />
-                <span className="text-lg font-mono">Loading events...</span>
-              </div>
-            )}
-
-            {allEvents && allEvents.length === 0 && (
-              <Card className="border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff]">
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <CalendarIcon className="h-16 w-16 text-muted-foreground mb-4" />
-                  <h2 className="text-2xl font-bold mb-2">No Events Found</h2>
-                  <p className="text-muted-foreground text-center mb-6">
-                    Create your first event to get started.
-                  </p>
-                  <Button 
-                    onClick={() => setCreateModalOpen(true)}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create First Event
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {allEvents && allEvents.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {allEvents.map(event => (
-                  <Card key={event._id} className="border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] flex flex-col">
-                    <CardContent className="p-6 flex-grow">
-                      <h3 className="text-xl font-bold mb-2">{event.name}</h3>
-                      <p className="text-muted-foreground line-clamp-3">{event.description}</p>
-                      <div className="mt-4 text-sm">
-                        <p><strong>Date:</strong> {new Date(event.startDate).toLocaleDateString()}</p>
-                        <p><strong>Venue:</strong> {event.venue}</p>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="p-4 border-t-2 border-black dark:border-white flex justify-end gap-2">
-                      <Button variant="outline" size="icon" onClick={() => handleInfoClick(event)}>
-                        <Info className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" onClick={() => handleEditClick(event)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="destructive" size="icon" onClick={() => handleDeleteClick(event)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
+        {/* Floating Navbar */}
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
+          <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={setActiveMenuItem} />
         </div>
+
+        <div className="container mx-auto px-4 py-8 pt-20">
+          {/* Events Display */}
+          {!allEvents ? (
+            <div className="flex items-center justify-center min-h-[400px]">
+              <Loader2 className="h-12 w-12 animate-spin" />
+            </div>
+          ) : allEvents.length === 0 ? (
+            <Card className="border-4 border-black dark:border-white bg-card/80 backdrop-blur-sm">
+              <CardContent className="p-8 text-center">
+                <h3 className="text-2xl font-bold mb-2 tracking-tighter">NO EVENTS FOUND</h3>
+                <p className="text-lg font-medium text-muted-foreground">
+                  No events have been created yet. Click "CREATE EVENT" to get started.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {allEvents.map((event) => (
+                <Card key={event._id} className="border-4 border-black dark:border-white bg-card/80 backdrop-blur-sm">
+                  <CardContent className="p-6">
+                    <h3 className="text-xl font-bold mb-2 tracking-tighter uppercase">{event.name}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{event.description}</p>
+                    <div className="space-y-2 text-sm">
+                      <p><strong>Date:</strong> {new Date(event.startDate).toLocaleDateString()}</p>
+                      <p><strong>Venue:</strong> {event.venue}</p>
+                      <p><strong>Status:</strong> {event.status}</p>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="p-4 border-t-2 border-black dark:border-white bg-muted/20">
+                    <div className="flex gap-2 w-full">
+                      <Button
+                        onClick={() => handleInfoClick(event)}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 border-2 border-black dark:border-white font-mono"
+                      >
+                        <Info className="h-4 w-4 mr-1" />
+                        INFO
+                      </Button>
+                      <Button
+                        onClick={() => handleEditClick(event)}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 border-2 border-black dark:border-white font-mono"
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        EDIT
+                      </Button>
+                      <Button
+                        onClick={() => handleDeleteClick(event)}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 border-2 border-black dark:border-white font-mono text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        DELETE
+                      </Button>
+                    </div>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Create Event Modal */}
         <CreateEventModal
           isOpen={createModalOpen}
           onOpenChange={setCreateModalOpen}
-          allUsers={allUsers}
+          allUsers={allUsers || []}
         />
 
         {/* Edit Event Modal */}
@@ -421,36 +463,124 @@ function AdminEventsContent() {
         {/* Delete Confirmation Modal */}
         {selectedEvent && (
           <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-            <DialogContent>
+            <DialogContent className="max-w-md bg-white dark:bg-black border-2 border-black dark:border-white font-mono">
               <DialogHeader>
-                <DialogTitle>Are you sure?</DialogTitle>
-                <DialogDescription>
-                  This action cannot be undone. This will permanently delete the event.
+                <DialogTitle className="text-xl font-bold tracking-tight">DELETE EVENT</DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground mt-2">
+                  Are you sure you want to delete "{selectedEvent.name}"? This action cannot be undone.
                 </DialogDescription>
               </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>Cancel</Button>
-                <Button variant="destructive" onClick={handleDeleteConfirm} disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="animate-spin" /> : "Delete"}
+              <DialogFooter className="flex gap-3 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setDeleteModalOpen(false)}
+                  className="flex-1 border-2 border-black dark:border-white font-mono text-base py-3"
+                  disabled={isSubmitting}
+                >
+                  CANCEL
+                </Button>
+                <Button 
+                  onClick={handleDeleteConfirm}
+                  disabled={isSubmitting}
+                  className="flex-1 bg-red-600 text-white hover:bg-red-700 font-mono text-base py-3 border-2 border-red-600"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                      DELETING...
+                    </>
+                  ) : (
+                    'DELETE EVENT'
+                  )}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         )}
 
-        {/* Info Modal */}
+        {/* Info Modal with Participants Table */}
         {selectedEvent && (
           <Dialog open={infoModalOpen} onOpenChange={setInfoModalOpen}>
-            <DialogContent>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-black border-2 border-black dark:border-white font-mono">
               <DialogHeader>
-                <DialogTitle>{selectedEvent.name}</DialogTitle>
+                <DialogTitle className="text-2xl font-bold tracking-tight">EVENT PARTICIPANTS</DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground mt-2">
+                  {selectedEvent.name} - Registered participants and their details
+                </DialogDescription>
               </DialogHeader>
-              <div>
-                <p><strong>Description:</strong> {selectedEvent.description}</p>
-                <p><strong>Venue:</strong> {selectedEvent.venue}</p>
-                <p><strong>Date:</strong> {new Date(selectedEvent.startDate).toLocaleString()}</p>
-                <p><strong>Status:</strong> {selectedEvent.status}</p>
+              
+              <div className="mt-6">
+                {!participants ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                    <span className="ml-2">Loading participants...</span>
+                  </div>
+                ) : participants.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-lg font-medium text-muted-foreground">
+                      No participants registered for this event yet.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="border-2 border-black dark:border-white">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="hover:bg-transparent border-b-2 border-black dark:border-white">
+                          <TableHead className="font-bold text-foreground border-r-2 border-black dark:border-white">Name</TableHead>
+                          <TableHead className="font-bold text-foreground border-r-2 border-black dark:border-white">Roll No</TableHead>
+                          <TableHead className="font-bold text-foreground border-r-2 border-black dark:border-white">Branch</TableHead>
+                          <TableHead className="font-bold text-foreground border-r-2 border-black dark:border-white">Mobile Number</TableHead>
+                          <TableHead className="font-bold text-foreground border-r-2 border-black dark:border-white">Email Address</TableHead>
+                          <TableHead className="font-bold text-foreground border-r-2 border-black dark:border-white">Payment Status</TableHead>
+                          <TableHead className="font-bold text-foreground">Registration Date</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {participants.map((participant) => (
+                          <TableRow key={participant._id} className="border-b border-black dark:border-white">
+                            <TableCell className="font-medium border-r border-black dark:border-white">
+                              {participant.name || 'N/A'}
+                            </TableCell>
+                            <TableCell className="border-r border-black dark:border-white">
+                              {participant.rollNo || 'N/A'}
+                            </TableCell>
+                            <TableCell className="border-r border-black dark:border-white">
+                              {participant.branch || 'N/A'}
+                            </TableCell>
+                            <TableCell className="border-r border-black dark:border-white">
+                              {participant.mobileNumber || 'N/A'}
+                            </TableCell>
+                            <TableCell className="border-r border-black dark:border-white">
+                              {participant.email || 'N/A'}
+                            </TableCell>
+                            <TableCell className="border-r border-black dark:border-white">
+                              <span className={`px-2 py-1 text-xs font-bold rounded ${
+                                participant.paymentStatus === 'Completed' 
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                              }`}>
+                                {participant.paymentStatus}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              {new Date(participant.registrationDate).toLocaleDateString()}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </div>
+
+              <DialogFooter className="mt-6">
+                <Button 
+                  onClick={() => setInfoModalOpen(false)}
+                  className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-base py-3 border-2 border-black dark:border-white"
+                >
+                  CLOSE
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         )}
@@ -461,7 +591,7 @@ function AdminEventsContent() {
 
 export default function AdminEvents() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <AdminEventsContent />
     </ThemeProvider>
   );
