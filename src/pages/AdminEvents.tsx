@@ -38,6 +38,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import * as XLSX from 'xlsx';
 
 import { internal } from "@/convex/_generated/api";
 
@@ -65,6 +66,7 @@ function AdminEventsContent() {
   const [infoModalOpen, setInfoModalOpen] = useState(false);
   const [participants, setParticipants] = useState<any[]>([]);
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
 
   // Fetch all events and users from the database
   const allEvents = useQuery(api.events.getAllEventsWithDetails);
@@ -235,6 +237,68 @@ function AdminEventsContent() {
       console.error(error);
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportToExcel = async () => {
+    if (!selectedEvent || !getEventParticipants) return;
+    
+    setIsExportingExcel(true);
+    try {
+      // Prepare the data for Excel export
+      const headers = [
+        'Name',
+        'Roll Number', 
+        'Branch',
+        'Phone Number',
+        'Email Address',
+        'Payment Status',
+        'Registration Date'
+      ];
+
+      const data = getEventParticipants.map(participant => [
+        participant.name || 'N/A',
+        participant.rollNo || 'N/A',
+        participant.branch || 'N/A',
+        participant.mobileNumber || 'N/A',
+        participant.email || 'N/A',
+        participant.paymentStatus,
+        new Date(participant.registrationDate).toLocaleDateString()
+      ]);
+
+      // Create workbook and worksheet
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.aoa_to_sheet([headers, ...data]);
+
+      // Set column widths for better formatting
+      const columnWidths = [
+        { wch: 20 }, // Name
+        { wch: 15 }, // Roll Number
+        { wch: 20 }, // Branch
+        { wch: 15 }, // Phone Number
+        { wch: 25 }, // Email Address
+        { wch: 15 }, // Payment Status
+        { wch: 18 }  // Registration Date
+      ];
+      worksheet['!cols'] = columnWidths;
+
+      // Add the worksheet to workbook
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Participants');
+
+      // Generate filename with event name and current date
+      const eventName = selectedEvent.name.replace(/[^a-zA-Z0-9]/g, '_');
+      const currentDate = new Date().toISOString().split('T')[0];
+      const filename = `participant_list_${eventName}_${currentDate}.xlsx`;
+
+      // Write and download the file
+      XLSX.writeFile(workbook, filename);
+
+      toast.success("✅ Participant data exported successfully.");
+    } catch (error) {
+      console.error('Excel export error:', error);
+      toast.error("❌ Failed to export data. Please try again.");
+    } finally {
+      setIsExportingExcel(false);
     }
   };
 
@@ -650,20 +714,20 @@ function AdminEventsContent() {
                   <Button
                     variant="outline"
                     className="border-2 border-black dark:border-white font-bold"
-                    disabled={isExporting}
+                    disabled={isExporting || isExportingExcel}
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    {isExporting ? "Exporting..." : "EXPORT"}
+                    {(isExporting || isExportingExcel) ? "Exporting..." : "EXPORT"}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={handleExportToSheets}>
+                  <DropdownMenuItem onClick={handleExportToSheets} disabled={isExporting}>
                     Export to Google Sheets
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => alert("Placeholder: Export as CSV")}>
                     Export as CSV
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => alert("Placeholder: Export as Excel")}>
+                  <DropdownMenuItem onClick={handleExportToExcel} disabled={isExportingExcel}>
                     Export as Excel
                   </DropdownMenuItem>
                 </DropdownMenuContent>
