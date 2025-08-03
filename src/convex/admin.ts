@@ -154,3 +154,93 @@ export const getAllAdminsWithEvents = query({
     return adminsWithEvents;
   },
 });
+
+// Get admin profile from TeamMembers table
+export const getAdminProfile = query({
+  args: {
+    adminId: v.id("admins"),
+  },
+  returns: v.union(
+    v.null(),
+    v.object({
+      _id: v.id("teamMembers"),
+      name: v.string(),
+      rollNo: v.string(),
+      branch: v.string(),
+      phone: v.string(),
+      email: v.string(),
+      _creationTime: v.number(),
+    })
+  ),
+  handler: async (ctx, args) => {
+    const profile = await ctx.db
+      .query("teamMembers")
+      .withIndex("by_admin_id", (q) => q.eq("adminId", args.adminId))
+      .unique();
+    
+    return profile;
+  },
+});
+
+// Update or create admin profile in TeamMembers table
+export const updateAdminProfile = mutation({
+  args: {
+    adminId: v.id("admins"),
+    name: v.string(),
+    rollNo: v.string(),
+    branch: v.string(),
+    phone: v.string(),
+    email: v.string(),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    message: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    try {
+      // Validate email format
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(args.email)) {
+        return { success: false, message: "Invalid email format" };
+      }
+
+      // Validate phone number (10 digits)
+      if (!/^\d{10}$/.test(args.phone)) {
+        return { success: false, message: "Phone number must be 10 digits" };
+      }
+
+      // Check if profile already exists
+      const existingProfile = await ctx.db
+        .query("teamMembers")
+        .withIndex("by_admin_id", (q) => q.eq("adminId", args.adminId))
+        .unique();
+
+      if (existingProfile) {
+        // Update existing profile
+        await ctx.db.patch(existingProfile._id, {
+          name: args.name,
+          rollNo: args.rollNo,
+          branch: args.branch,
+          phone: args.phone,
+          email: args.email,
+        });
+      } else {
+        // Create new profile
+        await ctx.db.insert("teamMembers", {
+          adminId: args.adminId,
+          name: args.name,
+          rollNo: args.rollNo,
+          branch: args.branch,
+          phone: args.phone,
+          email: args.email,
+          role: "Admin",
+          isActive: true,
+        });
+      }
+
+      return { success: true, message: "Profile updated successfully!" };
+    } catch (error) {
+      console.error("Profile update error:", error);
+      return { success: false, message: "Failed to update profile. Please try again." };
+    }
+  },
+});
