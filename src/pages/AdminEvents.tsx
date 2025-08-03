@@ -326,28 +326,6 @@ function AdminEventsContent() {
                 <Plus className="mr-2 h-5 w-5" />
                 CREATE EVENT
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-lg px-8 py-4 border-2 border-black dark:border-white"
-                    size="lg"
-                  >
-                    <Download className="mr-2 h-5 w-5" />
-                    EXPORT
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56">
-                  <DropdownMenuItem onClick={() => handleExport('pdf')}>
-                    Export as PDF
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleExport('xlsx')}>
-                    Export as Excel (.xlsx)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleExport('csv')}>
-                    Export as CSV (.csv)
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
           </div>
         </header>
