@@ -11,7 +11,7 @@ export const createAdminUser = internalMutation({
     // Check if admin already exists
     const existingAdmin = await ctx.db
       .query("admins")
-      .withIndex("by_email", (q) => q.eq("email", "aayushbhat0704@gmail.com"))
+      .withIndex("by_email", (q) => q.eq("email", "admin@eventhub.com"))
       .unique();
 
     if (existingAdmin) {
@@ -23,16 +23,16 @@ export const createAdminUser = internalMutation({
 
     // Create new admin user
     const adminId = await ctx.db.insert("admins", {
-      email: "aayushbhat0704@gmail.com",
-      password: "123456", // In production, this should be hashed
-      name: "Aayush Bhat",
+      email: "admin@eventhub.com",
+      password: "admin123", // In production, this should be hashed
+      name: "EventHub Admin",
       isActive: true,
-      lastLogin: undefined,
+      lastLogin: Date.now(),
     });
 
     return {
       adminId,
-      email: "aayushbhat0704@gmail.com",
+      email: "admin@eventhub.com",
     };
   },
 });
