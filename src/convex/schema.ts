@@ -129,13 +129,7 @@ const schema = defineSchema({
     reactions: v.optional(
       v.record(v.string(), v.array(v.id("users"))),
     ),
-    readBy: v.array(
-      v.object({
-        userId: v.id("users"),
-        userName: v.string(),
-        readAt: v.number(),
-      }),
-    ),
+    readBy: v.optional(v.array(v.id("users"))),
   }).index("by_timestamp", ["timestamp"]),
 },
 {

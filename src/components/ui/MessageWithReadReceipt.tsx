@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
-import { useAuth } from '@/hooks/use-auth';
-import { Id } from '@/convex/_generated/dataModel';
-import { useInView } from 'react-intersection-observer';
-import EmojiPicker from 'emoji-picker-react';
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from "react";
+import { useInView } from "react-intersection-observer";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useAuth } from "@/hooks/use-auth";
+import { Id } from "@/convex/_generated/dataModel";
+import { Button } from "./button";
 import { FileText, Download, Play, ImageIcon, FileIcon, AlertCircle, Plus } from "lucide-react";
+import EmojiPicker from "emoji-picker-react";
 
 interface Message {
   _id: Id<"admin_communication_messages">;
@@ -21,22 +21,16 @@ interface Message {
     type: "image" | "pdf" | "video" | "docx" | "other";
   }>;
   reactions?: Record<string, Id<"users">[]>;
-  readBy: Array<{
-    userId: Id<"users">;
-    userName: string;
-    readAt: number;
-  }>;
+  readBy?: Id<"users">[];
 }
 
 interface MessageWithReadReceiptProps {
   message: Message;
-  currentUserId?: Id<"users">;
   onEmojiReaction: (messageId: Id<"admin_communication_messages">, emoji: string) => void;
 }
 
 const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({
   message,
-  currentUserId,
   onEmojiReaction,
 }) => {
   const { user } = useAuth();
@@ -44,183 +38,95 @@ const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({
   const [showReactionTooltip, setShowReactionTooltip] = useState<string | null>(null);
   const [imageLoadErrors, setImageLoadErrors] = useState<Set<string>>(new Set());
   const [showImageModal, setShowImageModal] = useState<string | null>(null);
+
   const markAsRead = useMutation(api.communication.markAsRead);
+  const teamMemberCount = useQuery(api.communication.getTeamMemberCount);
 
   const { ref, inView } = useInView({
     threshold: 0.5,
     triggerOnce: true,
   });
 
+  // Mark message as read when it comes into view
   useEffect(() => {
     if (inView && user && message.senderId !== user._id) {
-      const hasRead = message.readBy?.some(read => read.userId === user._id);
-      if (!hasRead) {
+      const readBy = message.readBy || [];
+      if (!readBy.includes(user._id)) {
         markAsRead({ messageId: message._id });
       }
     }
   }, [inView, user, message._id, message.senderId, message.readBy, markAsRead]);
 
   const formatTimestamp = (timestamp: number) => {
-    return new Date(timestamp).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
+    const date = new Date(timestamp);
+    return date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
     });
   };
 
-  const handleImageError = (attachmentUrl: string) => {
-    setImageLoadErrors(prev => new Set([...prev, attachmentUrl]));
+  const handleImageError = (url: string) => {
+    setImageLoadErrors(prev => new Set(prev).add(url));
   };
 
   const renderAttachments = () => {
     if (!message.attachments || message.attachments.length === 0) return null;
 
     return (
-      <div className="mt-3 space-y-3">
+      <div className="mt-3 space-y-2">
         {message.attachments.map((attachment, index) => (
-          <div key={index} className="border-2 border-black dark:border-white rounded-lg overflow-hidden">
-            {/* Image Attachments */}
-            {attachment.type === "image" && (
-              <div className="bg-gray-50 dark:bg-gray-900 p-3">
-                {!imageLoadErrors.has(attachment.url) ? (
-                  <div className="space-y-2">
-                    <img 
-                      src={attachment.url} 
-                      alt={attachment.name}
-                      className="max-w-full max-h-[300px] object-contain rounded border-2 border-black dark:border-white cursor-pointer hover:opacity-90 transition-opacity"
-                      onClick={() => setShowImageModal(attachment.url)}
-                      onError={() => handleImageError(attachment.url)}
-                    />
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-mono text-gray-600 dark:text-gray-400 truncate">
-                        {attachment.name}
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(attachment.url, '_blank')}
-                        className="text-xs border-2 border-black dark:border-white font-mono"
-                      >
-                        <ImageIcon className="w-3 h-3 mr-1" />
-                        OPEN
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 rounded">
-                    <AlertCircle className="w-6 h-6 text-red-500" />
-                    <div className="flex-1">
-                      <p className="text-sm font-bold font-mono text-red-700 dark:text-red-400">
-                        Image could not be previewed
-                      </p>
-                      <p className="text-xs font-mono text-red-600 dark:text-red-500">
-                        {attachment.name}
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open(attachment.url, '_blank')}
-                      className="text-xs border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-mono"
-                    >
-                      <Download className="w-3 h-3 mr-1" />
-                      DOWNLOAD
-                    </Button>
-                  </div>
-                )}
+          <div key={index} className="border-2 border-black dark:border-white p-2 rounded">
+            {attachment.type === "image" && !imageLoadErrors.has(attachment.url) ? (
+              <div className="space-y-2">
+                <img
+                  src={attachment.url}
+                  alt={attachment.name}
+                  className="max-w-full max-h-[300px] object-contain cursor-pointer border border-gray-300 rounded"
+                  onClick={() => setShowImageModal(attachment.url)}
+                  onError={() => handleImageError(attachment.url)}
+                />
+                <p className="text-xs font-mono text-gray-600 dark:text-gray-400">{attachment.name}</p>
+              </div>
+            ) : attachment.type === "video" ? (
+              <div className="space-y-2">
+                <video
+                  src={attachment.url}
+                  controls
+                  className="max-w-full max-h-[300px] border border-gray-300 rounded"
+                >
+                  Your browser does not support the video tag.
+                </video>
+                <p className="text-xs font-mono text-gray-600 dark:text-gray-400">{attachment.name}</p>
+              </div>
+            ) : attachment.type === "pdf" ? (
+              <div className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-900/20 rounded cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/30" onClick={() => window.open(attachment.url, '_blank')}>
+                <FileText className="h-6 w-6 text-red-600" />
+                <div className="flex-1">
+                  <p className="text-sm font-mono font-bold">{attachment.name}</p>
+                  <p className="text-xs font-mono text-gray-600 dark:text-gray-400">PDF Document</p>
+                </div>
+                <Download className="h-4 w-4 text-gray-500" />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => window.open(attachment.url, '_blank')}>
+                <FileIcon className="h-6 w-6 text-gray-600" />
+                <div className="flex-1">
+                  <p className="text-sm font-mono font-bold">{attachment.name}</p>
+                  <p className="text-xs font-mono text-gray-600 dark:text-gray-400">
+                    {attachment.type === "docx" ? "Word Document" : "File"}
+                  </p>
+                </div>
+                <Download className="h-4 w-4 text-gray-500" />
               </div>
             )}
             
-            {/* Video Attachments */}
-            {attachment.type === "video" && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-3">
-                <div className="space-y-2">
-                  <video 
-                    controls 
-                    className="max-w-full max-h-[300px] rounded border-2 border-black dark:border-white"
-                    preload="metadata"
-                  >
-                    <source src={attachment.url} type="video/mp4" />
-                    <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 rounded">
-                      <AlertCircle className="w-6 h-6 text-red-500" />
-                      <p className="text-sm font-mono text-red-700 dark:text-red-400">
-                        Video could not be loaded
-                      </p>
-                    </div>
-                  </video>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-mono text-blue-600 dark:text-blue-400 truncate">
-                      {attachment.name}
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open(attachment.url, '_blank')}
-                      className="text-xs border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white font-mono"
-                    >
-                      <Play className="w-3 h-3 mr-1" />
-                      OPEN
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* PDF Attachments */}
-            {attachment.type === "pdf" && (
-              <div className="bg-red-50 dark:bg-red-900/20 p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-red-100 dark:bg-red-800 rounded border-2 border-red-500 flex items-center justify-center">
-                    <FileText className="w-6 h-6 text-red-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold font-mono text-red-700 dark:text-red-400 truncate">
-                      {attachment.name}
-                    </p>
-                    <p className="text-xs font-mono text-red-600 dark:text-red-500">
-                      PDF Document
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(attachment.url, '_blank')}
-                    className="text-xs border-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white font-mono"
-                  >
-                    <FileText className="w-3 h-3 mr-1" />
-                    OPEN PDF
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {/* Other File Types (docx, other) */}
-            {(attachment.type === "docx" || attachment.type === "other") && (
-              <div className="bg-gray-50 dark:bg-gray-900 p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded border-2 border-gray-500 flex items-center justify-center">
-                    <FileIcon className="w-6 h-6 text-gray-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold font-mono text-gray-700 dark:text-gray-400 truncate">
-                      {attachment.name}
-                    </p>
-                    <p className="text-xs font-mono text-gray-600 dark:text-gray-500 uppercase">
-                      {attachment.type === "docx" ? "Word Document" : "File"}
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(attachment.url, '_blank')}
-                    className="text-xs border-2 border-gray-600 text-gray-600 hover:bg-gray-600 hover:text-white font-mono"
-                  >
-                    <Download className="w-3 h-3 mr-1" />
-                    DOWNLOAD
-                  </Button>
-                </div>
+            {imageLoadErrors.has(attachment.url) && (
+              <div className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-900/20 rounded">
+                <AlertCircle className="h-5 w-5 text-red-500" />
+                <p className="text-sm font-mono text-red-600 dark:text-red-400">File could not be previewed</p>
               </div>
             )}
           </div>
@@ -252,23 +158,29 @@ const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({
   };
 
   const renderReadReceipts = () => {
-    if (!message.readBy || message.readBy.length === 0) return null;
-    
-    // Only show read receipts for messages sent by others (not current user's messages)
-    if (user && message.senderId === user._id) return null;
+    // Only show read receipts for messages sent by the current user (admin)
+    if (!user || message.senderId !== user._id || !teamMemberCount) return null;
 
-    const readers = message.readBy;
-    const displayNames = readers.slice(0, 2).map(read => read.userName);
-    const remainingCount = readers.length - 2;
+    const readBy = message.readBy || [];
+    const readCount = readBy.length;
+    const totalCount = teamMemberCount - 1; // Exclude the sender
+
+    if (totalCount <= 0) return null;
+
+    const allRead = readCount >= totalCount;
 
     return (
-      <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-          <span>👁️</span>
-          <span className="font-mono">
-            Seen by {displayNames.join(', ')}
-            {remainingCount > 0 && ` and ${remainingCount} other${remainingCount > 1 ? 's' : ''}`}
-          </span>
+      <div className="mt-2 flex justify-end">
+        <div className="text-xs font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded border border-gray-300 dark:border-gray-600">
+          {allRead ? (
+            <span className="flex items-center gap-1">
+              ✅ <span>All seen</span>
+            </span>
+          ) : (
+            <span className="flex items-center gap-1">
+              👁️ <span>{readCount}/{totalCount} seen</span>
+            </span>
+          )}
         </div>
       </div>
     );

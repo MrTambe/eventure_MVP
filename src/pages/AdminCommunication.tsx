@@ -270,7 +270,6 @@ function AdminCommunicationContent() {
                   <MessageWithReadReceipt
                     key={message._id}
                     message={message}
-                    currentUserId={currentUser?._id}
                     onEmojiReaction={handleEmojiReaction}
                   />
                 ))

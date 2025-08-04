@@ -155,39 +155,41 @@ export const markAsRead = mutation({
         return { success: false, message: "User not authenticated" };
       }
 
-      // Get the message
       const message = await ctx.db.get(args.messageId);
       if (!message) {
         return { success: false, message: "Message not found" };
       }
 
-      // Don't mark as read if user is the sender
+      // Don't mark own messages as read
       if (message.senderId === user._id) {
-        return { success: true, message: "Sender doesn't need to mark as read" };
+        return { success: true, message: "Cannot mark own message as read" };
       }
 
+      const currentReadBy = message.readBy || [];
+      
       // Check if user has already read this message
-      const hasRead = (message.readBy || []).some((receipt: { userId: Id<"users">; userName: string; readAt: number }) => receipt.userId === user._id);
-      if (hasRead) {
+      if (currentReadBy.includes(user._id)) {
         return { success: true, message: "Already marked as read" };
       }
 
-      // Add read receipt with userName
-      const currentReadBy = message.readBy || [];
-      const newReadReceipt = {
-        userId: user._id,
-        userName: user.name || "User",
-        readAt: Date.now(),
-      };
-
-      await ctx.db.patch(args.messageId, {
-        readBy: [...currentReadBy, newReadReceipt],
+      // Add user to readBy list
+      await ctx.db.patch(message._id, {
+        readBy: [...currentReadBy, user._id],
       });
 
-      return { success: true, message: "Marked as read" };
+      return { success: true, message: "Message marked as read" };
     } catch (error) {
-      console.error("Mark as read error:", error);
+      console.error("Error marking message as read:", error);
       return { success: false, message: "Failed to mark as read" };
     }
+  },
+});
+
+export const getTeamMemberCount = query({
+  returns: v.number(),
+  handler: async (ctx) => {
+    const users = await ctx.db.query("users").collect();
+    const teamMembers = await ctx.db.query("teamMembers").collect();
+    return users.length + teamMembers.length;
   },
 });
