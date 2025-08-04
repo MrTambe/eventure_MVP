@@ -70,11 +70,11 @@ export const createEventAsAdmin = mutation({
     name: v.string(),
     description: v.string(),
     venue: v.string(),
-    eventDate: v.string(), // ISO date string
-    eventTime: v.string(), // HH:MM format
+    eventDate: v.string(),
+    eventTime: v.string(),
     maxParticipants: v.optional(v.number()),
     volunteerIds: v.array(v.id("teamMembers")), // Changed to use teamMembers
-    adminEmail: v.string(), // Admin email for verification
+    adminEmail: v.string(),
   },
   returns: v.object({
     success: v.boolean(),
@@ -93,40 +93,50 @@ export const createEventAsAdmin = mutation({
         return { success: false, message: "Admin not found" };
       }
 
+      // Verify all volunteers exist
+      for (const volunteerId of args.volunteerIds) {
+        const volunteer = await ctx.db.get(volunteerId);
+        if (!volunteer) {
+          return { success: false, message: `Volunteer with ID ${volunteerId} not found` };
+        }
+      }
+
+      // Parse date and time
+      const startDate = new Date(args.eventDate + "T" + args.eventTime).getTime();
+      const endDate = startDate + (2 * 60 * 60 * 1000); // Default 2 hours
+
       // Create the event
       const eventId = await ctx.db.insert("events", {
         name: args.name,
         description: args.description,
         venue: args.venue,
-        startDate: new Date(args.eventDate + "T" + args.eventTime).getTime(),
-        endDate: new Date(args.eventDate + "T" + args.eventTime).getTime() + (2 * 60 * 60 * 1000), // Default 2 hours
+        startDate: startDate,
+        endDate: endDate,
         maxParticipants: args.maxParticipants,
         createdBy: admin._id as unknown as Id<"users">, // Type conversion for compatibility
         status: "active",
       });
 
-      // Assign volunteers to the event (only if volunteers exist)
-      const assignedDate = Date.now();
+      // Add this event to selected volunteers' volunteerEvents
       for (const volunteerId of args.volunteerIds) {
-        // Verify volunteer exists before assigning
         const volunteer = await ctx.db.get(volunteerId);
         if (volunteer) {
-          await ctx.db.insert("eventVolunteers", {
-            eventId,
-            userId: volunteerId as unknown as Id<"users">, // Type conversion for compatibility
-            assignedDate,
-            status: "assigned",
-          });
+          const currentEvents = volunteer.volunteerEvents || [];
+          if (!currentEvents.includes(eventId)) {
+            await ctx.db.patch(volunteerId, {
+              volunteerEvents: [...currentEvents, eventId],
+            });
+          }
         }
       }
-      
+
       return { 
         success: true, 
-        message: `Event created successfully with ${args.volunteerIds.length} volunteers assigned!`, 
-        eventId 
+        message: "Event created successfully!",
+        eventId: eventId
       };
     } catch (error) {
-      console.error("Admin event creation error:", error);
+      console.error("Event creation error:", error);
       return { 
         success: false, 
         message: "Failed to create event. Please try again." 
@@ -169,6 +179,14 @@ export const updateEventAsAdmin = mutation({
         return { success: false, message: "Event not found" };
       }
 
+      // Verify all volunteers exist
+      for (const volunteerId of args.volunteerIds) {
+        const volunteer = await ctx.db.get(volunteerId);
+        if (!volunteer) {
+          return { success: false, message: `Volunteer with ID ${volunteerId} not found` };
+        }
+      }
+
       // Update the event
       await ctx.db.patch(args.eventId, {
         name: args.name,
@@ -180,24 +198,32 @@ export const updateEventAsAdmin = mutation({
         status: "active",
       });
 
-      // Remove existing volunteer assignments
-      const existingVolunteers = await ctx.db
-        .query("eventVolunteers")
-        .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
-        .collect();
+      // Get all team members to update their volunteerEvents
+      const allTeamMembers = await ctx.db.query("teamMembers").collect();
 
-      for (const volunteer of existingVolunteers) {
-        await ctx.db.delete(volunteer._id);
+      // Remove this event from all team members' volunteerEvents
+      for (const member of allTeamMembers) {
+        const currentEvents = member.volunteerEvents || [];
+        const updatedEvents = currentEvents.filter(eventId => eventId !== args.eventId);
+        
+        if (currentEvents.length !== updatedEvents.length) {
+          await ctx.db.patch(member._id, {
+            volunteerEvents: updatedEvents,
+          });
+        }
       }
 
-      // Add new volunteer assignments
+      // Add this event to selected volunteers' volunteerEvents
       for (const volunteerId of args.volunteerIds) {
-        await ctx.db.insert("eventVolunteers", {
-          eventId: args.eventId,
-          userId: volunteerId as unknown as Id<"users">, // Type conversion for compatibility
-          assignedDate: Date.now(),
-          status: "assigned",
-        });
+        const volunteer = await ctx.db.get(volunteerId);
+        if (volunteer) {
+          const currentEvents = volunteer.volunteerEvents || [];
+          if (!currentEvents.includes(args.eventId)) {
+            await ctx.db.patch(volunteerId, {
+              volunteerEvents: [...currentEvents, args.eventId],
+            });
+          }
+        }
       }
 
       return { 
