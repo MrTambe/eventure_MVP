@@ -1,390 +1,97 @@
-import React, { useState, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { cn } from "@/lib/utils";
+import { IconUser, IconCalendarEvent } from "@tabler/icons-react";
+import { MenuBar } from '@/components/ui/glow-menu';
+import { LayoutDashboard, Calendar as CalendarIcon, Users, Settings, Bell, Home, Calendar } from "lucide-react";
+import { BackgroundPaths } from "@/components/ui/background-paths";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MenuBar } from "@/components/ui/glow-menu";
-import { Home, Calendar, Users, Settings, Plus } from "lucide-react";
-import MemberCard from "@/components/ui/member-card";
-import { Id } from "@/convex/_generated/dataModel";
-import { useNavigate } from "react-router";
+import { Id } from '@/convex/_generated/dataModel';
 
-interface AdminUser {
-  _id: Id<"admins">;
+interface AdminProfileCardProps {
+  name: string;
   email: string;
-  name?: string;
+  events: { _id: Id<"events">; name: string }[];
+  index: number;
 }
 
-function AdminTeamContent() {
-  const navigate = useNavigate();
-  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
-  const [activeMenuItem, setActiveMenuItem] = useState("Team");
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingMember, setEditingMember] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    rollNo: "",
-    branch: "",
-    phone: "",
-    email: "",
-    role: "Volunteer",
-    volunteerEvents: [] as Id<"events">[],
-  });
-
-  // Fetch data
-  const teamMembers = useQuery(api.team.getAllTeamMembers);
-  const events = useQuery(api.events.getAllEvents);
-
-  // Mutations
-  const addTeamMember = useMutation(api.team.addTeamMember);
-  const updateTeamMember = useMutation(api.team.updateTeamMember);
-  const deleteTeamMember = useMutation(api.team.deleteTeamMember);
-
-  // Load admin user from session storage
-  useEffect(() => {
-    const adminData = sessionStorage.getItem("adminUser");
-    if (adminData) {
-      setAdminUser(JSON.parse(adminData));
-    }
-  }, []);
-
-  const menuItems = [
-    { name: 'Dashboard', label: 'Dashboard', href: '/admin-dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500', iconColor: 'text-blue-500' },
-    { name: 'Events', label: 'Events', href: '/admin-events', icon: Calendar, gradient: 'from-green-500 to-emerald-500', iconColor: 'text-green-500' },
-    { name: 'Team', label: 'Team', href: '/admin-team', icon: Users, gradient: 'from-purple-500 to-violet-500', iconColor: 'text-purple-500' },
-    { name: 'Settings', label: 'Settings', href: '/admin-settings', icon: Settings, gradient: 'from-red-500 to-orange-500', iconColor: 'text-red-500' }
-  ];
-
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      rollNo: "",
-      branch: "",
-      phone: "",
-      email: "",
-      role: "Volunteer",
-      volunteerEvents: [],
-    });
-  };
-
-  const handleAddMember = async () => {
-    try {
-      const result = await addTeamMember(formData);
-      if (result.success) {
-        toast.success(result.message);
-        setIsAddModalOpen(false);
-        resetForm();
-      } else {
-        toast.error(result.message);
-      }
-    } catch (error) {
-      toast.error("Failed to add team member. Please try again.");
-    }
-  };
-
-  const handleEditMember = (member: any) => {
-    setEditingMember(member);
-    setFormData({
-      name: member.name,
-      rollNo: member.rollNo,
-      branch: member.branch,
-      phone: member.phone,
-      email: member.email,
-      role: member.role || "Volunteer",
-      volunteerEvents: member.volunteerEvents || [],
-    });
-    setIsEditModalOpen(true);
-  };
-
-  const handleUpdateMember = async () => {
-    if (!editingMember) return;
-    
-    try {
-      const result = await updateTeamMember({
-        memberId: editingMember._id,
-        ...formData,
-      });
-      if (result.success) {
-        toast.success(result.message);
-        setIsEditModalOpen(false);
-        setEditingMember(null);
-        resetForm();
-      } else {
-        toast.error(result.message);
-      }
-    } catch (error) {
-      toast.error("Failed to update team member. Please try again.");
-    }
-  };
-
-  const handleDeleteMember = async (memberId: Id<"teamMembers">) => {
-    if (confirm("Are you sure you want to delete this team member?")) {
-      try {
-        const result = await deleteTeamMember({ memberId });
-        if (result.success) {
-          toast.success(result.message);
-        } else {
-          toast.error(result.message);
-        }
-      } catch (error) {
-        toast.error("Failed to delete team member. Please try again.");
-      }
-    }
-  };
-
-  if (!adminUser) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-black mb-4">Access Denied</h1>
-          <p className="text-gray-600">Please sign in as an admin to access this page.</p>
+const AdminProfileCard: React.FC<AdminProfileCardProps> = ({ name, email, events, index }) => {
+  return (
+    <div
+      className={cn(
+        "relative p-6 rounded-2xl overflow-hidden transition-all duration-300",
+        "bg-white/80 dark:bg-black/80 border-2 border-black dark:border-white/20",
+        "hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_8px_30px_rgba(255,255,255,0.05)]",
+        "hover:-translate-y-1"
+      )}
+      style={{ animationDelay: `${index * 100}ms` }}
+    >
+      <div className="flex items-center gap-4 mb-4">
+        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
+          <IconUser className="w-7 h-7 text-white" />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold tracking-tight">{name}</h3>
+          <p className="text-sm text-muted-foreground">{email}</p>
         </div>
       </div>
-    );
-  }
-
-  const handleMenuItemClick = (itemName: string) => {
-    setActiveMenuItem(itemName);
-    
-    // Navigate to the corresponding route
-    switch (itemName) {
-      case 'Dashboard':
-        navigate('/admin-dashboard');
-        break;
-      case 'Events':
-        navigate('/admin-events');
-        break;
-      case 'Team':
-        navigate('/admin-team');
-        break;
-      case 'Settings':
-        navigate('/admin-settings');
-        break;
-      default:
-        break;
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-white text-black">
-      {/* Menu Bar */}
-      <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
-        <MenuBar 
-          items={menuItems} 
-          activeItem={activeMenuItem}
-          onItemClick={handleMenuItemClick}
-        />
-      </div>
-
-      {/* Main Content */}
-      <div className="pt-32 px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-7xl mx-auto"
-        >
-          {/* Header */}
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-4xl font-bold text-black">Team Management</h1>
-            
-            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-black text-white border-4 border-black hover:bg-gray-800 font-bold px-6 py-3">
-                  <Plus className="h-5 w-5 mr-2" />
-                  Add Team Member
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Add New Team Member</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Enter full name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="rollNo">Roll Number</Label>
-                    <Input
-                      id="rollNo"
-                      value={formData.rollNo}
-                      onChange={(e) => setFormData({ ...formData, rollNo: e.target.value })}
-                      placeholder="Enter roll number"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="branch">Branch</Label>
-                    <Input
-                      id="branch"
-                      value={formData.branch}
-                      onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-                      placeholder="Enter branch"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      placeholder="Enter 10-digit phone number"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="Enter email address"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="role">Role</Label>
-                    <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Volunteer">Volunteer</SelectItem>
-                        <SelectItem value="Coordinator">Coordinator</SelectItem>
-                        <SelectItem value="Admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleAddMember}>
-                      Add Member
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {/* Team Members Grid */}
-          <div className="flex flex-wrap justify-center gap-4">
-            {teamMembers === undefined ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading team members...</p>
-              </div>
-            ) : teamMembers.length === 0 ? (
-              <div className="text-center py-12">
-                <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-gray-600 mb-2">No Team Members</h2>
-                <p className="text-gray-500">Add team members to get started.</p>
-              </div>
-            ) : (
-              teamMembers.map((member) => (
-                <MemberCard
-                  key={member._id}
-                  member={member}
-                  onEdit={() => handleEditMember(member)}
-                />
-              ))
-            )}
-          </div>
-
-          {/* Edit Modal */}
-          <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Edit Team Member</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="edit-name">Name</Label>
-                  <Input
-                    id="edit-name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter full name"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-rollNo">Roll Number</Label>
-                  <Input
-                    id="edit-rollNo"
-                    value={formData.rollNo}
-                    onChange={(e) => setFormData({ ...formData, rollNo: e.target.value })}
-                    placeholder="Enter roll number"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-branch">Branch</Label>
-                  <Input
-                    id="edit-branch"
-                    value={formData.branch}
-                    onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-                    placeholder="Enter branch"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-phone">Phone Number</Label>
-                  <Input
-                    id="edit-phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="Enter 10-digit phone number"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-email">Email</Label>
-                  <Input
-                    id="edit-email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="Enter email address"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-role">Role</Label>
-                  <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Volunteer">Volunteer</SelectItem>
-                      <SelectItem value="Coordinator">Coordinator</SelectItem>
-                      <SelectItem value="Admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleUpdateMember}>
-                    Update Member
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </motion.div>
+      <div>
+        <h4 className="font-semibold mb-2 flex items-center gap-2">
+          <IconCalendarEvent className="w-5 h-5" />
+          Events Created
+        </h4>
+        {events.length > 0 ? (
+          <ul className="space-y-1 text-sm text-muted-foreground list-disc list-inside">
+            {events.map(event => (
+              <li key={event._id}>{event.name}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">No events created</p>
+        )}
       </div>
     </div>
   );
-}
+};
 
-export default function AdminTeam() {
-  return <AdminTeamContent />;
-}
+const AdminTeamPage = () => {
+  const [activeMenuItem, setActiveMenuItem] = useState("Team");
+  const adminsWithEvents = useQuery(api.admin.getAllAdminsWithEvents);
+
+  const menuItems = [
+    { name: "Dashboard", icon: Home, label: "Dashboard", href: "/admin-dashboard", gradient: "from-blue-500 to-purple-600", iconColor: "text-blue-400" },
+    { name: "Events", icon: Calendar, label: "Events", href: "/admin-events", gradient: "from-green-500 to-cyan-600", iconColor: "text-green-400" },
+    { name: "Team", icon: Users, label: "Team", href: "/admin-team", gradient: "from-red-500 to-orange-600", iconColor: "text-red-400" },
+    { name: "Settings", icon: Settings, label: "Settings", href: "/admin-settings", gradient: "from-yellow-500 to-amber-600", iconColor: "text-yellow-400" },
+  ];
+
+  return (
+    <div className="min-h-screen bg-background text-foreground font-mono relative">
+       <div className="fixed inset-0 z-0 pointer-events-none">
+        <BackgroundPaths title="" />
+      </div>
+      <div className="relative z-10">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
+          <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={setActiveMenuItem} />
+        </div>
+        <div className="pt-24">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-center mb-10">Admin Team</h1>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 relative z-10 py-10 max-w-7xl mx-auto gap-4">
+            {adminsWithEvents?.map((admin, index) => (
+              <AdminProfileCard 
+                key={admin._id}
+                name={admin.name || 'Unnamed Admin'}
+                email={admin.email}
+                events={admin.events}
+                index={index}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AdminTeamPage;
