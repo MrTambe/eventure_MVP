@@ -44,78 +44,105 @@ const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-card border border-border rounded-lg p-6 space-y-6 shadow-sm hover:shadow-md transition-shadow"
+      className="bg-gray-100 dark:bg-gray-800 border-4 border-black dark:border-white rounded-2xl p-8 space-y-6 shadow-lg max-w-md mx-auto"
     >
-      {/* Header Section */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-            <User className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-foreground">{member.name || 'Unknown'}</h3>
-            <p className="text-sm text-muted-foreground">{member.role || 'No role assigned'}</p>
-          </div>
-        </div>
-        <Badge variant="secondary" className="text-xs font-medium">
-          {member.branch || 'N/A'}
-        </Badge>
+      {/* Header */}
+      <div className="text-center space-y-2">
+        <h2 className="text-2xl font-bold text-black dark:text-white">Team Member</h2>
+        <p className="text-gray-600 dark:text-gray-400 text-sm">Member details and contact information</p>
       </div>
 
-      {/* Contact Information */}
-      <div className="space-y-3">
-        <div className="flex items-center space-x-3 text-sm">
-          <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-          <a 
-            href={`mailto:${member.email}`} 
-            className="text-foreground hover:text-primary hover:underline transition-colors"
-          >
-            {member.email || 'No email provided'}
-          </a>
+      {/* Member Information Fields */}
+      <div className="space-y-4">
+        {/* Name Field */}
+        <div className="bg-white dark:bg-gray-700 border-3 border-black dark:border-white rounded-xl p-4">
+          <div className="text-lg font-semibold text-black dark:text-white">
+            {member.name || 'Unknown'}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
+            Name
+          </div>
         </div>
-        <div className="flex items-center space-x-3 text-sm">
-          <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+
+        {/* Role Field */}
+        <div className="bg-white dark:bg-gray-700 border-3 border-black dark:border-white rounded-xl p-4">
+          <div className="text-lg font-semibold text-black dark:text-white">
+            {member.role || 'No role assigned'}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
+            Role
+          </div>
+        </div>
+
+        {/* Branch Field */}
+        <div className="bg-white dark:bg-gray-700 border-3 border-black dark:border-white rounded-xl p-4">
+          <div className="text-lg font-semibold text-black dark:text-white">
+            {member.branch || 'N/A'}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
+            Branch
+          </div>
+        </div>
+
+        {/* Mobile Number Field */}
+        <div className="bg-white dark:bg-gray-700 border-3 border-black dark:border-white rounded-xl p-4">
           <a 
             href={`tel:${member.phone}`} 
-            className="text-foreground hover:text-primary hover:underline transition-colors"
+            className="text-lg font-semibold text-black dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
           >
             {member.phone || 'No phone provided'}
           </a>
-        </div>
-      </div>
-
-      {/* Volunteer Events */}
-      {member.volunteerEvents && member.volunteerEvents.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-foreground">Volunteering Events:</h4>
-          <div className="flex flex-wrap gap-2">
-            {member.volunteerEvents.map((event, index) => (
-              <Badge key={index} variant="outline" className="text-xs">
-                {event}
-              </Badge>
-            ))}
+          <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
+            Mobile Number
           </div>
         </div>
-      )}
+
+        {/* Email Address Field */}
+        <div className="bg-white dark:bg-gray-700 border-3 border-black dark:border-white rounded-xl p-4">
+          <a 
+            href={`mailto:${member.email}`} 
+            className="text-lg font-semibold text-black dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer break-all"
+          >
+            {member.email || 'No email provided'}
+          </a>
+          <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
+            Email Address
+          </div>
+        </div>
+
+        {/* Volunteer Events Field */}
+        {member.volunteerEvents && member.volunteerEvents.length > 0 && (
+          <div className="bg-white dark:bg-gray-700 border-3 border-black dark:border-white rounded-xl p-4">
+            <div className="flex flex-wrap gap-2">
+              {member.volunteerEvents.map((event, index) => (
+                <Badge key={index} variant="outline" className="text-xs font-medium">
+                  {event}
+                </Badge>
+              ))}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-2">
+              Volunteer Events
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Action Buttons */}
-      <div className="flex justify-end space-x-2 pt-4 border-t border-border">
+      <div className="flex gap-3 pt-4">
         <Button 
-          variant="outline" 
-          size="sm" 
           onClick={() => onEdit(member)}
-          className="text-xs"
+          className="flex-1 bg-white dark:bg-gray-700 border-3 border-black dark:border-white rounded-xl py-4 text-black dark:text-white font-bold text-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+          variant="outline"
         >
-          <Edit className="h-3 w-3 mr-1" />
-          Edit
+          <Edit className="h-5 w-5 mr-2" />
+          Edit Member
         </Button>
         <Button 
-          variant="destructive" 
-          size="sm" 
           onClick={handleDelete}
-          className="text-xs"
+          className="flex-1 bg-red-500 border-3 border-black dark:border-white rounded-xl py-4 text-white font-bold text-lg hover:bg-red-600 transition-colors"
+          variant="destructive"
         >
-          <Trash2 className="h-3 w-3 mr-1" />
+          <Trash2 className="h-5 w-5 mr-2" />
           Delete
         </Button>
       </div>
