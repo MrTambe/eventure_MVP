@@ -22,33 +22,75 @@ interface MemberCardProps {
 const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
   return (
     <motion.div
-      className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+      className="group relative bg-white dark:bg-gray-800 p-6 rounded-lg border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] hover:shadow-[12px_12px_0px_#000] dark:hover:shadow-[12px_12px_0px_#fff] transition-all duration-300 hover:-translate-x-1 hover:-translate-y-1 overflow-hidden"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="flex justify-between items-start">
-        <div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">{member.name}</h3>
-          <p className="text-gray-600 dark:text-gray-400">{member.role || 'Volunteer'}</p>
+      {/* Default view - Name and Branch only */}
+      <div className="group-hover:opacity-0 transition-opacity duration-300">
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex-1">
+            <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight uppercase">
+              {member.name}
+            </h3>
+            <div className="mt-2 px-3 py-1 bg-black dark:bg-white text-white dark:text-black text-sm font-bold uppercase tracking-wider inline-block">
+              {member.branch}
+            </div>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onEdit}
+            className="border-2 border-black dark:border-white font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
+          >
+            EDIT
+          </Button>
         </div>
-        <Button variant="outline" size="sm" onClick={onEdit}>
-          Edit
-        </Button>
       </div>
-      <div className="mt-4 space-y-2">
-        <p className="text-sm text-gray-700 dark:text-gray-300">
-          <strong>Roll No:</strong> {member.rollNo}
-        </p>
-        <p className="text-sm text-gray-700 dark:text-gray-300">
-          <strong>Branch:</strong> {member.branch}
-        </p>
-        <p className="text-sm text-gray-700 dark:text-gray-300">
-          <strong>Phone:</strong> {member.phone}
-        </p>
-        <p className="text-sm text-gray-700 dark:text-gray-300">
-          <strong>Email:</strong> {member.email}
-        </p>
+
+      {/* Expanded view on hover - All details */}
+      <div className="absolute inset-0 p-6 bg-white dark:bg-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="flex justify-between items-start mb-4">
+          <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight uppercase">
+            {member.name}
+          </h3>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onEdit}
+            className="border-2 border-black dark:border-white font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
+          >
+            EDIT
+          </Button>
+        </div>
+        
+        <div className="space-y-3">
+          <div className="border-2 border-black dark:border-white p-2">
+            <div className="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400">ROLE</div>
+            <div className="text-sm font-bold text-gray-900 dark:text-white">{member.role || 'VOLUNTEER'}</div>
+          </div>
+          
+          <div className="border-2 border-black dark:border-white p-2">
+            <div className="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400">ROLL NO</div>
+            <div className="text-sm font-bold text-gray-900 dark:text-white">{member.rollNo}</div>
+          </div>
+          
+          <div className="border-2 border-black dark:border-white p-2">
+            <div className="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400">BRANCH</div>
+            <div className="text-sm font-bold text-gray-900 dark:text-white">{member.branch}</div>
+          </div>
+          
+          <div className="border-2 border-black dark:border-white p-2">
+            <div className="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400">PHONE</div>
+            <div className="text-sm font-bold text-gray-900 dark:text-white">{member.phone}</div>
+          </div>
+          
+          <div className="border-2 border-black dark:border-white p-2">
+            <div className="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400">EMAIL</div>
+            <div className="text-sm font-bold text-gray-900 dark:text-white break-all">{member.email}</div>
+          </div>
+        </div>
       </div>
     </motion.div>
   );
