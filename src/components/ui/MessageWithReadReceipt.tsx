@@ -29,6 +29,7 @@ interface Message {
   }>;
   readBy: Array<{
     userId: Id<"users">;
+    userName: string;
     readAt: number;
   }>;
 }
@@ -144,6 +145,29 @@ const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({
             )}
           </div>
         ))}
+      </div>
+    );
+  };
+
+  const renderReadReceipts = () => {
+    if (!message.readBy || message.readBy.length === 0) return null;
+    
+    // Only show read receipts for messages sent by others (not current user's messages)
+    if (user && message.senderId === user._id) return null;
+
+    const readers = message.readBy;
+    const displayNames = readers.slice(0, 2).map(read => read.userName);
+    const remainingCount = readers.length - 2;
+
+    return (
+      <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <span>👁️</span>
+          <span className="font-mono">
+            Seen by {displayNames.join(', ')}
+            {remainingCount > 0 && ` and ${remainingCount} other${remainingCount > 1 ? 's' : ''}`}
+          </span>
+        </div>
       </div>
     );
   };
@@ -285,32 +309,8 @@ const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({
         ))}
       </div>
 
-      {/* Read Receipts - Only visible to sender */}
-      {user && message.senderId === user._id && message.readBy && message.readBy.length > 0 && (
-        <div className="mt-3 pt-2 border-t-2 border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-gray-500 dark:text-gray-400">
-              READ BY:
-            </span>
-            <div className="flex -space-x-1">
-              {message.readBy.slice(0, 5).map((read, index) => (
-                <div
-                  key={index}
-                  className="w-5 h-5 bg-green-500 text-white text-xs flex items-center justify-center rounded-full border-2 border-white dark:border-black font-bold"
-                  title={`Read by user ${read.userId}`}
-                >
-                  {index + 1}
-                </div>
-              ))}
-              {message.readBy.length > 5 && (
-                <div className="w-5 h-5 bg-gray-500 text-white text-xs flex items-center justify-center rounded-full border-2 border-white dark:border-black font-bold">
-                  +{message.readBy.length - 5}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Read Receipts - Only show for messages from others */}
+      {renderReadReceipts()}
     </div>
   );
 };

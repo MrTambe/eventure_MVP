@@ -126,6 +126,7 @@ const schema = defineSchema({
     })),
     readBy: v.array(v.object({
       userId: v.id("users"),
+      userName: v.string(),
       readAt: v.number(),
     })),
   }).index("by_timestamp", ["timestamp"]),

@@ -68,6 +68,7 @@ export const getMessages = query({
     })),
     readBy: v.array(v.object({
       userId: v.id("users"),
+      userName: v.string(),
       readAt: v.number(),
     })),
   })),
@@ -219,15 +220,16 @@ export const markAsRead = mutation({
       }
 
       // Check if user has already read this message
-      const hasRead = (message.readBy || []).some((receipt: { userId: Id<"users">; readAt: number }) => receipt.userId === user._id);
+      const hasRead = (message.readBy || []).some((receipt: { userId: Id<"users">; userName: string; readAt: number }) => receipt.userId === user._id);
       if (hasRead) {
         return { success: true, message: "Already marked as read" };
       }
 
-      // Add read receipt
+      // Add read receipt with userName
       const currentReadBy = message.readBy || [];
       const newReadReceipt = {
         userId: user._id,
+        userName: user.name || "User",
         readAt: Date.now(),
       };
 
