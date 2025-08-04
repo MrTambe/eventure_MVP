@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from './button';
 import { Badge } from './badge';
-import { Phone, Mail, User, MapPin, Trash2, Edit } from 'lucide-react';
+import { Phone, Mail, User, Trash2, Edit, MapPin } from 'lucide-react';
 import { Id } from '@/convex/_generated/dataModel';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -44,54 +44,78 @@ const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white dark:bg-gray-800 border-2 border-black dark:border-gray-600 rounded-lg shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#4a5568] p-6 flex flex-col justify-between"
+      className="bg-card border border-border rounded-lg p-6 space-y-6 shadow-sm hover:shadow-md transition-shadow"
     >
-      <div>
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex items-center">
-            <div className="bg-gray-200 dark:bg-gray-700 rounded-full p-3 mr-4">
-              <User className="h-6 w-6 text-gray-800 dark:text-white" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-black dark:text-white">{member.name || 'Unknown'}</h3>
-              <p className="text-gray-600 dark:text-gray-400">{member.role || 'No role assigned'}</p>
-            </div>
+      {/* Header Section */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+            <User className="h-6 w-6 text-primary" />
           </div>
-          <Badge variant="secondary" className="font-mono text-sm">{member.branch || 'N/A'}</Badge>
-        </div>
-
-        <div className="space-y-3 text-sm mb-6">
-          <div className="flex items-center text-gray-700 dark:text-gray-300">
-            <Mail className="h-4 w-4 mr-3 text-gray-500" />
-            <span>{member.email || 'No email provided'}</span>
-          </div>
-          <div className="flex items-center text-gray-700 dark:text-gray-300">
-            <Phone className="h-4 w-4 mr-3 text-gray-500" />
-            <a href={`tel:${member.phone}`} className="hover:underline">
-              {member.phone || 'No phone provided'}
-            </a>
-          </div>
-        </div>
-
-        {member.volunteerEvents && member.volunteerEvents.length > 0 && (
           <div>
-            <h4 className="font-semibold mb-2 text-black dark:text-white">Volunteering In:</h4>
-            <div className="flex flex-wrap gap-2">
-              {member.volunteerEvents.map((event, index) => (
-                <Badge key={index} variant="outline" className="font-mono">{event}</Badge>
-              ))}
-            </div>
+            <h3 className="text-lg font-semibold text-foreground">{member.name || 'Unknown'}</h3>
+            <p className="text-sm text-muted-foreground">{member.role || 'No role assigned'}</p>
           </div>
-        )}
+        </div>
+        <Badge variant="secondary" className="text-xs font-medium">
+          {member.branch || 'N/A'}
+        </Badge>
       </div>
 
-      <div className="flex justify-end gap-2 mt-6">
-        <Button variant="outline" size="sm" onClick={() => onEdit(member)}>
-          <Edit className="h-4 w-4 mr-2" />
+      {/* Contact Information */}
+      <div className="space-y-3">
+        <div className="flex items-center space-x-3 text-sm">
+          <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <a 
+            href={`mailto:${member.email}`} 
+            className="text-foreground hover:text-primary hover:underline transition-colors"
+          >
+            {member.email || 'No email provided'}
+          </a>
+        </div>
+        <div className="flex items-center space-x-3 text-sm">
+          <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <a 
+            href={`tel:${member.phone}`} 
+            className="text-foreground hover:text-primary hover:underline transition-colors"
+          >
+            {member.phone || 'No phone provided'}
+          </a>
+        </div>
+      </div>
+
+      {/* Volunteer Events */}
+      {member.volunteerEvents && member.volunteerEvents.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium text-foreground">Volunteering Events:</h4>
+          <div className="flex flex-wrap gap-2">
+            {member.volunteerEvents.map((event, index) => (
+              <Badge key={index} variant="outline" className="text-xs">
+                {event}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex justify-end space-x-2 pt-4 border-t border-border">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => onEdit(member)}
+          className="text-xs"
+        >
+          <Edit className="h-3 w-3 mr-1" />
           Edit
         </Button>
-        <Button variant="destructive" size="sm" onClick={handleDelete}>
-          <Trash2 className="h-4 w-4 mr-2" />
+        <Button 
+          variant="destructive" 
+          size="sm" 
+          onClick={handleDelete}
+          className="text-xs"
+        >
+          <Trash2 className="h-3 w-3 mr-1" />
           Delete
         </Button>
       </div>
