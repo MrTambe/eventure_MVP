@@ -21,6 +21,7 @@ import AdminTeam from "./pages/AdminTeam.tsx";
 import Auth from "./pages/Auth.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AdminSettings from "./pages/AdminSettings";
+import AdminCommunication from "./pages/AdminCommunication";
 import { Toaster } from "@/components/ui/sonner";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
@@ -31,6 +32,10 @@ const router = createBrowserRouter([
     element: <Landing />,
   },
   {
+    path: "/auth",
+    element: <Auth />,
+  },
+  {
     path: "/dashboard",
     element: <Dashboard />,
   },
@@ -39,12 +44,12 @@ const router = createBrowserRouter([
     element: <Events />,
   },
   {
-    path: "/profile",
-    element: <Profile />,
-  },
-  {
     path: "/event/:slug",
     element: <EventInfo />,
+  },
+  {
+    path: "/profile",
+    element: <Profile />,
   },
   {
     path: "/admin-signIn",
@@ -63,12 +68,12 @@ const router = createBrowserRouter([
     element: <AdminTeam />,
   },
   {
-    path: "/auth",
-    element: <Auth />,
-  },
-  {
     path: "/admin-settings",
     element: <AdminSettings />,
+  },
+  {
+    path: "/admin-communication",
+    element: <AdminCommunication />,
   },
   {
     path: "*",
