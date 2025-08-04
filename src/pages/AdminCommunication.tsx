@@ -198,7 +198,10 @@ function AdminCommunicationContent() {
 
   const handleEmojiReaction = async (messageId: Id<"admin_communication_messages">, emoji: string) => {
     try {
-      await toggleEmojiReaction({ messageId, emoji });
+      const result = await toggleEmojiReaction({ messageId, emoji });
+      if (!result.success) {
+        toast.error(result.message);
+      }
     } catch (error) {
       toast.error("Failed to add reaction");
     }

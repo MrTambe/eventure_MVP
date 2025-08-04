@@ -121,6 +121,7 @@ const schema = defineSchema({
     emojiReactions: v.array(v.object({
       emoji: v.string(),
       userId: v.id("users"),
+      userName: v.string(),
       timestamp: v.number(),
     })),
     readBy: v.array(v.object({

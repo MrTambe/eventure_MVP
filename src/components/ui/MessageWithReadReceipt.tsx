@@ -1,10 +1,13 @@
-import React, { useEffect } from 'react';
-import { useInView } from 'react-intersection-observer';
+import React, { useEffect, useState } from 'react';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
+import { useInView } from 'react-intersection-observer';
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Play, Image } from "lucide-react";
+import { FileText, Download, Play, Image, Smile, Plus } from "lucide-react";
+import { toast } from "sonner";
+import EmojiPicker from 'emoji-picker-react';
+import { useAuth } from '@/hooks/use-auth';
 
 interface Message {
   _id: Id<"admin_communication_messages">;
@@ -21,6 +24,7 @@ interface Message {
   emojiReactions: Array<{
     emoji: string;
     userId: Id<"users">;
+    userName: string;
     timestamp: number;
   }>;
   readBy: Array<{
@@ -31,68 +35,48 @@ interface Message {
 
 interface MessageWithReadReceiptProps {
   message: Message;
-  currentUserId: Id<"users"> | undefined;
+  currentUserId?: Id<"users">;
   onEmojiReaction: (messageId: Id<"admin_communication_messages">, emoji: string) => void;
 }
 
-const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({ message, currentUserId, onEmojiReaction }) => {
-  const { ref, inView } = useInView({
-    triggerOnce: true,
-    threshold: 0.5,
-  });
-
+const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({
+  message,
+  currentUserId,
+  onEmojiReaction,
+}) => {
+  const { user } = useAuth();
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showReactionTooltip, setShowReactionTooltip] = useState<string | null>(null);
   const markAsRead = useMutation(api.communication.markAsRead);
 
+  const { ref, inView } = useInView({
+    threshold: 0.5,
+    triggerOnce: true,
+  });
+
   useEffect(() => {
-    if (inView && currentUserId && message.senderId !== currentUserId) {
-      const hasRead = message.readBy?.some(receipt => receipt.userId === currentUserId);
+    if (inView && user && message.senderId !== user._id) {
+      const hasRead = message.readBy?.some(read => read.userId === user._id);
       if (!hasRead) {
         markAsRead({ messageId: message._id });
       }
     }
-  }, [inView, currentUserId, message, markAsRead]);
+  }, [inView, user, message._id, message.senderId, message.readBy, markAsRead]);
 
   const formatTimestamp = (timestamp: number) => {
     const now = Date.now();
     const diff = now - timestamp;
-    
-    const minutes = Math.floor(diff / (1000 * 60));
     const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const days = Math.floor(hours / 24);
     
-    if (minutes < 1) return "Just now";
-    if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
-    if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
-    if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
-    
-    return new Date(timestamp).toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    if (days > 0) {
+      return `${days} day${days > 1 ? 's' : ''} ago`;
+    } else if (hours > 0) {
+      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    } else {
+      return 'Just now';
+    }
   };
-
-  const getEmojiCounts = (reactions: Array<{ emoji: string; userId: Id<"users">; timestamp: number }>) => {
-    const counts: Record<string, { count: number; userIds: Id<"users">[] }> = {};
-    
-    reactions.forEach(reaction => {
-      if (!counts[reaction.emoji]) {
-        counts[reaction.emoji] = { count: 0, userIds: [] };
-      }
-      counts[reaction.emoji].count++;
-      counts[reaction.emoji].userIds.push(reaction.userId);
-    });
-    
-    return counts;
-  };
-
-  const hasUserReacted = (reactions: Array<{ emoji: string; userId: Id<"users">; timestamp: number }>, emoji: string, userId: Id<"users"> | undefined) => {
-    if (!userId) return false;
-    return reactions.some(reaction => reaction.emoji === emoji && reaction.userId === userId);
-  };
-
-  const commonEmojis = ['👍', '❤️', '😂', '😮', '😢', '😡'];
-  const emojiCounts = getEmojiCounts(message.emojiReactions || []);
 
   const renderAttachments = () => {
     if (!message.attachments || message.attachments.length === 0) return null;
@@ -164,10 +148,38 @@ const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({ message
     );
   };
 
+  const getEmojiCounts = () => {
+    const emojiMap = new Map<string, { count: number; users: string[]; hasCurrentUser: boolean }>();
+    
+    message.emojiReactions?.forEach(reaction => {
+      const existing = emojiMap.get(reaction.emoji) || { count: 0, users: [], hasCurrentUser: false };
+      existing.count++;
+      existing.users.push(reaction.userName);
+      if (user && reaction.userId === user._id) {
+        existing.hasCurrentUser = true;
+      }
+      emojiMap.set(reaction.emoji, existing);
+    });
+    
+    return emojiMap;
+  };
+
+  const handleEmojiSelect = (emojiData: any) => {
+    onEmojiReaction(message._id, emojiData.emoji);
+    setShowEmojiPicker(false);
+  };
+
+  const handleQuickReaction = (emoji: string) => {
+    onEmojiReaction(message._id, emoji);
+  };
+
+  const emojiCounts = getEmojiCounts();
+  const hasReactions = emojiCounts.size > 0;
+
   return (
     <div
       ref={ref}
-      className="bg-white dark:bg-black border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] p-4"
+      className="bg-white dark:bg-black border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] p-4 relative"
     >
       {/* Message Header */}
       <div className="flex justify-between items-start mb-3">
@@ -184,8 +196,27 @@ const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({ message
             </div>
           </div>
         </div>
+        
+        {/* Add Reaction Button */}
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+          
+          {/* Emoji Picker */}
+          {showEmojiPicker && (
+            <div className="absolute top-10 right-0 z-50">
+              <EmojiPicker onEmojiClick={handleEmojiSelect} />
+            </div>
+          )}
+        </div>
       </div>
-      
+
       {/* Message Content */}
       {message.messageText && (
         <div className="mb-3">
@@ -198,61 +229,85 @@ const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({ message
       {/* Attachments */}
       {renderAttachments()}
 
-      {/* Emoji Reactions */}
-      <div className="mt-4 pt-3 border-t-2 border-gray-200 dark:border-gray-700">
-        {/* Existing Reactions */}
-        {Object.keys(emojiCounts).length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-3">
-            {Object.entries(emojiCounts).map(([emoji, data]) => (
-              <button
-                key={emoji}
-                onClick={() => onEmojiReaction(message._id, emoji)}
-                className={`flex items-center gap-1 px-2 py-1 border-2 font-bold text-sm transition-colors ${
-                  hasUserReacted(message.emojiReactions || [], emoji, currentUserId)
-                    ? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-700 dark:text-blue-300'
-                    : 'bg-gray-100 dark:bg-gray-800 border-gray-400 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'
+      {/* Emoji Reactions Bar */}
+      {hasReactions && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {Array.from(emojiCounts.entries()).map(([emoji, data]) => (
+            <div
+              key={emoji}
+              className="relative"
+              onMouseEnter={() => setShowReactionTooltip(emoji)}
+              onMouseLeave={() => setShowReactionTooltip(null)}
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleQuickReaction(emoji)}
+                className={`h-8 px-2 text-xs font-mono border-2 transition-all ${
+                  data.hasCurrentUser
+                    ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300'
+                    : 'border-black dark:border-white hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
               >
-                <span className="text-lg">{emoji}</span>
-                <span className="text-xs">{data.count}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Add Reaction Buttons */}
-        <div className="flex flex-wrap gap-1">
-          {commonEmojis.map((emoji) => (
-            <button
-              key={emoji}
-              onClick={() => onEmojiReaction(message._id, emoji)}
-              className="w-8 h-8 flex items-center justify-center border-2 border-gray-300 dark:border-gray-600 hover:border-black dark:hover:border-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-lg"
-              title={`React with ${emoji}`}
-            >
-              {emoji}
-            </button>
+                <span className="mr-1">{emoji}</span>
+                <span className="font-bold">{data.count}</span>
+              </Button>
+              
+              {/* Reaction Tooltip */}
+              {showReactionTooltip === emoji && (
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50">
+                  <div className="bg-black dark:bg-white text-white dark:text-black text-xs font-mono p-2 rounded border-2 border-black dark:border-white whitespace-nowrap">
+                    <div className="font-bold mb-1">{emoji} {data.count}</div>
+                    <div className="max-w-48">
+                      {data.users.slice(0, 5).join(', ')}
+                      {data.users.length > 5 && ` +${data.users.length - 5} more`}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
         </div>
+      )}
+
+      {/* Quick Reaction Buttons */}
+      <div className="mt-3 flex gap-1">
+        {['👍', '❤️', '😂', '😮', '😢', '😡'].map((emoji) => (
+          <Button
+            key={emoji}
+            variant="ghost"
+            size="sm"
+            onClick={() => handleQuickReaction(emoji)}
+            className="h-7 w-7 p-0 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 opacity-60 hover:opacity-100"
+          >
+            {emoji}
+          </Button>
+        ))}
       </div>
 
-      {/* Read Receipts */}
-      {currentUserId === message.senderId && message.readBy && message.readBy.length > 0 && (
-        <div className="mt-3 pt-2 border-t-2 border-dashed border-gray-300 dark:border-gray-700">
+      {/* Read Receipts - Only visible to sender */}
+      {user && message.senderId === user._id && message.readBy && message.readBy.length > 0 && (
+        <div className="mt-3 pt-2 border-t-2 border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">Read by:</span>
-            <div className="flex -space-x-2">
-              {message.readBy.slice(0, 5).map((receipt, index) => (
-                <div key={index} className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 border-2 border-white dark:border-black flex items-center justify-center text-xs font-bold">
-                  {/* Placeholder for avatar - using initial */}
-                  U
+            <span className="text-xs font-mono text-gray-500 dark:text-gray-400">
+              READ BY:
+            </span>
+            <div className="flex -space-x-1">
+              {message.readBy.slice(0, 5).map((read, index) => (
+                <div
+                  key={index}
+                  className="w-5 h-5 bg-green-500 text-white text-xs flex items-center justify-center rounded-full border-2 border-white dark:border-black font-bold"
+                  title={`Read by user ${read.userId}`}
+                >
+                  {index + 1}
                 </div>
               ))}
+              {message.readBy.length > 5 && (
+                <div className="w-5 h-5 bg-gray-500 text-white text-xs flex items-center justify-center rounded-full border-2 border-white dark:border-black font-bold">
+                  +{message.readBy.length - 5}
+                </div>
+              )}
             </div>
-            {message.readBy.length > 5 && (
-              <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                + {message.readBy.length - 5} more
-              </span>
-            )}
           </div>
         </div>
       )}
