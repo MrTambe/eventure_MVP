@@ -3,11 +3,11 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
+import { MenuBar } from "@/components/ui/glow-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MenuBar } from "@/components/ui/glow-menu";
-import { motion } from "framer-motion";
 import { Home, Calendar, Users, Settings } from "lucide-react";
 
 interface AdminUser {
@@ -53,7 +53,10 @@ function AdminSettingsContent() {
         setAdminUser(parsedAdmin);
       } catch (error) {
         console.error("Error parsing admin user:", error);
+        toast.error("Failed to load admin data. Please sign in again.");
       }
+    } else {
+      toast.error("No admin session found. Please sign in.");
     }
   }, []);
 
@@ -100,8 +103,24 @@ function AdminSettingsContent() {
     const { name, rollNo, branch, phone, email } = formData;
     
     // Check if all fields are filled
-    if (!name.trim() || !rollNo.trim() || !branch.trim() || !phone.trim() || !email.trim()) {
-      toast.error("All fields are required");
+    if (!name.trim()) {
+      toast.error("Name is required");
+      return false;
+    }
+    if (!rollNo.trim()) {
+      toast.error("Roll Number is required");
+      return false;
+    }
+    if (!branch.trim()) {
+      toast.error("Branch is required");
+      return false;
+    }
+    if (!phone.trim()) {
+      toast.error("Phone Number is required");
+      return false;
+    }
+    if (!email.trim()) {
+      toast.error("Email Address is required");
       return false;
     }
 
@@ -123,6 +142,8 @@ function AdminSettingsContent() {
   };
 
   const handleSave = async () => {
+    console.log("Save button clicked!"); // Debug log
+    
     if (!adminUser) {
       toast.error("Admin user not found. Please sign in again.");
       return;
@@ -135,6 +156,11 @@ function AdminSettingsContent() {
     setIsLoading(true);
     
     try {
+      console.log("Calling updateProfile with:", {
+        adminId: adminUser._id,
+        ...formData
+      }); // Debug log
+
       const result = await updateProfile({
         adminId: adminUser._id,
         name: formData.name.trim(),
@@ -144,12 +170,14 @@ function AdminSettingsContent() {
         email: formData.email.trim(),
       });
 
+      console.log("Update result:", result); // Debug log
+
       if (result.success) {
-        toast.success(result.message);
+        toast.success("Profile updated successfully!");
         // Update original data to reflect saved changes
         setOriginalData({ ...formData });
       } else {
-        toast.error(result.message);
+        toast.error(result.message || "Failed to update profile");
       }
     } catch (error) {
       console.error("Save error:", error);
@@ -281,7 +309,7 @@ function AdminSettingsContent() {
               <div className="pt-4">
                 <Button
                   onClick={handleSave}
-                  disabled={isLoading || !hasChanges()}
+                  disabled={isLoading}
                   className="w-full h-14 bg-black text-white font-bold text-lg border-4 border-black hover:bg-gray-800 disabled:bg-gray-400 disabled:border-gray-400 disabled:cursor-not-allowed rounded-none shadow-[4px_4px_0px_#666]"
                 >
                   {isLoading ? "SAVING..." : "SAVE CHANGES »"}
