@@ -41,118 +41,135 @@ function AdminSettingsContent() {
     adminUser ? { adminId: adminUser._id } : "skip"
   );
 
-  // Update profile mutation
+  // Update admin profile mutation
   const updateProfile = useMutation(api.admin.updateAdminProfile);
 
-  // Load admin user from session storage
+  // Load admin user from session storage on component mount
   useEffect(() => {
     const storedAdmin = sessionStorage.getItem("adminUser");
     if (storedAdmin) {
-      setAdminUser(JSON.parse(storedAdmin));
+      try {
+        const parsedAdmin = JSON.parse(storedAdmin);
+        setAdminUser(parsedAdmin);
+      } catch (error) {
+        console.error("Error parsing admin user:", error);
+      }
     }
   }, []);
 
-  // Pre-fill form with existing data
+  // Update form data when admin profile is loaded
   useEffect(() => {
     if (adminProfile) {
-      const data = {
+      const profileData = {
         name: adminProfile.name || "",
         rollNo: adminProfile.rollNo || "",
         branch: adminProfile.branch || "",
         phone: adminProfile.phone || "",
         email: adminProfile.email || "",
       };
-      setFormData(data);
-      setOriginalData(data);
-    } else if (adminUser) {
-      // If no profile exists, pre-fill with admin email
-      const data = {
+      setFormData(profileData);
+      setOriginalData(profileData);
+    } else if (adminUser && adminProfile === null) {
+      // If no profile exists, pre-fill with admin user data
+      const defaultData = {
         name: adminUser.name || "",
         rollNo: "",
         branch: "",
         phone: "",
         email: adminUser.email || "",
       };
-      setFormData(data);
-      setOriginalData(data);
+      setFormData(defaultData);
+      setOriginalData(defaultData);
     }
   }, [adminProfile, adminUser]);
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const validateForm = () => {
-    if (!formData.name.trim()) {
-      toast.error("Name is required");
-      return false;
-    }
-    if (!formData.rollNo.trim()) {
-      toast.error("Roll No. is required");
-      return false;
-    }
-    if (!formData.branch.trim()) {
-      toast.error("Branch is required");
-      return false;
-    }
-    if (!formData.phone.trim()) {
-      toast.error("Mobile Number is required");
-      return false;
-    }
-    if (!formData.email.trim()) {
-      toast.error("Email Address is required");
-      return false;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      toast.error("Invalid email format");
-      return false;
-    }
-    if (!/^\d{10}$/.test(formData.phone)) {
-      toast.error("Mobile number must be 10 digits");
-      return false;
-    }
-    return true;
+  const hasChanges = () => {
+    return Object.keys(formData).some(
+      key => formData[key as keyof typeof formData] !== originalData[key as keyof typeof originalData]
+    );
   };
 
-  const hasChanges = () => {
-    return JSON.stringify(formData) !== JSON.stringify(originalData);
+  const validateForm = () => {
+    const { name, rollNo, branch, phone, email } = formData;
+    
+    // Check if all fields are filled
+    if (!name.trim() || !rollNo.trim() || !branch.trim() || !phone.trim() || !email.trim()) {
+      toast.error("All fields are required");
+      return false;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email address");
+      return false;
+    }
+
+    // Validate phone number (10 digits)
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(phone)) {
+      toast.error("Phone number must be exactly 10 digits");
+      return false;
+    }
+
+    return true;
   };
 
   const handleSave = async () => {
     if (!adminUser) {
-      toast.error("Admin user not found");
+      toast.error("Admin user not found. Please sign in again.");
       return;
     }
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
 
     setIsLoading(true);
+    
     try {
       const result = await updateProfile({
         adminId: adminUser._id,
-        name: formData.name,
-        rollNo: formData.rollNo,
-        branch: formData.branch,
-        phone: formData.phone,
-        email: formData.email,
+        name: formData.name.trim(),
+        rollNo: formData.rollNo.trim(),
+        branch: formData.branch.trim(),
+        phone: formData.phone.trim(),
+        email: formData.email.trim(),
       });
 
       if (result.success) {
         toast.success(result.message);
+        // Update original data to reflect saved changes
         setOriginalData({ ...formData });
       } else {
         toast.error(result.message);
       }
     } catch (error) {
-      toast.error("Failed to save changes. Please try again.");
       console.error("Save error:", error);
+      toast.error("Failed to save changes. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Show loading state while admin user is being loaded
+  if (!adminUser) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="font-mono text-black">Loading admin data...</p>
+        </div>
+      </div>
+    );
+  }
 
   const menuItems = [
     { name: 'Dashboard', label: 'Dashboard', href: '/admin-dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500', iconColor: 'text-blue-500' },
