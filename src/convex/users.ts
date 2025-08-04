@@ -110,36 +110,3 @@ export const listAll = query({
     return users;
   },
 });
-
-export const getAllUsers = query({
-  args: {},
-  returns: v.array(v.object({
-    _id: v.id("users"),
-    _creationTime: v.number(),
-    name: v.optional(v.string()),
-    image: v.optional(v.string()),
-    email: v.optional(v.string()),
-    role: v.optional(v.union(
-      v.literal("admin"),
-      v.literal("user"),
-      v.literal("member"),
-    )),
-    rollNo: v.optional(v.string()),
-    branch: v.optional(v.string()),
-    mobileNumber: v.optional(v.string()),
-  })),
-  handler: async (ctx) => {
-    const users = await ctx.db.query("users").collect();
-    return users.map(user => ({
-      _id: user._id,
-      _creationTime: user._creationTime,
-      name: user.name,
-      image: user.image,
-      email: user.email,
-      role: user.role,
-      rollNo: user.rollNo,
-      branch: user.branch,
-      mobileNumber: user.mobileNumber,
-    }));
-  },
-});

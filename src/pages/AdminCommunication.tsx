@@ -13,7 +13,6 @@ import MessageWithReadReceipt from "@/components/ui/MessageWithReadReceipt";
 import { Id } from "@/convex/_generated/dataModel";
 import { useNavigate } from "react-router";
 import EmojiPicker from 'emoji-picker-react';
-import AvatarDock from "@/components/ui/avatar-dock";
 
 interface AdminUser {
   _id: Id<"admins">;
@@ -237,8 +236,8 @@ function AdminCommunicationContent() {
           <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={handleMenuItemClick} />
         </div>
 
-        {/* Main Content Container with right padding for avatar dock */}
-        <div className="container mx-auto px-4 py-8 pt-24 pr-20">
+        {/* Main Content Container */}
+        <div className="container mx-auto px-4 py-8 pt-24">
           {/* Messages Display */}
           <div className="space-y-6 mb-8">
             {messages === undefined ? (
@@ -367,12 +366,6 @@ function AdminCommunicationContent() {
             </div>
           )}
         </div>
-
-        {/* Avatar Dock */}
-        <AvatarDock onStartDM={(userId) => {
-          // TODO: Implement DM functionality
-          console.log('Start DM with user:', userId);
-        }} />
       </div>
     </div>
   );
