@@ -197,8 +197,8 @@ function AdminDashboardContent() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-mono relative">
-      <div className="absolute inset-0 z-0">
-        <BackgroundPaths />
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <BackgroundPaths title="" />
       </div>
       <div className="relative z-10">
         {/* Header Section */}
