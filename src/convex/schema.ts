@@ -131,6 +131,24 @@ const schema = defineSchema({
     ),
     readBy: v.optional(v.array(v.id("users"))),
   }).index("by_timestamp", ["timestamp"]),
+
+  private_messages: defineTable({
+    senderId: v.id("users"),
+    receiverId: v.id("users"),
+    message: v.string(),
+    timestamp: v.number(),
+    attachments: v.optional(v.array(v.object({
+      name: v.string(),
+      url: v.string(),
+      type: v.union(v.literal("image"), v.literal("video"), v.literal("pdf"), v.literal("docx"), v.literal("other")),
+      size: v.optional(v.number()),
+    }))),
+    reactions: v.optional(v.record(v.string(), v.array(v.id("users")))),
+    readBy: v.optional(v.array(v.id("users"))),
+  })
+    .index("by_participants", ["senderId", "receiverId"])
+    .index("by_receiver", ["receiverId"])
+    .index("by_sender", ["senderId"]),
 },
 {
   schemaValidation: false

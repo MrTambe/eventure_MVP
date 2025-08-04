@@ -22,6 +22,7 @@ import type * as events from "../events.js";
 import type * as generators_createAdminUser from "../generators/createAdminUser.js";
 import type * as generators_createSampleData from "../generators/createSampleData.js";
 import type * as http from "../http.js";
+import type * as privateMessages from "../privateMessages.js";
 import type * as team from "../team.js";
 import type * as users from "../users.js";
 
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   "generators/createAdminUser": typeof generators_createAdminUser;
   "generators/createSampleData": typeof generators_createSampleData;
   http: typeof http;
+  privateMessages: typeof privateMessages;
   team: typeof team;
   users: typeof users;
 }>;
