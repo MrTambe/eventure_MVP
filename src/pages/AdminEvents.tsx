@@ -456,6 +456,7 @@ function AdminEventsContent() {
         {/* Create Event Modal */}
         <CreateEventModal
           isOpen={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
           onOpenChange={setCreateModalOpen}
           allUsers={allUsers || []}
         />
