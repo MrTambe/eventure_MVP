@@ -110,7 +110,7 @@ const schema = defineSchema({
 
   admin_communication_messages: defineTable({
     messageText: v.string(),
-    senderId: v.id("users"),
+    senderId: v.union(v.id("users"), v.id("admins")),
     senderName: v.string(),
     timestamp: v.number(),
     attachmentUrl: v.optional(v.string()),
@@ -119,6 +119,10 @@ const schema = defineSchema({
       emoji: v.string(),
       userId: v.id("users"),
       timestamp: v.number(),
+    })),
+    readBy: v.array(v.object({
+      userId: v.id("users"),
+      readAt: v.number(),
     })),
   }).index("by_timestamp", ["timestamp"]),
 },

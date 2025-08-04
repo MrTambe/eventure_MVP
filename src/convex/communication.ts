@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUser } from "./users";
+import { Id } from "./_generated/dataModel";
 
 export const postMessage = mutation({
   args: {
@@ -19,32 +20,26 @@ export const postMessage = mutation({
         return { success: false, message: "User not authenticated" };
       }
 
-      // Check if user is admin - you can enhance this check based on your admin logic
-      const isAdmin = user.role === "admin" || user.email?.includes("admin"); // Adjust this logic as needed
-      
-      if (!isAdmin) {
-        return { success: false, message: "Only admins can post in this channel." };
+      // Check if user is admin (assuming role field exists)
+      if (user.role !== "admin") {
+        return { success: false, message: "Only admins can post messages" };
       }
 
-      if (!args.messageText.trim()) {
-        return { success: false, message: "Message text cannot be empty" };
-      }
-
-      // Create the message document
       await ctx.db.insert("admin_communication_messages", {
         messageText: args.messageText.trim(),
         senderId: user._id,
-        senderName: user.name || user.email || "Admin",
+        senderName: user.name || "Admin",
         timestamp: Date.now(),
         attachmentUrl: args.attachmentUrl,
         attachmentType: args.attachmentType,
         emojiReactions: [],
+        readBy: [], // Add the required readBy field
       });
 
-      return { success: true, message: "Message posted successfully!" };
+      return { success: true, message: "Message posted successfully" };
     } catch (error) {
       console.error("Post message error:", error);
-      return { success: false, message: "Failed to post message. Please try again." };
+      return { success: false, message: "Failed to post message" };
     }
   },
 });
@@ -55,7 +50,7 @@ export const getMessages = query({
     _id: v.id("admin_communication_messages"),
     _creationTime: v.number(),
     messageText: v.string(),
-    senderId: v.id("users"),
+    senderId: v.union(v.id("users"), v.id("admins")),
     senderName: v.string(),
     timestamp: v.number(),
     attachmentUrl: v.optional(v.string()),
@@ -64,6 +59,10 @@ export const getMessages = query({
       emoji: v.string(),
       userId: v.id("users"),
       timestamp: v.number(),
+    })),
+    readBy: v.array(v.object({
+      userId: v.id("users"),
+      readAt: v.number(),
     })),
   })),
   handler: async (ctx) => {
@@ -184,6 +183,57 @@ export const toggleEmojiReaction = mutation({
     } catch (error) {
       console.error("Toggle emoji reaction error:", error);
       return { success: false, message: "Failed to update reaction. Please try again." };
+    }
+  },
+});
+
+export const markAsRead = mutation({
+  args: {
+    messageId: v.id("admin_communication_messages"),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    message: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    try {
+      const user = await getCurrentUser(ctx);
+      if (!user) {
+        return { success: false, message: "User not authenticated" };
+      }
+
+      // Get the message
+      const message = await ctx.db.get(args.messageId);
+      if (!message) {
+        return { success: false, message: "Message not found" };
+      }
+
+      // Don't mark as read if user is the sender
+      if (message.senderId === user._id) {
+        return { success: true, message: "Sender doesn't need to mark as read" };
+      }
+
+      // Check if user has already read this message
+      const hasRead = (message.readBy || []).some((receipt: { userId: Id<"users">; readAt: number }) => receipt.userId === user._id);
+      if (hasRead) {
+        return { success: true, message: "Already marked as read" };
+      }
+
+      // Add read receipt
+      const currentReadBy = message.readBy || [];
+      const newReadReceipt = {
+        userId: user._id,
+        readAt: Date.now(),
+      };
+
+      await ctx.db.patch(args.messageId, {
+        readBy: [...currentReadBy, newReadReceipt],
+      });
+
+      return { success: true, message: "Marked as read" };
+    } catch (error) {
+      console.error("Mark as read error:", error);
+      return { success: false, message: "Failed to mark as read" };
     }
   },
 });
