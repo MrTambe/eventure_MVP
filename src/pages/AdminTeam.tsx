@@ -295,12 +295,8 @@ function AdminTeamContent() {
               teamMembers.map((member) => (
                 <MemberCard
                   key={member._id}
-                  name={member.name}
-                  branch={member.branch}
-                  phone={member.phone}
-                  eventNames={member.eventNames}
+                  member={member}
                   onEdit={() => handleEditMember(member)}
-                  onDelete={() => handleDeleteMember(member._id)}
                 />
               ))
             )}

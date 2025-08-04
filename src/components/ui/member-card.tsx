@@ -15,7 +15,7 @@ interface MemberCardProps {
     branch: string;
     phone: string;
     email: string;
-    role: string;
+    role?: string;
     volunteerEvents?: string[];
   };
   onEdit: (member: MemberCardProps['member']) => void;
@@ -24,9 +24,14 @@ interface MemberCardProps {
 const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
   const deleteTeamMember = useMutation(api.team.deleteTeamMember);
 
+  // Add null/undefined check for member
+  if (!member) {
+    return null;
+  }
+
   const handleDelete = async () => {
     try {
-      await deleteTeamMember({ id: member._id });
+      await deleteTeamMember({ memberId: member._id });
       toast.success("Team member deleted successfully!");
     } catch (error) {
       toast.error("Failed to delete team member.");
@@ -48,21 +53,21 @@ const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
               <User className="h-6 w-6 text-gray-800 dark:text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-black dark:text-white">{member.name}</h3>
-              <p className="text-gray-600 dark:text-gray-400">{member.role}</p>
+              <h3 className="text-xl font-bold text-black dark:text-white">{member.name || 'Unknown'}</h3>
+              <p className="text-gray-600 dark:text-gray-400">{member.role || 'No role assigned'}</p>
             </div>
           </div>
-          <Badge variant="secondary" className="font-mono text-sm">{member.branch}</Badge>
+          <Badge variant="secondary" className="font-mono text-sm">{member.branch || 'N/A'}</Badge>
         </div>
 
         <div className="space-y-3 text-sm mb-6">
           <div className="flex items-center text-gray-700 dark:text-gray-300">
             <Mail className="h-4 w-4 mr-3 text-gray-500" />
-            <span>{member.email}</span>
+            <span>{member.email || 'No email provided'}</span>
           </div>
           <div className="flex items-center text-gray-700 dark:text-gray-300">
             <Phone className="h-4 w-4 mr-3 text-gray-500" />
-            <span>{member.phone}</span>
+            <span>{member.phone || 'No phone provided'}</span>
           </div>
         </div>
 
