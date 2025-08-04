@@ -24,8 +24,9 @@ import {
   Square,
   Settings,
   Bell,
-  LayoutDashboard,
-  Home
+  Home,
+  Calendar,
+  Users2
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation, useQuery } from 'convex/react';
@@ -34,8 +35,10 @@ import { Id } from '@/convex/_generated/dataModel';
 import { MenuBar } from '@/components/ui/glow-menu';
 import { ThemeProvider, useTheme } from 'next-themes';
 import { BackgroundPaths } from "@/components/ui/background-paths";
+import { useNavigate } from "react-router";
 
 function AdminDashboardContent() {
+  const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const allUsers = useQuery(api.users.listAll);
   const availableVolunteers = allUsers || [];
@@ -131,6 +134,28 @@ function AdminDashboardContent() {
     }
   };
 
+  const handleMenuItemClick = (itemName: string) => {
+    setActiveMenuItem(itemName);
+    
+    // Navigate to the corresponding route
+    switch (itemName) {
+      case 'Dashboard':
+        navigate('/admin-dashboard');
+        break;
+      case 'Events':
+        navigate('/admin-events');
+        break;
+      case 'Team':
+        navigate('/admin-team');
+        break;
+      case 'Settings':
+        navigate('/admin-settings');
+        break;
+      default:
+        break;
+    }
+  };
+
   const getCurrentDate = () => {
     return new Date().toLocaleDateString('en-US', {
       weekday: 'long',
@@ -163,11 +188,10 @@ function AdminDashboardContent() {
   })) || [];
 
   const menuItems = [
-    { name: "Dashboard", icon: LayoutDashboard, label: "Dashboard", href: "#", gradient: "from-blue-500 to-purple-600", iconColor: "text-blue-400" },
-    { name: "Events", icon: CalendarIcon, label: "Events", href: "/admin-events", gradient: "from-green-500 to-cyan-600", iconColor: "text-green-400" },
-    { name: "Users", icon: Users, label: "Users", href: "#", gradient: "from-red-500 to-orange-600", iconColor: "text-red-400" },
-    { name: "Settings", icon: Settings, label: "Settings", href: "#", gradient: "from-yellow-500 to-amber-600", iconColor: "text-yellow-400" },
-    { name: "Notifications", icon: Bell, label: "Notifications", href: "#", gradient: "from-pink-500 to-rose-600", iconColor: "text-pink-400" },
+    { name: 'Dashboard', label: 'Dashboard', href: '/admin-dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500', iconColor: 'text-blue-500' },
+    { name: 'Events', label: 'Events', href: '/admin-events', icon: Calendar, gradient: 'from-green-500 to-emerald-500', iconColor: 'text-green-500' },
+    { name: 'Team', label: 'Team', href: '/admin-team', icon: Users, gradient: 'from-purple-500 to-violet-500', iconColor: 'text-purple-500' },
+    { name: 'Settings', label: 'Settings', href: '/admin-settings', icon: Settings, gradient: 'from-red-500 to-orange-500', iconColor: 'text-red-500' }
   ];
 
   return (
@@ -197,7 +221,7 @@ function AdminDashboardContent() {
 
         {/* Floating Navbar */}
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
-          <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={setActiveMenuItem} />
+          <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={handleMenuItemClick} />
         </div>
 
         <div className="container mx-auto px-4 py-8 pt-20">

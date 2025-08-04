@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Home, Calendar, Users, Settings } from "lucide-react";
+import { useNavigate } from "react-router";
 
 interface AdminUser {
   _id: Id<"admins">;
@@ -17,6 +18,8 @@ interface AdminUser {
 }
 
 function AdminSettingsContent() {
+  const navigate = useNavigate();
+  
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -34,6 +37,28 @@ function AdminSettingsContent() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [activeMenuItem, setActiveMenuItem] = useState("Settings");
+
+  const handleMenuItemClick = (itemName: string) => {
+    setActiveMenuItem(itemName);
+    
+    // Navigate to the corresponding route
+    switch (itemName) {
+      case 'Dashboard':
+        navigate('/admin-dashboard');
+        break;
+      case 'Events':
+        navigate('/admin-events');
+        break;
+      case 'Team':
+        navigate('/admin-team');
+        break;
+      case 'Settings':
+        navigate('/admin-settings');
+        break;
+      default:
+        break;
+    }
+  };
 
   // Get admin profile data
   const adminProfile = useQuery(
@@ -219,7 +244,7 @@ function AdminSettingsContent() {
         <MenuBar 
           items={menuItems} 
           activeItem={activeMenuItem}
-          onItemClick={setActiveMenuItem}
+          onItemClick={handleMenuItemClick}
         />
       </div>
 

@@ -1,18 +1,18 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
-import { Plus, Users } from "lucide-react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MenuBar } from "@/components/ui/glow-menu";
-import { Home, Calendar, Settings } from "lucide-react";
+import { Home, Calendar, Users, Settings, Plus } from "lucide-react";
 import MemberCard from "@/components/ui/member-card";
 import { Id } from "@/convex/_generated/dataModel";
+import { useNavigate } from "react-router";
 
 interface AdminUser {
   _id: Id<"admins">;
@@ -21,6 +21,7 @@ interface AdminUser {
 }
 
 function AdminTeamContent() {
+  const navigate = useNavigate();
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [activeMenuItem, setActiveMenuItem] = useState("Team");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -45,8 +46,8 @@ function AdminTeamContent() {
   const updateTeamMember = useMutation(api.team.updateTeamMember);
   const deleteTeamMember = useMutation(api.team.deleteTeamMember);
 
-  // Check admin session
-  React.useEffect(() => {
+  // Load admin user from session storage
+  useEffect(() => {
     const adminData = sessionStorage.getItem("adminUser");
     if (adminData) {
       setAdminUser(JSON.parse(adminData));
@@ -148,6 +149,28 @@ function AdminTeamContent() {
     );
   }
 
+  const handleMenuItemClick = (itemName: string) => {
+    setActiveMenuItem(itemName);
+    
+    // Navigate to the corresponding route
+    switch (itemName) {
+      case 'Dashboard':
+        navigate('/admin-dashboard');
+        break;
+      case 'Events':
+        navigate('/admin-events');
+        break;
+      case 'Team':
+        navigate('/admin-team');
+        break;
+      case 'Settings':
+        navigate('/admin-settings');
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white text-black">
       {/* Menu Bar */}
@@ -155,7 +178,7 @@ function AdminTeamContent() {
         <MenuBar 
           items={menuItems} 
           activeItem={activeMenuItem}
-          onItemClick={setActiveMenuItem}
+          onItemClick={handleMenuItemClick}
         />
       </div>
 
