@@ -164,19 +164,23 @@ export const getAdminProfile = query({
     v.null(),
     v.object({
       _id: v.id("teamMembers"),
+      _creationTime: v.number(),
+      adminId: v.optional(v.id("admins")),
       name: v.string(),
       rollNo: v.string(),
       branch: v.string(),
       phone: v.string(),
       email: v.string(),
-      _creationTime: v.number(),
+      role: v.optional(v.string()),
+      isActive: v.optional(v.boolean()),
     })
   ),
   handler: async (ctx, args) => {
+    // Find team member profile for this admin
     const profile = await ctx.db
       .query("teamMembers")
       .withIndex("by_admin_id", (q) => q.eq("adminId", args.adminId))
-      .unique();
+      .first();
     
     return profile;
   },
