@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MenuBar } from "@/components/ui/glow-menu";
+import { BackgroundPaths } from "@/components/ui/background-paths";
+import { ThemeProvider, useTheme } from 'next-themes';
 import { Home, Calendar, Users, Settings, Plus } from "lucide-react";
 import MemberCard from "@/components/ui/member-card";
 import { Id } from "@/convex/_generated/dataModel";
@@ -22,6 +24,7 @@ interface AdminUser {
 
 function AdminTeamContent() {
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [activeMenuItem, setActiveMenuItem] = useState("Team");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -158,75 +161,238 @@ function AdminTeamContent() {
     }
   };
 
+  const getCurrentDate = () => {
+    return new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).toUpperCase();
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
-        <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={handleMenuItemClick} />
+    <div className="min-h-screen bg-background text-foreground font-mono relative">
+      {/* Background Animation */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <BackgroundPaths title="" />
       </div>
-      <div className="container mx-auto px-4 py-8 pt-24">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Team Members</h1>
-          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => resetForm()}>
-                <Plus className="mr-2 h-4 w-4" /> Add Member
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
+      
+      <div className="relative z-10">
+        {/* Header Section */}
+        <header className="border-b-2 border-black dark:border-white/20 p-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">TEAM MANAGEMENT</h1>
+            <div className="flex items-center gap-4 md:gap-6">
+              <div className="text-right hidden md:block">
+                <div className="text-sm font-bold">{getCurrentDate()}</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">ADMIN PANEL</div>
+              </div>
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-lg">
+                {adminUser?.name?.charAt(0) || 'A'}
+              </div>
+              <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 border-2 border-black dark:border-white">
+                {theme === 'dark' ? 'Light' : 'Dark'}
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Floating Navbar */}
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
+          <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={handleMenuItemClick} />
+        </div>
+
+        <div className="container mx-auto px-4 py-8 pt-24">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-3xl font-bold tracking-tight">TEAM MEMBERS</h2>
+            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  onClick={() => resetForm()}
+                  className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-lg px-6 py-3 border-2 border-black dark:border-white"
+                >
+                  <Plus className="mr-2 h-5 w-5" /> ADD MEMBER
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md bg-white dark:bg-black border-2 border-black dark:border-white font-mono">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold tracking-tight">ADD NEW TEAM MEMBER</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="name" className="text-sm font-bold mb-2 block">NAME</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Enter full name"
+                      className="border-2 border-black dark:border-white font-mono"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="rollNo" className="text-sm font-bold mb-2 block">ROLL NO</Label>
+                    <Input
+                      id="rollNo"
+                      value={formData.rollNo}
+                      onChange={(e) => setFormData({ ...formData, rollNo: e.target.value })}
+                      placeholder="Enter roll number"
+                      className="border-2 border-black dark:border-white font-mono"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="branch" className="text-sm font-bold mb-2 block">BRANCH</Label>
+                    <Input
+                      id="branch"
+                      value={formData.branch}
+                      onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
+                      placeholder="Enter branch"
+                      className="border-2 border-black dark:border-white font-mono"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone" className="text-sm font-bold mb-2 block">PHONE</Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="Enter 10-digit phone number"
+                      className="border-2 border-black dark:border-white font-mono"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email" className="text-sm font-bold mb-2 block">EMAIL</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="Enter email address"
+                      className="border-2 border-black dark:border-white font-mono"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="role" className="text-sm font-bold mb-2 block">ROLE</Label>
+                    <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+                      <SelectTrigger className="border-2 border-black dark:border-white font-mono">
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Volunteer">Volunteer</SelectItem>
+                        <SelectItem value="Coordinator">Coordinator</SelectItem>
+                        <SelectItem value="Admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsAddModalOpen(false)}
+                      className="border-2 border-black dark:border-white font-mono"
+                    >
+                      CANCEL
+                    </Button>
+                    <Button 
+                      onClick={handleAddMember}
+                      className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono border-2 border-black dark:border-white"
+                    >
+                      ADD MEMBER
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {teamMembers === undefined ? (
+              <div className="col-span-full text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black dark:border-white mx-auto"></div>
+                <p className="text-lg font-bold mt-4">LOADING TEAM MEMBERS...</p>
+              </div>
+            ) : teamMembers.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <h2 className="text-2xl font-bold text-gray-600 mb-2">NO TEAM MEMBERS</h2>
+                <p className="text-gray-500">Add team members to get started.</p>
+              </div>
+            ) : (
+              teamMembers.map((member) => (
+                <div
+                  key={member._id}
+                  onMouseEnter={() => setHoveredCard(member._id)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                >
+                  <MemberCard
+                    member={member}
+                    onEdit={() => handleEditMember(member)}
+                    isHovered={hoveredCard === member._id}
+                  />
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Edit Modal */}
+          <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+            <DialogContent className="max-w-md bg-white dark:bg-black border-2 border-black dark:border-white font-mono">
               <DialogHeader>
-                <DialogTitle>Add New Team Member</DialogTitle>
+                <DialogTitle className="text-2xl font-bold tracking-tight">EDIT TEAM MEMBER</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Name</Label>
+                  <Label htmlFor="edit-name" className="text-sm font-bold mb-2 block">NAME</Label>
                   <Input
-                    id="name"
+                    id="edit-name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Enter full name"
+                    className="border-2 border-black dark:border-white font-mono"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="rollNo">Roll No</Label>
+                  <Label htmlFor="edit-rollNo" className="text-sm font-bold mb-2 block">ROLL NO</Label>
                   <Input
-                    id="rollNo"
+                    id="edit-rollNo"
                     value={formData.rollNo}
                     onChange={(e) => setFormData({ ...formData, rollNo: e.target.value })}
                     placeholder="Enter roll number"
+                    className="border-2 border-black dark:border-white font-mono"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="branch">Branch</Label>
+                  <Label htmlFor="edit-branch" className="text-sm font-bold mb-2 block">BRANCH</Label>
                   <Input
-                    id="branch"
+                    id="edit-branch"
                     value={formData.branch}
                     onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
                     placeholder="Enter branch"
+                    className="border-2 border-black dark:border-white font-mono"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="edit-phone" className="text-sm font-bold mb-2 block">PHONE</Label>
                   <Input
-                    id="phone"
+                    id="edit-phone"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="Enter 10-digit phone number"
+                    className="border-2 border-black dark:border-white font-mono"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="edit-email" className="text-sm font-bold mb-2 block">EMAIL</Label>
                   <Input
-                    id="email"
+                    id="edit-email"
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="Enter email address"
+                    className="border-2 border-black dark:border-white font-mono"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="role">Role</Label>
+                  <Label htmlFor="edit-role" className="text-sm font-bold mb-2 block">ROLE</Label>
                   <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-2 border-black dark:border-white font-mono">
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
@@ -237,125 +403,33 @@ function AdminTeamContent() {
                   </Select>
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
-                    Cancel
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="border-2 border-black dark:border-white font-mono"
+                  >
+                    CANCEL
                   </Button>
-                  <Button onClick={handleAddMember}>
-                    Add Member
+                  <Button 
+                    onClick={handleUpdateMember}
+                    className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono border-2 border-black dark:border-white"
+                  >
+                    UPDATE MEMBER
                   </Button>
                 </div>
               </div>
             </DialogContent>
           </Dialog>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {teamMembers === undefined ? (
-            <p>Loading...</p>
-          ) : teamMembers.length === 0 ? (
-            <div className="col-span-full text-center py-12">
-              <h2 className="text-2xl font-bold text-gray-600 mb-2">No Team Members</h2>
-              <p className="text-gray-500">Add team members to get started.</p>
-            </div>
-          ) : (
-            teamMembers.map((member) => (
-              <div
-                key={member._id}
-                onMouseEnter={() => setHoveredCard(member._id)}
-                onMouseLeave={() => setHoveredCard(null)}
-              >
-                <MemberCard
-                  member={member}
-                  onEdit={() => handleEditMember(member)}
-                  isHovered={hoveredCard === member._id}
-                />
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Edit Modal */}
-        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Edit Team Member</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="edit-name">Name</Label>
-                <Input
-                  id="edit-name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter full name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-rollNo">Roll No</Label>
-                <Input
-                  id="edit-rollNo"
-                  value={formData.rollNo}
-                  onChange={(e) => setFormData({ ...formData, rollNo: e.target.value })}
-                  placeholder="Enter roll number"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-branch">Branch</Label>
-                <Input
-                  id="edit-branch"
-                  value={formData.branch}
-                  onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-                  placeholder="Enter branch"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-phone">Phone</Label>
-                <Input
-                  id="edit-phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="Enter 10-digit phone number"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-email">Email</Label>
-                <Input
-                  id="edit-email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="Enter email address"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-role">Role</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Volunteer">Volunteer</SelectItem>
-                    <SelectItem value="Coordinator">Coordinator</SelectItem>
-                    <SelectItem value="Admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleUpdateMember}>
-                  Update Member
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );
 }
 
 export default function AdminTeam() {
-  return <AdminTeamContent />;
+  return (
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <AdminTeamContent />
+    </ThemeProvider>
+  );
 }
