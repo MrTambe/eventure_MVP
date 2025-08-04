@@ -145,6 +145,11 @@ function AdminEventsContent() {
         return;
       }
 
+      if (!selectedEvent) {
+        toast.error("No event selected for editing.");
+        return;
+      }
+
       const result = await updateEventAsAdmin({
         eventId: selectedEvent._id,
         adminEmail: adminUser.email,
@@ -160,8 +165,6 @@ function AdminEventsContent() {
       if (result.success) {
         toast.success(result.message);
         setEditModalOpen(false);
-        setSelectedEvent(null);
-        setSelectedVolunteers([]);
       } else {
         toast.error(result.message);
       }
