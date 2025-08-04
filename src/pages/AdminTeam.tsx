@@ -5,8 +5,6 @@ import { cn } from "@/lib/utils";
 import { IconUser, IconCalendarEvent } from "@tabler/icons-react";
 import { MenuBar } from '@/components/ui/glow-menu';
 import { LayoutDashboard, Calendar as CalendarIcon, Users, Settings, Bell, Home, Calendar } from "lucide-react";
-import { BackgroundPaths } from "@/components/ui/background-paths";
-import { toast } from "sonner";
 import { Id } from '@/convex/_generated/dataModel';
 
 interface AdminProfileCardProps {
@@ -67,27 +65,22 @@ const AdminTeamPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-mono relative">
-       <div className="fixed inset-0 z-0 pointer-events-none">
-        <BackgroundPaths title="" />
+    <div className="min-h-screen bg-background text-foreground font-mono">
+      <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
+        <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={setActiveMenuItem} />
       </div>
-      <div className="relative z-10">
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
-          <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={setActiveMenuItem} />
-        </div>
-        <div className="pt-24">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-center mb-10">Admin Team</h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 relative z-10 py-10 max-w-7xl mx-auto gap-4">
-            {adminsWithEvents?.map((admin, index) => (
-              <AdminProfileCard 
-                key={admin._id}
-                name={admin.name || 'Unnamed Admin'}
-                email={admin.email}
-                events={admin.events}
-                index={index}
-              />
-            ))}
-          </div>
+      <div className="pt-24">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-center mb-10">Admin Team</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 relative z-10 py-10 max-w-7xl mx-auto gap-4">
+          {adminsWithEvents?.map((admin, index) => (
+            <AdminProfileCard 
+              key={admin._id}
+              name={admin.name || 'Unnamed Admin'}
+              email={admin.email}
+              events={admin.events}
+              index={index}
+            />
+          ))}
         </div>
       </div>
     </div>
