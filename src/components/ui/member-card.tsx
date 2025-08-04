@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from './button';
 import { Badge } from './badge';
@@ -23,6 +23,7 @@ interface MemberCardProps {
 
 const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
   const deleteTeamMember = useMutation(api.team.deleteTeamMember);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Add null/undefined check for member
   if (!member) {
@@ -44,108 +45,124 @@ const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-gray-100 dark:bg-gray-800 border-4 border-black dark:border-white rounded-2xl p-8 space-y-6 shadow-lg max-w-md mx-auto"
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
+      className="relative cursor-pointer"
     >
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-black dark:text-white">Team Member</h2>
-        <p className="text-gray-600 dark:text-gray-400 text-sm">Member details and contact information</p>
-      </div>
-
-      {/* Member Information Fields */}
-      <div className="space-y-4">
-        {/* Name Field */}
-        <div className="bg-white dark:bg-gray-700 border-3 border-black dark:border-white rounded-xl p-4">
-          <div className="text-lg font-semibold text-black dark:text-white">
-            {member.name || 'Unknown'}
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
-            Name
-          </div>
-        </div>
-
-        {/* Role Field */}
-        <div className="bg-white dark:bg-gray-700 border-3 border-black dark:border-white rounded-xl p-4">
-          <div className="text-lg font-semibold text-black dark:text-white">
-            {member.role || 'No role assigned'}
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
-            Role
-          </div>
-        </div>
-
-        {/* Branch Field */}
-        <div className="bg-white dark:bg-gray-700 border-3 border-black dark:border-white rounded-xl p-4">
-          <div className="text-lg font-semibold text-black dark:text-white">
-            {member.branch || 'N/A'}
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
-            Branch
-          </div>
-        </div>
-
-        {/* Mobile Number Field */}
-        <div className="bg-white dark:bg-gray-700 border-3 border-black dark:border-white rounded-xl p-4">
-          <a 
-            href={`tel:${member.phone}`} 
-            className="text-lg font-semibold text-black dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
-          >
-            {member.phone || 'No phone provided'}
-          </a>
-          <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
-            Mobile Number
-          </div>
-        </div>
-
-        {/* Email Address Field */}
-        <div className="bg-white dark:bg-gray-700 border-3 border-black dark:border-white rounded-xl p-4">
-          <a 
-            href={`mailto:${member.email}`} 
-            className="text-lg font-semibold text-black dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer break-all"
-          >
-            {member.email || 'No email provided'}
-          </a>
-          <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
-            Email Address
-          </div>
-        </div>
-
-        {/* Volunteer Events Field */}
-        {member.volunteerEvents && member.volunteerEvents.length > 0 && (
-          <div className="bg-white dark:bg-gray-700 border-3 border-black dark:border-white rounded-xl p-4">
-            <div className="flex flex-wrap gap-2">
-              {member.volunteerEvents.map((event, index) => (
-                <Badge key={index} variant="outline" className="text-xs font-medium">
-                  {event}
-                </Badge>
-              ))}
+      <motion.div
+        animate={{
+          height: isHovered ? 'auto' : '220px',
+          boxShadow: isHovered 
+            ? '0 10px 25px rgba(0, 0, 0, 0.15)' 
+            : '0 4px 6px rgba(0, 0, 0, 0.1)'
+        }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className="w-[300px] bg-gray-100 dark:bg-gray-800 border-4 border-black dark:border-white rounded-2xl p-6 overflow-hidden"
+      >
+        {/* Always visible content */}
+        <div className="space-y-4">
+          {/* Header with avatar and basic info */}
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-white dark:bg-gray-700 border-2 border-black dark:border-white rounded-full flex items-center justify-center">
+              <User className="h-6 w-6 text-black dark:text-white" />
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-2">
-              Volunteer Events
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-bold text-black dark:text-white truncate">
+                {member.name || 'Unknown'}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                {member.role || 'No role assigned'}
+              </p>
             </div>
           </div>
-        )}
-      </div>
 
-      {/* Action Buttons */}
-      <div className="flex gap-3 pt-4">
-        <Button 
-          onClick={() => onEdit(member)}
-          className="flex-1 bg-white dark:bg-gray-700 border-3 border-black dark:border-white rounded-xl py-4 text-black dark:text-white font-bold text-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-          variant="outline"
+          {/* Branch - Always visible */}
+          <div className="bg-white dark:bg-gray-700 border-2 border-black dark:border-white rounded-lg p-3">
+            <div className="text-sm font-semibold text-black dark:text-white">
+              {member.branch || 'N/A'}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              Branch
+            </div>
+          </div>
+        </div>
+
+        {/* Expandable content */}
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{
+            opacity: isHovered ? 1 : 0,
+            height: isHovered ? 'auto' : 0,
+            marginTop: isHovered ? 16 : 0
+          }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          className="space-y-4 overflow-hidden"
         >
-          <Edit className="h-5 w-5 mr-2" />
-          Edit Member
-        </Button>
-        <Button 
-          onClick={handleDelete}
-          className="flex-1 bg-red-500 border-3 border-black dark:border-white rounded-xl py-4 text-white font-bold text-lg hover:bg-red-600 transition-colors"
-          variant="destructive"
-        >
-          <Trash2 className="h-5 w-5 mr-2" />
-          Delete
-        </Button>
-      </div>
+          {/* Phone Number */}
+          <div className="bg-white dark:bg-gray-700 border-2 border-black dark:border-white rounded-lg p-3">
+            <a 
+              href={`tel:${member.phone}`} 
+              className="text-sm font-semibold text-black dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors block"
+            >
+              {member.phone || 'No phone provided'}
+            </a>
+            <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              Mobile Number
+            </div>
+          </div>
+
+          {/* Email Address */}
+          <div className="bg-white dark:bg-gray-700 border-2 border-black dark:border-white rounded-lg p-3">
+            <a 
+              href={`mailto:${member.email}`} 
+              className="text-sm font-semibold text-black dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors block break-all"
+            >
+              {member.email || 'No email provided'}
+            </a>
+            <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              Email Address
+            </div>
+          </div>
+
+          {/* Volunteer Events */}
+          {member.volunteerEvents && member.volunteerEvents.length > 0 && (
+            <div className="bg-white dark:bg-gray-700 border-2 border-black dark:border-white rounded-lg p-3">
+              <div className="flex flex-wrap gap-1">
+                {member.volunteerEvents.map((event, index) => (
+                  <Badge key={index} variant="outline" className="text-xs">
+                    {event}
+                  </Badge>
+                ))}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-2">
+                Volunteer Events
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 pt-2">
+            <Button 
+              onClick={() => onEdit(member)}
+              className="flex-1 bg-white dark:bg-gray-700 border-2 border-black dark:border-white rounded-lg py-2 text-black dark:text-white font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              variant="outline"
+              size="sm"
+            >
+              <Edit className="h-4 w-4 mr-1" />
+              Edit
+            </Button>
+            <Button 
+              onClick={handleDelete}
+              className="flex-1 bg-red-500 border-2 border-black dark:border-white rounded-lg py-2 text-white font-semibold text-sm hover:bg-red-600 transition-colors"
+              variant="destructive"
+              size="sm"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Delete
+            </Button>
+          </div>
+        </motion.div>
+      </motion.div>
     </motion.div>
   );
 };
