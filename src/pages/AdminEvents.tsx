@@ -71,6 +71,7 @@ function AdminEventsContent() {
 
   const allEvents = useQuery(api.events.getAllEventsWithDetails);
   const allUsers = useQuery(api.users.listAll);
+  const teamMembers = useQuery(api.team.getAllTeamMembers);
   const updateEventAsAdmin = useMutation(api.events.updateEventAsAdmin);
   const deleteEventAsAdmin = useMutation(api.events.deleteEventAsAdmin);
 
@@ -88,6 +89,20 @@ function AdminEventsContent() {
         ? prev.filter(id => id !== volunteerId)
         : [...prev, volunteerId]
     );
+  };
+
+  // Format volunteer display for better UX
+  const formatVolunteerDisplay = (volunteer: any) => {
+    const name = volunteer.name || 'Unknown Name';
+    const email = volunteer.email || 'No email';
+    const branch = volunteer.branch || 'N/A';
+    const rollNo = volunteer.rollNo || 'N/A';
+    
+    // Show branch and roll number if available
+    if (branch !== 'N/A' && rollNo !== 'N/A') {
+      return `${name} (${branch} - ${rollNo})`;
+    }
+    return name;
   };
 
   const handleInfoClick = (event: any) => {
@@ -573,30 +588,49 @@ function AdminEventsContent() {
                   <Label className="text-sm font-bold mb-3 block">ASSIGNED VOLUNTEERS</Label>
                   <p className="text-xs text-muted-foreground mb-2">Select users who will help manage this event</p>
                   <div className="space-y-2 max-h-48 overflow-y-auto border-2 border-black dark:border-white p-3 bg-muted/20">
-                    {allUsers?.map((volunteer) => (
-                      <div key={volunteer._id} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
-                        <button
-                          type="button"
-                          onClick={() => toggleVolunteer(volunteer._id)}
-                          className="flex-shrink-0"
-                          disabled={isSubmitting}
-                        >
-                          {selectedVolunteers.includes(volunteer._id) ? (
-                            <CheckSquare className="h-5 w-5 text-primary" />
-                          ) : (
-                            <Square className="h-5 w-5 text-muted-foreground" />
-                          )}
-                        </button>
-                        <div className="flex-grow">
-                          <div className="font-medium text-sm">{volunteer.name || 'Unnamed User'}</div>
-                          <div className="text-xs text-muted-foreground">{volunteer.email}</div>
-                        </div>
+                    {allUsers === undefined ? (
+                      <div className="text-center py-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-black dark:border-white mx-auto"></div>
+                        <p className="text-sm text-gray-500 mt-2">Loading volunteers...</p>
                       </div>
-                    ))}
-                    {(!allUsers || allUsers.length === 0) && (
-                      <p className="text-sm text-muted-foreground text-center py-4">No users available for volunteer assignment</p>
+                    ) : !allUsers || allUsers.length === 0 ? (
+                      <div className="text-center py-4">
+                        <Users className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          No volunteers available. Please add them under /admin-teams or /admin-settings.
+                        </p>
+                      </div>
+                    ) : (
+                      allUsers.map((volunteer) => (
+                        <div key={volunteer._id} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+                          <button
+                            type="button"
+                            onClick={() => toggleVolunteer(volunteer._id)}
+                            className="flex-shrink-0"
+                            disabled={isSubmitting}
+                          >
+                            {selectedVolunteers.includes(volunteer._id) ? (
+                              <CheckSquare className="h-5 w-5 text-primary" />
+                            ) : (
+                              <Square className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </button>
+                          <div className="flex-grow">
+                            <div className="font-medium text-sm">{formatVolunteerDisplay(volunteer)}</div>
+                            <div className="text-xs text-muted-foreground">{volunteer.email || 'No email provided'}</div>
+                          </div>
+                          {volunteer.role && (
+                            <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full">
+                              {volunteer.role}
+                            </span>
+                          )}
+                        </div>
+                      ))
                     )}
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {selectedVolunteers.length} volunteer{selectedVolunteers.length !== 1 ? 's' : ''} selected
+                  </p>
                 </div>
 
                 <DialogFooter className="flex gap-3 pt-6">
