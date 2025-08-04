@@ -16,6 +16,7 @@ import type {
 import type * as admin from "../admin.js";
 import type * as auth_emailOtp from "../auth/emailOtp.js";
 import type * as auth from "../auth.js";
+import type * as communication from "../communication.js";
 import type * as dashboard from "../dashboard.js";
 import type * as events from "../events.js";
 import type * as generators_createAdminUser from "../generators/createAdminUser.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   "auth/emailOtp": typeof auth_emailOtp;
   auth: typeof auth;
+  communication: typeof communication;
   dashboard: typeof dashboard;
   events: typeof events;
   "generators/createAdminUser": typeof generators_createAdminUser;

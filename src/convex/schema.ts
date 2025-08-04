@@ -107,6 +107,20 @@ const schema = defineSchema({
   }).index("by_user", ["userId"])
     .index("by_event", ["eventId"])
     .index("by_user_and_event", ["userId", "eventId"]),
+
+  admin_communication_messages: defineTable({
+    messageText: v.string(),
+    senderId: v.id("users"),
+    senderName: v.string(),
+    timestamp: v.number(),
+    attachmentUrl: v.optional(v.string()),
+    attachmentType: v.optional(v.union(v.literal("image"), v.literal("pdf"))),
+    emojiReactions: v.array(v.object({
+      emoji: v.string(),
+      userId: v.id("users"),
+      timestamp: v.number(),
+    })),
+  }).index("by_timestamp", ["timestamp"]),
 },
 {
   schemaValidation: false
