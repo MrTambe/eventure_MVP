@@ -317,8 +317,8 @@ function AdminCommunicationContent() {
             )}
           </div>
 
-          {/* Enhanced Message Composer */}
-          {isAdmin && (
+          {/* Enhanced Message Composer - Admin Only */}
+          {isAdmin ? (
             <div className="bg-white dark:bg-black border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] p-6">
               <h3 className="text-xl font-bold mb-4 font-mono tracking-tight uppercase">POST MESSAGE</h3>
               
@@ -421,6 +421,24 @@ function AdminCommunicationContent() {
                   />
                 </div>
               )}
+            </div>
+          ) : (
+            /* Non-Admin Restriction Message */
+            <div className="bg-white dark:bg-black border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] p-6">
+              <div className="text-center py-8">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 dark:bg-gray-700 border-2 border-black dark:border-white flex items-center justify-center">
+                  <span className="text-2xl">🔒</span>
+                </div>
+                <h3 className="text-xl font-bold mb-2 font-mono tracking-tight uppercase text-gray-600 dark:text-gray-400">
+                  ADMIN ONLY CHANNEL
+                </h3>
+                <p className="font-mono text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  Only admins can post here. You can react to updates above.
+                </p>
+                <div className="text-xs font-mono text-gray-400 dark:text-gray-500 uppercase">
+                  VIEW ONLY ACCESS
+                </div>
+              </div>
             </div>
           )}
         </div>
