@@ -12,7 +12,7 @@ export const getDirectMessages = query({
     _id: v.id("private_messages"),
     _creationTime: v.number(),
     senderId: v.id("users"),
-    receiverId: v.id("users"),
+    receiverId: v.id("users"), // Always return users ID after conversion
     message: v.string(),
     timestamp: v.number(),
     attachments: v.optional(v.array(v.object({
@@ -71,9 +71,17 @@ export const getDirectMessages = query({
         const receiver = await ctx.db.get(message.receiverId);
         
         return {
-          ...message,
-          senderName: sender?.name || "Unknown User",
-          receiverName: receiver?.name || "Unknown User",
+          _id: message._id,
+          _creationTime: message._creationTime,
+          senderId: message.senderId,
+          receiverId: message.receiverId, // This is already a users ID from schema
+          message: message.message,
+          timestamp: message.timestamp,
+          attachments: message.attachments,
+          reactions: message.reactions,
+          readBy: message.readBy,
+          senderName: sender?.name,
+          receiverName: receiver?.name,
         };
       })
     );
@@ -120,7 +128,7 @@ export const sendDirectMessage = mutation({
 
       const messageId = await ctx.db.insert("private_messages", {
         senderId: user._id,
-        receiverId: actualRecipientId,
+        receiverId: actualRecipientId, // Always store as users ID
         message: args.message,
         timestamp: Date.now(),
         attachments: args.attachments,

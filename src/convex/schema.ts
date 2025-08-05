@@ -136,7 +136,7 @@ const schema = defineSchema({
 
   private_messages: defineTable({
     senderId: v.id("users"),
-    receiverId: v.id("users"), // Keep as users for now, but handle conversion in functions
+    receiverId: v.id("users"), // Store as users ID only
     message: v.string(),
     timestamp: v.number(),
     attachments: v.optional(v.array(v.object({
@@ -147,14 +147,11 @@ const schema = defineSchema({
     }))),
     reactions: v.optional(v.record(v.string(), v.array(v.id("users")))),
     readBy: v.optional(v.array(v.id("users"))),
-    // Add fields to track if this is a teamMember conversation
-    isTeamMemberConversation: v.optional(v.boolean()),
-    teamMemberId: v.optional(v.id("teamMembers")),
   })
     .index("by_participants", ["senderId", "receiverId"])
     .index("by_receiver", ["receiverId"])
-    .index("by_sender", ["senderId"])
-    .index("by_team_member", ["teamMemberId"]),
+    .index("by_sender", ["senderId"]),
+
 },
 {
   schemaValidation: false
