@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUser } from "./users";
+import { Doc } from "./_generated/dataModel";
 
 export const getAllTeamMembers = query({
   args: {},
@@ -36,5 +37,66 @@ export const checkAdminProfile = query({
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
     return user && user.role === "admin" ? user : null;
+  },
+});
+
+// Helper function to determine if a team member's profile is complete
+const isTeamMemberProfileComplete = (member: Doc<"teamMembers">) => {
+  return !!(
+    member.name &&
+    member.branch &&
+    member.rollNo &&
+    (member as any).mobileNumber
+  );
+};
+
+// Query to get all team members with their profile completion status
+export const getTeamMembersWithProfileStatus = query({
+  args: {},
+  handler: async (ctx) => {
+    const teamMembers = await ctx.db.query("teamMembers").collect();
+    return teamMembers.map((member) => ({
+        ...member,
+        isProfileComplete: isTeamMemberProfileComplete(member),
+    }));
+  },
+});
+
+// Query to get only team members with incomplete profiles
+// NOTE: This currently fetches all members and filters in memory.
+// For large numbers of team members, this could be inefficient.
+// A more scalable approach would be to store and index a `isProfileComplete` field.
+export const getIncompleteTeamMemberProfiles = query({
+    args: {},
+    handler: async (ctx) => {
+        const teamMembers = await ctx.db.query("teamMembers").collect();
+        return teamMembers.filter((member) => !isTeamMemberProfileComplete(member));
+    }
+});
+
+// Mutation to update team member profile information
+export const updateTeamMemberProfile = mutation({
+  args: {
+    teamMemberId: v.id("teamMembers"),
+    name: v.optional(v.string()),
+    branch: v.optional(v.string()),
+    rollNo: v.optional(v.string()),
+    mobileNumber: v.optional(v.string()),
+    department: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user || user.role !== "admin") {
+      throw new Error("Admin access required");
+    }
+
+    const { teamMemberId, ...updateData } = args;
+    
+    // Filter out undefined values
+    const filteredUpdateData = Object.fromEntries(
+      Object.entries(updateData).filter(([_, value]) => value !== undefined)
+    );
+
+    await ctx.db.patch(teamMemberId, filteredUpdateData);
   },
 });

@@ -97,6 +97,9 @@ const schema = defineSchema({
     email: v.string(),
     password: v.string(), // In real app, this should be hashed
     role: v.string(),
+    branch: v.optional(v.string()),
+    rollNo: v.optional(v.string()),
+    mobileNumber: v.optional(v.string()),
   }).index("by_email", ["email"]),
 
 },
