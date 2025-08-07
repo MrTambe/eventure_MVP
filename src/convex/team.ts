@@ -62,18 +62,6 @@ export const getTeamMembersWithProfileStatus = query({
   },
 });
 
-// Query to get only team members with incomplete profiles
-// NOTE: This currently fetches all members and filters in memory.
-// For large numbers of team members, this could be inefficient.
-// A more scalable approach would be to store and index a `isProfileComplete` field.
-export const getIncompleteTeamMemberProfiles = query({
-    args: {},
-    handler: async (ctx) => {
-        const teamMembers = await ctx.db.query("teamMembers").collect();
-        return teamMembers.filter((member) => !isTeamMemberProfileComplete(member));
-    }
-});
-
 // Mutation to update team member profile information
 export const updateTeamMemberProfile = mutation({
   args: {
