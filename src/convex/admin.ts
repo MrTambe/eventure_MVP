@@ -1,60 +1,34 @@
-import { query, mutation } from "./_generated/server";
+"use node";
 import { v } from "convex/values";
+import { action } from "./_generated/server";
+import bcrypt from "bcryptjs";
+import { internal } from "./_generated/api";
 
-export const adminLogin = mutation({
+export const adminLogin = action({
   args: {
     email: v.string(),
     password: v.string(),
   },
-  handler: async (ctx, args) => {
-    // Check for admin
-    const admin = await ctx.db
-      .query("admins")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
-      .unique();
+  handler: async (ctx, args): Promise<{ success: boolean; message: string; user?: any }> => {
+    let existingUser: any = await ctx.runQuery(internal.admin_creation.getAdminByEmail, { email: args.email });
 
-    if (admin && admin.password === args.password) {
-      return {
-        success: true,
-        message: "Admin login successful",
-        user: {
-          _id: admin._id,
-          email: admin.email,
-          name: admin.name,
-          role: "admin",
-        },
-      };
+    if (!existingUser) {
+        existingUser = await ctx.runQuery(internal.admin_creation.getTeamMemberByEmail, { email: args.email });
     }
 
-    // Check for team member
-    const teamMember = await ctx.db
-      .query("teamMembers")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
-      .unique();
-
-    if (teamMember && teamMember.password === args.password) {
-      return {
-        success: true,
-        message: "Team Member login successful",
-        user: {
-          _id: teamMember._id,
-          email: teamMember.email,
-          name: teamMember.name,
-          role: teamMember.role,
-        },
-      };
+    if (!existingUser) {
+      return { success: false, message: "Invalid credentials" };
     }
 
-    return {
-      success: false,
-      message: "Invalid credentials",
-    };
-  },
-});
+    const isPasswordValid = await bcrypt.compare(args.password, existingUser.password);
 
-export const listAdmins = query({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.db.query("admins").collect();
+    if (!isPasswordValid) {
+      return { success: false, message: "Invalid credentials" };
+    }
+    
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...user } = existingUser;
+
+    return { success: true, message: "Login successful", user };
   },
 });

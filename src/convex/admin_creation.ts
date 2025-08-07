@@ -1,6 +1,26 @@
 import { v } from "convex/values";
-import { internalMutation } from "./_generated/server";
+import { internalMutation, internalQuery } from "./_generated/server";
 import { ROLES } from "./schema";
+
+export const getAdminByEmail = internalQuery({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("admins")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .unique();
+  },
+});
+
+export const getTeamMemberByEmail = internalQuery({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("teamMembers")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .unique();
+  },
+});
 
 export const createAdminInternal = internalMutation({
   args: {

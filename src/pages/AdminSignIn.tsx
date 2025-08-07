@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useMutation, useQuery } from 'convex/react';
+import { useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-import { Id } from '@/convex/_generated/dataModel';
 
 export default function AdminSignIn() {
   const navigate = useNavigate();
@@ -15,8 +14,8 @@ export default function AdminSignIn() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Mutations
-  const adminLogin = useMutation(api.admin.adminLogin);
+  // Actions
+  const adminLogin = useAction(api.admin.adminLogin);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { Tiles } from "@/components/ui/tiles";
-import { useMutation } from 'convex/react';
+import { useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { toast } from 'sonner';
 
@@ -34,7 +34,7 @@ export function Component() {
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   
   const navigate = useNavigate();
-  const adminLogin = useMutation(api.admin.adminLogin);
+  const adminLogin = useAction(api.admin.adminLogin);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
