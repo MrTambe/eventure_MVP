@@ -78,7 +78,9 @@ const schema = defineSchema({
     mobileNumber: v.optional(v.string()),
     joinedAt: v.number(),
   }).index("by_user_id", ["userId"])
-    .index("by_email", ["email"]),
+    .index("by_email", ["email"])
+    .index("by_name", ["name"])
+    .index("by_joined_at", ["joinedAt"]),
 
   private_messages: defineTable({
     senderId: v.id("users"),
@@ -96,12 +98,14 @@ const schema = defineSchema({
   admins: defineTable({
     name: v.optional(v.string()),
     email: v.string(),
-    password: v.string(), // In real app, this should be hashed
+    password: v.string(),
     role: v.string(),
     branch: v.optional(v.string()),
     rollNo: v.optional(v.string()),
     mobileNumber: v.optional(v.string()),
-  }).index("by_email", ["email"]),
+  }).index("by_email", ["email"])
+    .index("by_name", ["name"])
+    .index("by_role", ["role"]),
 
 },
 {

@@ -22,20 +22,15 @@ const isAdminProfileComplete = (admin: Doc<"admins">) => {
     );
 };
 
-// Keep the original query for backward compatibility
-export const getAllTeamMembers = query({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.db.query("teamMembers").collect();
-  },
-});
-
-// Query to get all team members and admins with their profile completion status
+// Optimized query to get all team members and admins with their profile completion status
 export const getCombinedTeamWithProfileStatus = query({
   args: {},
   handler: async (ctx) => {
-    const teamMembers = await ctx.db.query("teamMembers").collect();
-    const admins = await ctx.db.query("admins").collect();
+    // Use Promise.all to fetch both collections in parallel for better performance
+    const [teamMembers, admins] = await Promise.all([
+      ctx.db.query("teamMembers").order("asc").collect(),
+      ctx.db.query("admins").order("asc").collect()
+    ]);
 
     const formattedTeamMembers = teamMembers.map((member) => ({
         ...member,
@@ -49,10 +44,24 @@ export const getCombinedTeamWithProfileStatus = query({
         isProfileComplete: isAdminProfileComplete(admin),
     }));
 
+    // Combine and sort by name (admins first, then team members)
     const combined = [...formattedAdmins, ...formattedTeamMembers];
     
-    // Sort by name, handling cases where name might be null or undefined
-    return combined.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+    return combined.sort((a, b) => {
+      // Sort by type first (admins before team members), then by name
+      if (a.type !== b.type) {
+        return a.type === 'admin' ? -1 : 1;
+      }
+      return (a.name ?? "").localeCompare(b.name ?? "");
+    });
+  },
+});
+
+// Keep the original query for backward compatibility
+export const getAllTeamMembers = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("teamMembers").order("asc").collect();
   },
 });
 
