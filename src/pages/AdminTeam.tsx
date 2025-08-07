@@ -93,9 +93,23 @@ const EditProfileModal = ({
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      const adminUserString = sessionStorage.getItem('adminUser');
+      if (!adminUserString) {
+        toast.error('Authentication error. Please sign in again.');
+        setIsSubmitting(false);
+        return;
+      }
+      const adminUser = JSON.parse(adminUserString);
+      if (adminUser.role !== 'admin') {
+        toast.error('Authorization error. Admin access required.');
+        setIsSubmitting(false);
+        return;
+      }
+
       await updateProfile({
         teamMemberId: member._id,
         ...formData,
+        adminId: adminUser._id,
       });
       toast.success(`Profile for ${formData.name} updated successfully!`);
       onClose();

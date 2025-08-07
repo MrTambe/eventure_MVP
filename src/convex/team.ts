@@ -71,14 +71,15 @@ export const updateTeamMemberProfile = mutation({
     rollNo: v.optional(v.string()),
     mobileNumber: v.optional(v.string()),
     department: v.optional(v.string()),
+    adminId: v.id("admins"),
   },
   handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx);
-    if (!user || user.role !== "admin") {
+    const admin = await ctx.db.get(args.adminId);
+    if (!admin || admin.role !== "admin") {
       throw new Error("Admin access required");
     }
 
-    const { teamMemberId, ...updateData } = args;
+    const { teamMemberId, adminId, ...updateData } = args;
     
     // Filter out undefined values
     const filteredUpdateData = Object.fromEntries(
