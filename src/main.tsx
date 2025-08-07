@@ -21,6 +21,7 @@ import AdminCommunication from "./pages/AdminCommunication.tsx";
 import AdminSettings from "./pages/AdminSettings.tsx";
 import AdminTeam from "./pages/AdminTeam.tsx";
 import { Protected } from "@/lib/protected-page.tsx";
+import { AdminProtected } from "@/lib/admin-protected-page.tsx";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
@@ -37,11 +38,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/event/:eventId" element={<Protected><EventInfo /></Protected>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin-signIn" element={<AdminSignIn />} />
-            <Route path="/admin-dashboard" element={<Protected requiredRole="admin"><AdminDashboard /></Protected>} />
-            <Route path="/admin-events" element={<Protected requiredRole="admin"><AdminEvents /></Protected>} />
-            <Route path="/admin-team" element={<Protected requiredRole="admin"><AdminTeam /></Protected>} />
-            <Route path="/admin-communication" element={<Protected requiredRole="admin"><AdminCommunication /></Protected>} />
-            <Route path="/admin-settings" element={<Protected requiredRole="admin"><AdminSettings /></Protected>} />
+            <Route path="/admin-dashboard" element={<AdminProtected requiredRole="admin"><AdminDashboard /></AdminProtected>} />
+            <Route path="/admin-events" element={<AdminProtected requiredRole="admin"><AdminEvents /></AdminProtected>} />
+            <Route path="/admin-team" element={<AdminProtected requiredRole="admin"><AdminTeam /></AdminProtected>} />
+            <Route path="/admin-communication" element={<AdminProtected requiredRole="admin"><AdminCommunication /></AdminProtected>} />
+            <Route path="/admin-settings" element={<AdminProtected requiredRole="admin"><AdminSettings /></AdminProtected>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
