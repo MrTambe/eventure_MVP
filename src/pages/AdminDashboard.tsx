@@ -389,6 +389,8 @@ function AdminDashboardContent() {
                           placeholder="Enter maximum participants"
                           min="1"
                           disabled={isSubmitting}
+                          value={maxParticipants}
+                          onChange={(e) => setMaxParticipants(e.target.value)}
                         />
                       </div>
 
