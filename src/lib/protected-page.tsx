@@ -1,33 +1,48 @@
+import React from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { AuthLoading, Authenticated, Unauthenticated } from "convex/react";
-import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { Spinner } from "@/components/ui/spinner";
+import { AuthButton } from "@/components/auth/AuthButton";
 
-export function Protected({ children }: { children: React.ReactNode }) {
-  const { isLoading, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+interface ProtectedProps {
+  children: React.ReactNode;
+  requiredRole?: "admin" | "user";
+}
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate(`/auth?redirect=${encodeURIComponent(location.pathname)}`);
-    }
-  }, [isAuthenticated, isLoading, location.pathname, navigate]);
-
-  return (
-    <>
-      <Unauthenticated>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-12 w-12 animate-spin " />
+export function Protected({ children, requiredRole }: ProtectedProps) {
+  const { isLoading, isAuthenticated, user } = useAuth();
+  
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Spinner className="h-12 w-12" />
+      </div>
+    );
+  }
+  
+  // Handle unauthenticated state
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="mb-4">You need to sign in to access this content</p>
+          <AuthButton />
         </div>
-      </Unauthenticated>
-      <AuthLoading>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-12 w-12 animate-spin " />
+      </div>
+    );
+  }
+  
+  // Role-based authorization check
+  if (requiredRole && (!user || user.role !== requiredRole)) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p>Access denied: {requiredRole} privileges required</p>
         </div>
-      </AuthLoading>
-      <Authenticated>{children}</Authenticated>
-    </>
-  );
+      </div>
+    );
+  }
+  
+  // User is authenticated and authorized
+  return <>{children}</>;
 }

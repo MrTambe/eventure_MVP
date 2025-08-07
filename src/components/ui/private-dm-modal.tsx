@@ -1,327 +1,215 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { useAuth } from '@/hooks/use-auth';
-import { X, Paperclip, Send } from 'lucide-react';
-import { Id } from '@/convex/_generated/dataModel';
-import { toast } from 'sonner';
+import { toast } from "sonner";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Send, X, Smile } from "lucide-react";
+import { Id } from "@/convex/_generated/dataModel";
+import EmojiPicker from 'emoji-picker-react';
 
 interface PrivateDMModalProps {
   isOpen: boolean;
   onClose: () => void;
-  recipientId: Id<"users"> | Id<"teamMembers">;
+  recipientId: Id<"users">;
   recipientName: string;
-  recipientRole?: string;
+  recipientImage?: string;
+  currentUser: any;
 }
 
-interface DirectMessage {
+interface PrivateMessage {
   _id: Id<"private_messages">;
-  _creationTime: number;
   senderId: Id<"users">;
-  receiverId: Id<"users">;
-  message: string;
+  recipientId: Id<"users">;
+  content: string;
   timestamp: number;
-  attachments?: Array<{
-    name: string;
-    url: string;
-    type: "image" | "video" | "pdf" | "docx" | "other";
-    size?: number;
+  isRead: boolean;
+  reactions?: Array<{
+    emoji: string;
+    userId: Id<"users">;
   }>;
-  reactions?: Record<string, Id<"users">[]>;
-  readBy?: Id<"users">[];
-  senderName?: string;
-  receiverName?: string;
 }
 
-const PrivateDMModal: React.FC<PrivateDMModalProps> = ({
-  isOpen,
-  onClose,
-  recipientId,
-  recipientName,
-  recipientRole = "Member"
-}) => {
-  const { user: currentUser } = useAuth();
-  const [messageText, setMessageText] = useState('');
+export default function PrivateDMModal({ isOpen, onClose, recipientId, recipientName, recipientImage, currentUser: propCurrentUser }: PrivateDMModalProps) {
+  const [messageText, setMessageText] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [isPosting, setIsPosting] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Live query for direct messages
+  // Get current user
+  const currentUser = useQuery(api.users.currentUser);
+
+  // Fetch direct messages
   const messages = useQuery(
     api.privateMessages.getDirectMessages,
     isOpen && currentUser ? { recipientId } : "skip"
-  ) as DirectMessage[] | undefined;
+  );
 
-  // Mutations for sending messages and reactions
+  // Mutations
   const sendMessage = useMutation(api.privateMessages.sendDirectMessage);
   const markAsRead = useMutation(api.privateMessages.markPrivateMessageAsRead);
   const toggleReaction = useMutation(api.privateMessages.togglePrivateMessageReaction);
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (messagesEndRef.current && messages) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Mark messages as read when modal opens or new messages arrive
-  useEffect(() => {
-    if (isOpen && messages && currentUser) {
-      messages.forEach(message => {
-        if (message.senderId !== currentUser._id && 
-            (!message.readBy || !message.readBy.includes(currentUser._id))) {
-          markAsRead({ messageId: message._id });
-        }
-      });
-    }
-  }, [isOpen, messages, currentUser, markAsRead]);
-
   const handleSendMessage = async () => {
-    if (!messageText.trim() || !currentUser || isPosting) return;
-
-    setIsPosting(true);
+    if (!messageText.trim() || isSending || !currentUser) return;
+    
+    setIsSending(true);
     try {
       const result = await sendMessage({
+        content: messageText.trim(),
         recipientId,
-        message: messageText.trim(),
       });
 
-      if (result.success) {
-        setMessageText('');
-        toast.success('Message sent!');
+      if (result?.success) {
+        setMessageText("");
+        toast.success("Message sent!");
       } else {
-        toast.error(result.message || 'Failed to send message');
+        toast.error("Failed to send message");
       }
     } catch (error) {
-      console.error('Send message error:', error);
-      toast.error('Failed to send message');
+      toast.error("Failed to send message");
     } finally {
-      setIsPosting(false);
+      setIsSending(false);
     }
   };
 
   const handleEmojiReaction = async (messageId: Id<"private_messages">, emoji: string) => {
     try {
       const result = await toggleReaction({ messageId, emoji });
-      if (!result.success) {
-        toast.error(result.message || 'Failed to toggle reaction');
+      if (!result?.success) {
+        toast.error("Failed to toggle reaction");
       }
     } catch (error) {
-      console.error('Toggle reaction error:', error);
-      toast.error('Failed to toggle reaction');
+      toast.error("Failed to toggle reaction");
     }
   };
 
-  const getInitials = (name: string): string => {
-    return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const formatTimestamp = (timestamp: number): string => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false 
-    });
-  };
-
-  const isMessageRead = (message: DirectMessage): boolean => {
-    if (message.senderId === currentUser?._id) {
-      // For sent messages, check if recipient has read it
-      return message.readBy ? message.readBy.length > 1 : false;
+  const handleEmojiSelect = (emojiData: any) => {
+    if (textareaRef.current) {
+      const textarea = textareaRef.current;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const newText = messageText.slice(0, start) + emojiData.emoji + messageText.slice(end);
+      setMessageText(newText);
+      
+      // Set cursor position after emoji
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + emojiData.emoji.length;
+        textarea.focus();
+      }, 0);
     }
-    return true; // Received messages are always considered "read" for display
+    setShowEmojiPicker(false);
   };
-
-  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl h-[80vh] bg-[#f9f9f9] border-4 border-black shadow-[8px_8px_0px_#000] flex flex-col">
-        
-        {/* Header */}
-        <div className="border-b-4 border-black p-6 flex items-center justify-between bg-[#eaeaea]">
-          <div className="flex items-center gap-4">
-            {/* Recipient Avatar */}
-            <div className="w-16 h-16 rounded-full border-4 border-black bg-white flex items-center justify-center">
-              <span className="text-xl font-mono font-bold">
-                {getInitials(recipientName)}
-              </span>
-            </div>
-            
-            {/* Recipient Info */}
-            <div>
-              <h2 className="text-2xl font-mono font-bold tracking-tight uppercase">
-                {recipientName} – {recipientRole}
-              </h2>
-              <p className="text-sm font-mono text-gray-600 uppercase">PRIVATE MESSAGE</p>
-            </div>
-          </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[80vh] p-0">
+        <DialogHeader className="p-4 border-b">
+          <DialogTitle className="flex items-center gap-3">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback>{recipientName?.charAt(0) || 'U'}</AvatarFallback>
+            </Avatar>
+            Direct Message with {recipientName || 'User'}
+          </DialogTitle>
+        </DialogHeader>
 
-          {/* Close Button */}
-          <button
-            onClick={onClose}
-            className="w-12 h-12 border-4 border-black bg-white hover:bg-black hover:text-white transition-colors duration-200 flex items-center justify-center font-bold text-xl"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {/* Loading State */}
-          {messages === undefined && (
-            <div className="text-center py-12">
-              <div className="inline-block w-8 h-8 border-4 border-black border-t-transparent animate-spin"></div>
-              <p className="text-gray-500 font-mono uppercase mt-4">LOADING MESSAGES...</p>
-            </div>
-          )}
-
-          {/* Empty State */}
-          {messages && messages.length === 0 && (
-            <div className="text-center py-12">
-              <h3 className="text-xl font-mono font-bold text-gray-600 mb-2 uppercase">NO MESSAGES YET</h3>
-              <p className="text-gray-500 font-mono uppercase">Start the conversation with {recipientName}!</p>
-            </div>
-          )}
-
-          {/* Messages */}
-          {messages && messages.length > 0 && messages.map((message) => {
-            const isSent = message.senderId === currentUser?._id;
-            const messageRead = isMessageRead(message);
-
-            return (
-              <div key={message._id} className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}>
-                <div className="max-w-[70%]">
-                  <div className={`p-4 border-4 border-black font-mono ${
-                    isSent ? 'bg-white ml-4' : 'bg-[#eaeaea] mr-4'
-                  }`}>
-                    <p className="text-sm leading-relaxed">
-                      {message.message}
-                    </p>
-                    
-                    {/* Reactions */}
-                    {message.reactions && Object.keys(message.reactions).length > 0 && (
-                      <div className="flex gap-1 mt-2">
-                        {Object.entries(message.reactions).map(([emoji, userIds]) => (
-                          <button
-                            key={emoji}
-                            onClick={() => handleEmojiReaction(message._id, emoji)}
-                            className={`px-2 py-1 text-xs border-2 border-black ${
-                              userIds.includes(currentUser?._id || '' as Id<"users">)
-                                ? 'bg-black text-white'
-                                : 'bg-white hover:bg-gray-100'
-                            }`}
-                          >
-                            {emoji} {userIds.length}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className={`flex items-center gap-2 mt-1 text-xs font-mono text-gray-600 ${
-                    isSent ? 'justify-end' : 'justify-start'
-                  }`}>
-                    <span>{formatTimestamp(message.timestamp)}</span>
-                    {isSent && (
-                      <span className="font-bold uppercase">
-                        {messageRead ? 'READ ✅' : 'SENT ✓'}
-                      </span>
-                    )}
-                  </div>
+        <div className="flex flex-col h-[60vh]">
+          {/* Messages Area */}
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-4">
+              {messages === undefined ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  <p className="text-sm text-muted-foreground mt-2">Loading messages...</p>
                 </div>
-              </div>
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input Bar */}
-        <div className="border-t-4 border-black p-6 bg-[#eaeaea]">
-          <div className="flex gap-4">
-            {/* Message Input */}
-            <div className="flex-1">
-              <textarea
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                placeholder="TYPE YOUR MESSAGE..."
-                className="w-full h-20 p-3 border-4 border-black font-mono text-sm resize-none focus:outline-none bg-white"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
-                disabled={isPosting}
-              />
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col gap-2">
-              {/* Emoji Button */}
-              <button
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="px-4 py-2 border-4 border-black bg-white hover:bg-gray-100 font-mono text-sm font-bold uppercase"
-                disabled={isPosting}
-              >
-                😀
-              </button>
-
-              {/* Attach Button */}
-              <button 
-                className="px-4 py-2 border-4 border-black bg-white hover:bg-gray-100 font-mono text-sm font-bold uppercase"
-                disabled={isPosting}
-              >
-                <Paperclip className="w-4 h-4" />
-              </button>
-
-              {/* Send Button */}
-              <button
-                onClick={handleSendMessage}
-                disabled={!messageText.trim() || isPosting}
-                className={`px-6 py-2 border-4 border-black font-mono text-sm font-bold uppercase transition-colors ${
-                  messageText.trim() && !isPosting
-                    ? 'bg-black text-white hover:bg-gray-800'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                {isPosting ? 'SENDING...' : 'SEND'}
-              </button>
-            </div>
-          </div>
-
-          {/* Emoji Picker */}
-          {showEmojiPicker && (
-            <div className="mt-4 border-4 border-black">
-              <div className="p-4 bg-white">
-                <p className="font-mono text-sm font-bold uppercase mb-2">QUICK REACTIONS</p>
-                <div className="flex gap-2">
-                  {['👍', '❤️', '😂', '😮', '😢', '😡', '🔥', '💯'].map((emoji) => (
-                    <button
-                      key={emoji}
-                      onClick={() => {
-                        setMessageText(prev => prev + emoji);
-                        setShowEmojiPicker(false);
-                      }}
-                      className="w-8 h-8 border-2 border-black hover:bg-gray-100 font-mono"
+              ) : messages.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No messages yet. Start the conversation!</p>
+                </div>
+              ) : (
+                messages.map((message) => (
+                  <div
+                    key={message._id}
+                    className={`flex ${message.senderId === currentUser?._id ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[70%] p-3 rounded-lg ${
+                        message.senderId === currentUser?._id
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
+                      }`}
                     >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
+                      <p className="text-sm">{message.content}</p>
+                      <p className="text-xs opacity-70 mt-1">
+                        {new Date(message._creationTime).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <div ref={messagesEndRef} />
+          </ScrollArea>
+
+          {/* Message Input */}
+          <div className="p-4 border-t">
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <Textarea
+                  ref={textareaRef}
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  placeholder="Type your message..."
+                  className="min-h-[60px] resize-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                >
+                  <Smile className="h-4 w-4" />
+                </Button>
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!messageText.trim() || isSending}
+                  size="sm"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
 
-export default PrivateDMModal;
+            {/* Emoji Picker */}
+            {showEmojiPicker && (
+              <div className="mt-2 border rounded-lg">
+                <EmojiPicker
+                  onEmojiClick={handleEmojiSelect}
+                  width="100%"
+                  height={300}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -39,7 +39,7 @@ function AdminSettingsContent() {
 
   // Get admin profile data
   const adminProfile = useQuery(
-    api.users.getCurrentUser
+    api.users.currentUser
   );
 
   // Update profile mutation
@@ -146,7 +146,7 @@ function AdminSettingsContent() {
     <div className="min-h-screen bg-white text-black font-mono">
       {/* Menu Bar */}
       <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
-        <MenuBar items={menuItems} onItemClick={(item) => navigate(item.href)} activeItem={activeMenuItem}/>
+        <MenuBar items={menuItems} onItemClick={(item) => navigate(item)} activeItem={activeMenuItem}/>
       </div>
 
       {/* Main Content */}

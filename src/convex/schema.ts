@@ -66,6 +66,37 @@ const schema = defineSchema({
     content: v.string(),
   }).index("by_author", ["authorId"]),
 
+  teamMembers: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    email: v.string(),
+    role: v.string(),
+    department: v.optional(v.string()),
+    branch: v.optional(v.string()),
+    rollNo: v.optional(v.string()),
+    joinedAt: v.number(),
+  }).index("by_user_id", ["userId"])
+    .index("by_email", ["email"]),
+
+  private_messages: defineTable({
+    senderId: v.id("users"),
+    recipientId: v.id("users"),
+    content: v.string(),
+    isRead: v.boolean(),
+    reactions: v.optional(v.array(v.object({
+      userId: v.id("users"),
+      emoji: v.string(),
+    }))),
+  }).index("by_sender", ["senderId"])
+    .index("by_recipient", ["recipientId"])
+    .index("by_conversation", ["senderId", "recipientId"]),
+
+  admins: defineTable({
+    name: v.optional(v.string()),
+    email: v.string(),
+    password: v.string(), // In real app, this should be hashed
+  }).index("by_email", ["email"]),
+
 },
 {
   schemaValidation: false

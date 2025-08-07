@@ -25,14 +25,14 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
     eventDate: "",
     eventTime: "",
     maxParticipants: "",
-    volunteerIds: [] as Id<"teamMembers">[], // Changed to teamMembers
+    volunteerIds: [] as Id<"users">[],
   });
 
-  const [selectedVolunteers, setSelectedVolunteers] = useState<Set<Id<"teamMembers">>>(new Set()); // Changed to teamMembers
+  const [selectedVolunteers, setSelectedVolunteers] = useState<Set<Id<"users">>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const createEvent = useMutation(api.events.createEvent);
-  const teamMembers = useQuery(api.team.getAllTeamMembers); // Use team members instead of allUsers
+  const teamMembers = useQuery(api.users.listMembers);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -56,7 +56,7 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
     onClose();
   };
 
-  const handleVolunteerToggle = (volunteerId: Id<"teamMembers">) => { // Changed to teamMembers
+  const handleVolunteerToggle = (volunteerId: Id<"users">) => {
     setSelectedVolunteers(prev => {
       const newSet = new Set(prev);
       if (newSet.has(volunteerId)) {
@@ -92,11 +92,11 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
         volunteerIds,
       });
 
-      if (result.success) {
+      if (result?.success) {
         toast.success(result.message);
         handleClose();
       } else {
-        toast.error(result.message);
+        toast.error(result?.message || "Failed to create event");
       }
     } catch (error) {
       console.error("Event creation error:", error);
@@ -222,15 +222,15 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
                   </p>
                 </div>
               ) : (
-                availableVolunteers.map((volunteer) => (
+                availableVolunteers.map((volunteer: any) => (
                   <div key={volunteer._id} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
                     <button
                       type="button"
-                      onClick={() => handleVolunteerToggle(volunteer._id)}
+                      onClick={() => handleVolunteerToggle(volunteer._id as Id<"users">)}
                       className="flex-shrink-0"
                       disabled={isSubmitting}
                     >
-                      {selectedVolunteers.has(volunteer._id) ? (
+                      {selectedVolunteers.has(volunteer._id as Id<"users">) ? (
                         <CheckSquare className="h-5 w-5 text-primary" />
                       ) : (
                         <Square className="h-5 w-5 text-muted-foreground" />

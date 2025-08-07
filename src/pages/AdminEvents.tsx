@@ -57,6 +57,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router";
+import { Badge } from "@/components/ui/badge";
 
 function AdminEventsContent() {
   const [activeMenuItem, setActiveMenuItem] = useState("Events");
@@ -67,6 +68,17 @@ function AdminEventsContent() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [selectedVolunteers, setSelectedVolunteers] = useState<Id<"teamMembers">[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [eventDetails, setEventDetails] = useState({
+    name: '',
+    description: '',
+    venue: '',
+    startDate: '',
+    endDate: '',
+    status: 'active' as 'active' | 'completed' | 'cancelled',
+    maxParticipants: ''
+  });
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const navigate = useNavigate();
 
   const allEvents = useQuery(api.events.getAllEventsWithDetails);
@@ -151,15 +163,13 @@ function AdminEventsContent() {
       }
 
       const result = await updateEventAsAdmin({
-        eventId: selectedEvent._id,
-        adminEmail: adminUser.email,
+        id: selectedEvent._id,
         name: eventName,
         description: description || "",
         venue: venue,
         startDate: startDate,
         endDate: endDate,
         maxParticipants: maxParticipants ? parseInt(maxParticipants) : undefined,
-        volunteerIds: selectedVolunteers,
       });
 
       if (result.success) {
@@ -192,8 +202,7 @@ function AdminEventsContent() {
       const admin = JSON.parse(adminData);
 
       const result = await deleteEventAsAdmin({
-        eventId: selectedEvent._id,
-        adminEmail: admin.email,
+        id: selectedEvent._id,
       });
 
       if (result.success) {
@@ -334,6 +343,50 @@ function AdminEventsContent() {
       link.click();
       document.body.removeChild(link);
       toast.success("Event details exported as CSV!");
+    }
+  };
+
+  const handleUpdateEvent = async () => {
+    if (!selectedEvent) return;
+    try {
+      const result = await updateEventAsAdmin({
+        id: selectedEvent._id,
+        name: eventDetails.name,
+        description: eventDetails.description,
+        venue: eventDetails.venue,
+        startDate: new Date(eventDetails.startDate).getTime(),
+        endDate: new Date(eventDetails.endDate).getTime(),
+        status: eventDetails.status as "active" | "completed" | "cancelled",
+        maxParticipants: parseInt(eventDetails.maxParticipants, 10),
+      });
+      if (result?.success) {
+        toast.success(result.message);
+        setShowEditModal(false);
+      } else {
+        toast.error(result?.message);
+      }
+    } catch (error) {
+      console.error("Failed to update event:", error);
+      toast.error("An error occurred while updating the event.");
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!selectedEvent) return;
+    try {
+      const result = await deleteEventAsAdmin({
+        id: selectedEvent._id,
+      });
+      if (result?.success) {
+        toast.success(result.message);
+        setShowDeleteModal(false);
+        setSelectedEvent(null);
+      } else {
+        toast.error(result?.message);
+      }
+    } catch (error) {
+      console.error("Failed to delete event:", error);
+      toast.error("An error occurred while deleting the event.");
     }
   };
 
@@ -751,22 +804,12 @@ function AdminEventsContent() {
                       </TableHeader>
                       <TableBody>
                         {participants.map((participant) => (
-                          <TableRow key={participant._id} className="border-b-2 border-black dark:border-white">
-                            <TableCell className="font-medium border-r-2 border-black dark:border-white">{participant.name || 'N/A'}</TableCell>
-                            <TableCell className="border-r-2 border-black dark:border-white">{participant.rollNo || 'N/A'}</TableCell>
-                            <TableCell className="border-r-2 border-black dark:border-white">{participant.branch || 'N/A'}</TableCell>
-                            <TableCell className="border-r-2 border-black dark:border-white">{participant.mobileNumber || 'N/A'}</TableCell>
-                            <TableCell className="border-r-2 border-black dark:border-white">{participant.email || 'N/A'}</TableCell>
-                            <TableCell className="border-r-2 border-black dark:border-white">
-                              <span className={`px-2 py-1 text-xs font-bold border-2 ${
-                                participant.paymentStatus === 'Completed' 
-                                  ? 'bg-green-400 text-black border-black' 
-                                  : 'bg-yellow-400 text-black border-black'
-                              }`}>
-                                {participant.paymentStatus}
-                              </span>
-                            </TableCell>
-                            <TableCell>{new Date(participant.registrationDate).toLocaleDateString()}</TableCell>
+                          <TableRow key={participant._id}>
+                            <TableCell className="font-medium border-r-2 border-black dark:border-white">{participant.user?.name || 'N/A'}</TableCell>
+                            <TableCell className="border-r-2 border-black dark:border-white">{participant.user?.rollNo || 'N/A'}</TableCell>
+                            <TableCell className="border-r-2 border-black dark:border-white">{participant.user?.branch || 'N/A'}</TableCell>
+                            <TableCell className="border-r-2 border-black dark:border-white">{participant.user?.mobileNumber || 'N/A'}</TableCell>
+                            <TableCell className="border-r-2 border-black dark:border-white">{participant.user?.email || 'N/A'}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

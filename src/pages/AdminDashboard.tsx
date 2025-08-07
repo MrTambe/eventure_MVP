@@ -65,73 +65,63 @@ function AdminDashboardContent() {
   // Form state
   const [activeMenuItem, setActiveMenuItem] = useState("Dashboard");
   const [eventName, setEventName] = useState("");
-  const [description, setDescription] = useState("");
-  const [venue, setVenue] = useState("");
+  const [eventDescription, setEventDescription] = useState("");
+  const [eventVenue, setEventVenue] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [eventTime, setEventTime] = useState("");
-  const [maxParticipants, setMaxParticipants] = useState("");
-  const [selectedVolunteers, setSelectedVolunteers] = useState<Id<"teamMembers">[]>([]);
+  const [maxParticipants, setMaxParticipants] = useState<string>("");
+  const [selectedVolunteers, setSelectedVolunteers] = useState<Id<"users">[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
 
-  const toggleVolunteer = (volunteerId: Id<"teamMembers">) => {
-    setSelectedVolunteers(prev =>
-      prev.includes(volunteerId)
-        ? prev.filter(id => id !== volunteerId)
-        : [...prev, volunteerId]
-    );
+  const toggleVolunteer = (volunteerId: Id<"users">) => {
+    setSelectedVolunteers(prev => {
+      if (prev.includes(volunteerId)) {
+        return prev.filter(id => id !== volunteerId);
+      } else {
+        return [...prev, volunteerId];
+      }
+    });
   };
 
-  const handleCreateEvent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  const handleCreateEvent = async () => {
+    if (!eventName.trim() || !eventVenue.trim() || !eventDate || !eventTime) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
 
+    setIsCreatingEvent(true);
     try {
-      if (!eventName.trim() || !venue.trim() || !eventDate || !eventTime) {
-        toast.error("Please fill in all required fields");
-        return;
-      }
-
-      const adminData = sessionStorage.getItem("adminUser");
-      if (!adminData) {
-        toast.error("Admin session expired. Please log in again.");
-        return;
-      }
-
-      const admin = JSON.parse(adminData);
-      
-      const volunteerIds = selectedVolunteers;
-
       const result = await createEventAsAdmin({
-        name: eventName,
-        description: description || "",
-        venue: venue,
+        name: eventName.trim(),
+        description: eventDescription.trim(),
+        venue: eventVenue.trim(),
         eventDate: eventDate,
         eventTime: eventTime,
         maxParticipants: maxParticipants ? parseInt(maxParticipants) : undefined,
-        volunteerIds,
-        adminEmail: admin.email,
+        volunteerIds: selectedVolunteers,
       });
 
-      if (result.success) {
+      if (result?.success) {
         toast.success(result.message);
         // Reset form
         setEventName("");
-        setDescription("");
-        setVenue("");
+        setEventDescription("");
+        setEventVenue("");
         setEventDate("");
         setEventTime("");
         setMaxParticipants("");
         setSelectedVolunteers([]);
         setIsCreateEventOpen(false);
       } else {
-        toast.error(result.message);
+        toast.error(result?.message || "Failed to create event");
       }
     } catch (error) {
       console.error("Event creation error:", error);
       toast.error("Failed to create event. Please try again.");
     } finally {
-      setIsSubmitting(false);
+      setIsCreatingEvent(false);
     }
   };
 
@@ -429,14 +419,14 @@ function AdminDashboardContent() {
                             </div>
                           ) : (
                             teamMembers.map((volunteer) => (
-                              <div key={volunteer._id} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800">
+                              <div key={volunteer.userId} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800">
                                 <button
                                   type="button"
-                                  onClick={() => toggleVolunteer(volunteer._id)}
+                                  onClick={() => toggleVolunteer(volunteer.userId)}
                                   className="flex-shrink-0"
                                   disabled={isSubmitting}
                                 >
-                                  {selectedVolunteers.includes(volunteer._id) ? (
+                                  {selectedVolunteers.includes(volunteer.userId) ? (
                                     <CheckSquare className="h-5 w-5 text-primary" />
                                   ) : (
                                     <Square className="h-5 w-5 text-muted-foreground" />
@@ -444,7 +434,7 @@ function AdminDashboardContent() {
                                 </button>
                                 <div className="flex-grow">
                                   <div className="font-medium text-sm">
-                                    {volunteer.name} ({volunteer.branch} - {volunteer.rollNo})
+                                    {volunteer.name} ({volunteer.department || volunteer.role || 'N/A'})
                                   </div>
                                   <div className="text-xs text-muted-foreground">{volunteer.email}</div>
                                 </div>
@@ -506,14 +496,14 @@ function AdminDashboardContent() {
                     </div>
                   ) : (
                     teamMembers.map((volunteer) => (
-                      <div key={volunteer._id} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+                      <div key={volunteer.userId} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
                         <button
                           type="button"
-                          onClick={() => toggleVolunteer(volunteer._id)}
+                          onClick={() => toggleVolunteer(volunteer.userId)}
                           className="flex-shrink-0"
                           disabled={isSubmitting}
                         >
-                          {selectedVolunteers.includes(volunteer._id) ? (
+                          {selectedVolunteers.includes(volunteer.userId) ? (
                             <CheckSquare className="h-5 w-5 text-primary" />
                           ) : (
                             <Square className="h-5 w-5 text-muted-foreground" />
@@ -521,7 +511,7 @@ function AdminDashboardContent() {
                         </button>
                         <div className="flex-grow">
                           <div className="font-medium text-sm">
-                            {volunteer.name} ({volunteer.branch} - {volunteer.rollNo})
+                            {volunteer.name} ({volunteer.department || volunteer.role || 'N/A'})
                           </div>
                           <div className="text-xs text-muted-foreground">{volunteer.email}</div>
                         </div>

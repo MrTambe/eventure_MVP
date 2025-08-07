@@ -1,538 +1,231 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/use-auth";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { MenuBar } from "@/components/ui/glow-menu";
-import { BackgroundPaths } from "@/components/ui/background-paths";
-import { ThemeProvider, useTheme } from 'next-themes';
-import BrutalistDock from "@/components/ui/brutalist-dock";
-import { Id } from "@/convex/_generated/dataModel";
-import { useNavigate } from "react-router";
 import EmojiPicker from 'emoji-picker-react';
-import MessageWithReadReceipt from "@/components/ui/MessageWithReadReceipt";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Smile, Send, MessageSquare, Users, Settings, FileText, Paperclip, Home, Calendar } from 'lucide-react';
+import { BrutalistDock } from "@/components/ui/brutalist-dock";
+import { MessageWithReadReceipt, Message } from "@/components/ui/MessageWithReadReceipt";
+import { useNavigate } from "react-router";
+import { useTheme } from "@/components/theme-provider";
 import { Protected } from "@/lib/protected-page";
-import { AdminNavBar } from "@/components/admin/admin-navbar";
-import { Home, Users, MessageSquare, Calendar } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useForm, SubmitHandler } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { formatDistanceToNow } from "date-fns";
 
 interface AdminUser {
-  _id: Id<"admins">;
-  email: string;
+  _id: Id<"users">;
   name?: string;
-  role?: string;
+  email?: string;
+  image?: string;
 }
 
 interface AttachmentPreview {
-  file: File;
-  url: string;
   name: string;
-  type: "image" | "pdf" | "video";
+  url: string;
+  type: string;
 }
 
-const messageSchema = z.object({
-  content: z.string().min(1, "Message cannot be empty"),
-});
-
-type MessageFormValues = z.infer<typeof messageSchema>;
-
-function AdminCommunicationContent() {
+export default function AdminCommunication() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
-  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
-  const [activeMenuItem, setActiveMenuItem] = useState("Communication");
+  const { user: adminUser } = useAuth();
   const [messageText, setMessageText] = useState("");
   const [attachments, setAttachments] = useState<AttachmentPreview[]>([]);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [isPosting, setIsPosting] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [activeMenuItem, setActiveMenuItem] = useState("Communication");
 
-  // Fetch data
-  const messages = useQuery(api.communication.getMessages);
-  const currentUser = useQuery(api.users.currentUser);
+  const messages = useQuery(api.communication.listMessages);
+  const allUsers = useQuery(api.users.listAll);
+  const teamMembers = useQuery(api.team.getAllTeamMembers);
 
-  // Mutations
-  const postMessage = useMutation(api.communication.postMessage);
+  const postMessage = useMutation(api.communication.sendMessage);
   const toggleEmojiReaction = useMutation(api.communication.toggleEmojiReaction);
 
-  // Load admin user from session storage
-  useEffect(() => {
-    const adminData = sessionStorage.getItem("adminUser");
-    if (adminData) {
-      setAdminUser(JSON.parse(adminData));
-    }
-  }, []);
-
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
   const menuItems = [
-    { name: 'Dashboard', label: 'Dashboard', href: '/admin-dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500', iconColor: 'text-blue-500' },
-    { name: 'Events', label: 'Events', href: '/admin-events', icon: Calendar, gradient: 'from-green-500 to-emerald-500', iconColor: 'text-green-500' },
-    { name: 'Team', label: 'Team', href: '/admin-team', icon: Users, gradient: 'from-purple-500 to-violet-500', iconColor: 'text-purple-500' },
+    { name: 'Dashboard', label: 'Dashboard', href: '/admin-dashboard', icon: MessageSquare, gradient: 'from-blue-500 to-green-500', iconColor: 'text-blue-500' },
+    { name: 'Events', label: 'Events', href: '/admin-events', icon: Users, gradient: 'from-green-500 to-orange-500', iconColor: 'text-green-500' },
     { name: 'Communication', label: 'Communication', href: '/admin-communication', icon: Settings, gradient: 'from-orange-500 to-red-500', iconColor: 'text-orange-500' },
     { name: 'Settings', label: 'Settings', href: '/admin-settings', icon: Settings, gradient: 'from-red-500 to-orange-500', iconColor: 'text-red-500' }
   ];
 
   const handleMenuItemClick = (itemName: string) => {
     setActiveMenuItem(itemName);
-    const menuItem = menuItems.find(item => item.name === itemName);
-    if (menuItem?.href) {
-      navigate(menuItem.href);
+    const item = menuItems.find(m => m.name === itemName);
+    if (item) {
+      navigate(item.href);
     }
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    
-    if (attachments.length + files.length > 5) {
-      toast.error("Maximum 5 attachments allowed per message");
-      return;
+  const handleSendMessage = async () => {
+    if (!messageText.trim()) return;
+
+    try {
+      const result = await postMessage({
+        content: messageText,
+      });
+      setMessageText("");
+      setAttachments([]);
+      toast.success("Message sent successfully");
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      toast.error("Failed to send message");
     }
+  };
 
-    files.forEach(file => {
-      // Validate file type
-      const validTypes = ['.jpg', '.jpeg', '.png', '.webp', '.pdf', '.mp4'];
-      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-      
-      if (!validTypes.includes(fileExtension)) {
-        toast.error(`Unsupported file type: ${file.name}`);
-        return;
-      }
-
-      // Validate file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error(`File too large: ${file.name} (max 10MB)`);
-        return;
-      }
-
-      // Determine file type
-      let type: "image" | "pdf" | "video";
-      if (['.jpg', '.jpeg', '.png', '.webp'].includes(fileExtension)) {
-        type = "image";
-      } else if (fileExtension === '.pdf') {
-        type = "pdf";
-      } else if (fileExtension === '.mp4') {
-        type = "video";
+  const handleToggleReaction = async (messageId: Id<"admin_communication_messages">, emoji: string) => {
+    if (!adminUser) return;
+    try {
+      const result = await toggleEmojiReaction({ messageId, emoji });
+      if (result?.success) {
+        toast.success("Reaction updated");
       } else {
-        return;
+        toast.error("Failed to toggle reaction");
       }
-
-      // Create preview
-      const url = URL.createObjectURL(file);
-      const preview: AttachmentPreview = {
-        file,
-        url,
-        name: file.name,
-        type
-      };
-
-      setAttachments(prev => [...prev, preview]);
-    });
-
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    } catch (error) {
+      console.error("Failed to toggle reaction:", error);
+      toast.error("Failed to toggle reaction");
     }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    
-    if (attachments.length + files.length > 5) {
-      toast.error("Maximum 5 attachments allowed per message");
-      return;
-    }
-
-    files.forEach(file => {
-      // Validate file type
-      const validTypes = ['.jpg', '.jpeg', '.png', '.webp', '.pdf', '.mp4'];
-      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-      
-      if (!validTypes.includes(fileExtension)) {
-        toast.error(`Unsupported file type: ${file.name}`);
-        return;
-      }
-
-      // Validate file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error(`File too large: ${file.name} (max 10MB)`);
-        return;
-      }
-
-      // Determine file type
-      let type: "image" | "pdf" | "video";
-      if (['.jpg', '.jpeg', '.png', '.webp'].includes(fileExtension)) {
-        type = "image";
-      } else if (fileExtension === '.pdf') {
-        type = "pdf";
-      } else if (fileExtension === '.mp4') {
-        type = "video";
-      } else {
-        return;
-      }
-
-      // Create preview
-      const url = URL.createObjectURL(file);
-      const preview: AttachmentPreview = {
-        file,
-        url,
+    if (event.target.files) {
+      const files = Array.from(event.target.files);
+      const previews = files.map(file => ({
         name: file.name,
-        type
-      };
-
-      setAttachments(prev => [...prev, preview]);
-    });
-
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+        url: URL.createObjectURL(file),
+        type: file.type
+      }));
+      setAttachments(prev => [...prev, ...previews]);
     }
   };
 
   const removeAttachment = (index: number) => {
-    setAttachments(prev => {
-      const newAttachments = [...prev];
-      URL.revokeObjectURL(newAttachments[index].url);
-      newAttachments.splice(index, 1);
-      return newAttachments;
-    });
+    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleEmojiSelect = (emojiData: any) => {
-    if (textareaRef.current) {
-      const textarea = textareaRef.current;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const newText = messageText.slice(0, start) + emojiData.emoji + messageText.slice(end);
-      setMessageText(newText);
-      
-      // Set cursor position after emoji
-      setTimeout(() => {
-        textarea.selectionStart = textarea.selectionEnd = start + emojiData.emoji.length;
-        textarea.focus();
-      }, 0);
-    }
-    setShowEmojiPicker(false);
-  };
+  const convertedMessages: Message[] = (messages || []).map(message => ({
+    _id: message._id,
+    senderId: message.authorId,
+    senderName: message.authorName || 'Unknown',
+    messageText: message.content,
+    timestamp: message._creationTime,
+    reactions: [],
+    isRead: true,
+    attachments: [],
+  }));
 
-  const handleSendMessage = async () => {
-    if (!canSend) return;
-    setIsPosting(true);
-    try {
-      const result = await postMessage({
-        messageText,
-        attachments,
-      });
-
-      if (result && result.success) {
-        toast.success("Message posted successfully!");
-        setMessageText("");
-        setAttachments([]);
-      } else {
-        toast.error(result?.message || "Failed to post message");
-      }
-    } catch (error) {
-      toast.error("An unexpected error occurred.");
-    } finally {
-      setIsPosting(false);
-    }
-  };
-
-  const handleEmojiReaction = async (messageId: Id<"admin_communication_messages">, emoji: string) => {
-    try {
-      const result = await toggleEmojiReaction({ messageId, emoji });
-      if (!result || !result.success) {
-        toast.error(result?.message || "Failed to toggle reaction");
-      }
-    } catch (error) {
-      toast.error("Failed to add reaction");
-    }
-  };
-
-  const getCurrentDate = () => {
-    return new Date().toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    }).toUpperCase();
-  };
-
-  const canSend = messageText.trim().length > 0 || attachments.length > 0;
-  const isAdmin = adminUser?.role === "admin";
-
-  return (
-    <div className="min-h-screen bg-background text-foreground font-mono relative">
-      {/* Background Animation */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <BackgroundPaths title="" />
-      </div>
-      
-      <div className="relative z-10">
-        {/* Header Section */}
-        <header className="border-b-2 border-black dark:border-white/20 p-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">ADMIN COMMUNICATION</h1>
-            <div className="flex items-center gap-4 md:gap-6">
-              <div className="text-right hidden md:block">
-                <div className="text-sm font-bold">{getCurrentDate()}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">ADMIN PANEL</div>
-              </div>
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-lg">
-                {adminUser?.name?.charAt(0) || 'A'}
-              </div>
-              <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 border-2 border-black dark:border-white">
-                {theme === 'dark' ? 'Light' : 'Dark'}
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {/* Floating Navbar */}
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
-          <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={handleMenuItemClick} />
-        </div>
-
-        {/* Main Content Container - back to normal padding */}
-        <div className="container mx-auto px-4 py-8 pt-24 pb-24">
-          {/* Messages Display */}
-          <div className="space-y-6 mb-8">
-            {messages === undefined ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black dark:border-white mx-auto"></div>
-                <p className="text-lg font-bold mt-4">LOADING MESSAGES...</p>
-              </div>
-            ) : messages.length === 0 ? (
-              <div className="text-center py-12">
-                <h2 className="text-2xl font-bold text-gray-600 mb-2">NO MESSAGES</h2>
-                <p className="text-gray-500">Start the conversation by posting the first message.</p>
-              </div>
-            ) : (
-              messages.map((message) => (
-                <MessageWithReadReceipt
-                  key={message._id}
-                  message={message}
-                  onEmojiReaction={handleEmojiReaction}
-                />
-              ))
-            )}
-          </div>
-
-          {/* Enhanced Message Composer - Admin Only */}
-          {isAdmin ? (
-            <div className="bg-white dark:bg-black border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] p-6">
-              <h3 className="text-xl font-bold mb-4 font-mono tracking-tight uppercase">POST MESSAGE</h3>
-              
-              {/* Message Input */}
-              <div className="mb-4">
-                <textarea
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  placeholder="Type your message here..."
-                  className="w-full h-32 p-3 border-2 border-black dark:border-white font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white bg-white dark:bg-black"
-                />
-              </div>
-
-              {/* Attachment Previews */}
-              {attachments.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-sm font-bold mb-2 font-mono">ATTACHMENTS ({attachments.length})</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                    {attachments.map((attachment, index) => (
-                      <div key={index} className="relative border-2 border-black dark:border-white p-2 bg-gray-50 dark:bg-gray-800">
-                        {attachment.type === 'image' ? (
-                          <img src={attachment.url} alt={attachment.name} className="w-full h-20 object-cover" />
-                        ) : (
-                          <div className="w-full h-20 flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-                            <FileText className="w-8 h-8 text-gray-600" />
-                          </div>
-                        )}
-                        <p className="text-xs font-mono mt-1 truncate">{attachment.name}</p>
-                        <button
-                          onClick={() => removeAttachment(index)}
-                          className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold flex items-center justify-center border border-black dark:border-white"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Action Bar */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  {/* File Upload */}
-                  <label className="cursor-pointer">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*,video/*,.pdf,.doc,.docx"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      disabled={isUploading}
-                    />
-                    <div className="flex items-center gap-2 px-3 py-2 border-2 border-black dark:border-white hover:bg-gray-100 dark:hover:bg-gray-800 font-mono text-sm">
-                      {isUploading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black dark:border-white"></div>
-                          UPLOADING...
-                        </>
-                      ) : (
-                        <>
-                          <Paperclip className="w-4 h-4" />
-                          ATTACH
-                        </>
-                      )}
-                    </div>
-                  </label>
-
-                  {/* Emoji Picker Toggle */}
-                  <button
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className="flex items-center gap-2 px-3 py-2 border-2 border-black dark:border-white hover:bg-gray-100 dark:hover:bg-gray-800 font-mono text-sm"
-                  >
-                    😀 EMOJI
-                  </button>
-                </div>
-
-                {/* Send Button */}
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!canSend || isPosting}
-                  className={`px-6 py-2 font-mono text-sm font-bold border-2 border-black dark:border-white transition-colors ${
-                    canSend && !isPosting
-                      ? 'bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400'
-                  }`}
-                >
-                  {isPosting ? 'POSTING...' : 'SEND MESSAGE'}
-                </button>
-              </div>
-
-              {/* Emoji Picker */}
-              {showEmojiPicker && (
-                <div className="mt-4 border-2 border-black dark:border-white">
-                  <EmojiPicker
-                    onEmojiClick={(emojiData) => {
-                      setMessageText(prev => prev + emojiData.emoji);
-                      setShowEmojiPicker(false);
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          ) : (
-            /* Non-Admin Restriction Message */
-            <div className="bg-white dark:bg-black border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] p-6">
-              <div className="text-center py-8">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 dark:bg-gray-700 border-2 border-black dark:border-white flex items-center justify-center">
-                  <span className="text-2xl">🔒</span>
-                </div>
-                <h3 className="text-xl font-bold mb-2 font-mono tracking-tight uppercase text-gray-600 dark:text-gray-400">
-                  ADMIN ONLY CHANNEL
-                </h3>
-                <p className="font-mono text-sm text-gray-500 dark:text-gray-400 mb-4">
-                  Only admins can post here. You can react to updates above.
-                </p>
-                <div className="text-xs font-mono text-gray-400 dark:text-gray-500 uppercase">
-                  VIEW ONLY ACCESS
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Brutalist Dock */}
-        <BrutalistDock />
-      </div>
-    </div>
-  );
-}
-
-export default function AdminCommunication() {
   const adminNavItems = [
     { name: 'Dashboard', url: '/admin-dashboard', icon: Home },
     { name: 'Team', url: '/admin-team', icon: Users },
     { name: 'Events', url: '/admin-events', icon: Calendar },
     { name: 'Communication', url: '/admin-communication', icon: MessageSquare },
+    { name: 'Settings', url: '/admin-settings', icon: Settings }
   ];
-
-  const messages = useQuery(api.communication.listMessages);
-  const sendMessage = useMutation(api.communication.sendMessage);
-
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<MessageFormValues>({
-    resolver: zodResolver(messageSchema),
-  });
-
-  const onSubmit: SubmitHandler<MessageFormValues> = async (data) => {
-    try {
-      await sendMessage({ content: data.content });
-      toast.success("Message sent successfully!");
-      reset();
-    } catch (error) {
-      toast.error("Failed to send message. Please try again.");
-    }
-  };
 
   return (
     <Protected>
-      <div className="min-h-screen bg-background">
-        <AdminNavBar items={adminNavItems} />
-        <div className="container mx-auto px-4 py-20">
-          <Card>
-            <CardHeader>
-              <CardTitle>Admin Communication Channel</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col h-[60vh]">
-                <div className="flex-1 overflow-y-auto pr-4 space-y-4">
-                  {messages?.map((message) => (
-                    <div key={message._id} className="flex items-start gap-4">
-                      <Avatar>
-                        <AvatarImage src={message.authorImage} />
-                        <AvatarFallback>{message.authorName?.charAt(0) || "A"}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="flex items-baseline gap-2">
-                          <p className="font-semibold">{message.authorName}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(message._creationTime), { addSuffix: true })}
-                          </p>
-                        </div>
-                        <p className="text-foreground">{message.content}</p>
+      <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+        <div className="flex-1 flex flex-col">
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="max-w-4xl mx-auto space-y-4">
+              {convertedMessages.map((message) => (
+                <MessageWithReadReceipt
+                  key={message._id}
+                  message={message}
+                  onEmojiReaction={handleToggleReaction}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t bg-white dark:bg-gray-800 p-4">
+            {attachments.length > 0 && (
+              <div className="flex gap-2 mb-4 overflow-x-auto">
+                {attachments.map((attachment, index) => (
+                  <div key={index} className="relative">
+                    {attachment.type.startsWith('image/') ? (
+                      <img src={attachment.url} alt={attachment.name} className="w-full h-20 object-cover" />
+                    ) : (
+                      <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
+                        <FileText className="w-8 h-8 text-gray-600" />
                       </div>
-                    </div>
-                  ))}
-                </div>
-                <form onSubmit={handleSubmit(onSubmit)} className="mt-4 pt-4 border-t">
-                  <div className="flex gap-2">
-                    <Textarea
-                      {...register("content")}
-                      placeholder="Type your message..."
-                      className="flex-1"
-                    />
-                    <Button type="submit">Send</Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="absolute -top-2 -right-2 w-6 h-6 rounded-full p-0"
+                      onClick={() => removeAttachment(index)}
+                    >
+                      ×
+                    </Button>
                   </div>
-                  {errors.content && <p className="text-destructive text-sm mt-1">{errors.content.message}</p>}
-                </form>
+                ))}
               </div>
-            </CardContent>
-          </Card>
+            )}
+
+            <div className="flex gap-2">
+              <Textarea
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                placeholder="Type your message..."
+                className="flex-1 min-h-[60px] resize-none"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+              />
+              <div className="flex flex-col gap-2">
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                >
+                  <Paperclip className="w-4 h-4" />
+                </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      <Smile className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <EmojiPicker
+                      onEmojiClick={(emojiData) => {
+                        setMessageText(prev => prev + emojiData.emoji);
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Button onClick={handleSendMessage} disabled={!messageText.trim()}>
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="w-80 border-l bg-white dark:bg-gray-800">
+          <BrutalistDock
+            currentUser={adminUser}
+            allUsers={allUsers || []}
+            teamMembers={teamMembers || []}
+          />
         </div>
       </div>
     </Protected>

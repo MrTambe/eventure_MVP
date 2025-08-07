@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Menu } from 'lucide-react';
@@ -14,21 +14,32 @@ interface User {
   isOnline?: boolean;
 }
 
-interface BrutalistDockProps {
-  className?: string;
+interface TeamMember {
+  _id: Id<"users">;
+  name: string;
+  role: string;
+  email: string;
+  image?: string;
 }
 
-const BrutalistDock: React.FC<BrutalistDockProps> = ({ className = '' }) => {
+interface BrutalistDockProps {
+  currentUser: any;
+  allUsers: any[];
+  teamMembers: any[];
+}
+
+export const BrutalistDock: React.FC<BrutalistDockProps> = ({ currentUser: propCurrentUser, allUsers, teamMembers: propTeamMembers }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isPrivateDMModalOpen, setPrivateDMModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
   const [hoveredUser, setHoveredUser] = useState<string | null>(null);
-  const [dmModalOpen, setDmModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   // Get team members and users from database
   const teamMembers = useQuery(api.team.getAllTeamMembers);
   const currentUser = useQuery(api.users.currentUser);
 
   // Combine team members and current user for display
-  const allUsers: User[] = React.useMemo(() => {
+  const combinedUsers = useMemo(() => {
     const users: User[] = [];
     
     // Add current user if exists
@@ -72,12 +83,15 @@ const BrutalistDock: React.FC<BrutalistDockProps> = ({ className = '' }) => {
       .slice(0, 2);
   };
 
-  const openPrivateDM = (userId: Id<"users"> | Id<"teamMembers">) => {
-    const user = allUsers.find(u => u._id === userId);
-    if (user) {
-      setSelectedUser(user);
-      setDmModalOpen(true);
-    }
+  const openPrivateDM = (user: any) => {
+    const recipientId = user.userId ? user.userId : user._id;
+    setSelectedUser({ ...user, _id: recipientId });
+    setPrivateDMModalOpen(true);
+  };
+
+  const closePrivateDM = () => {
+    setPrivateDMModalOpen(false);
+    setSelectedUser(null);
   };
 
   const handleMenuClick = () => {
@@ -87,7 +101,7 @@ const BrutalistDock: React.FC<BrutalistDockProps> = ({ className = '' }) => {
 
   return (
     <>
-      <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-30 ${className}`}>
+      <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-30`}>
         <div className="bg-[#f8f8f8] border-2 border-black shadow-[4px_4px_0px_#000] hover:shadow-[6px_6px_0px_#000] transition-shadow duration-200">
           <div className="flex items-center px-4 py-3 gap-4">
             
@@ -98,7 +112,7 @@ const BrutalistDock: React.FC<BrutalistDockProps> = ({ className = '' }) => {
 
             {/* Center Area - Team Member Avatars */}
             <div className="flex items-center gap-1">
-              {allUsers.map((user, index) => (
+              {combinedUsers.map((user, index) => (
                 <React.Fragment key={user._id}>
                   <div
                     className="relative"
@@ -107,7 +121,7 @@ const BrutalistDock: React.FC<BrutalistDockProps> = ({ className = '' }) => {
                   >
                     {/* Avatar */}
                     <button
-                      onClick={() => openPrivateDM(user._id)}
+                      onClick={() => openPrivateDM(user)}
                       className="relative w-12 h-12 rounded-full border-2 border-black bg-white hover:border-4 transition-all duration-200 overflow-hidden cursor-pointer"
                     >
                       {user.image ? (
@@ -148,7 +162,7 @@ const BrutalistDock: React.FC<BrutalistDockProps> = ({ className = '' }) => {
                   </div>
 
                   {/* Hard Separation Between Avatars */}
-                  {index < allUsers.length - 1 && (
+                  {index < combinedUsers.length - 1 && (
                     <div className="w-1 h-8 bg-black"></div>
                   )}
                 </React.Fragment>
@@ -166,17 +180,14 @@ const BrutalistDock: React.FC<BrutalistDockProps> = ({ className = '' }) => {
         </div>
       </div>
 
-      {/* Private DM Modal */}
-      {selectedUser && (
+      {isPrivateDMModalOpen && selectedUser && (
         <PrivateDMModal
-          isOpen={dmModalOpen}
-          onClose={() => {
-            setDmModalOpen(false);
-            setSelectedUser(null);
-          }}
+          isOpen={isPrivateDMModalOpen}
+          onClose={closePrivateDM}
           recipientId={selectedUser._id}
           recipientName={selectedUser.name}
-          recipientRole={selectedUser.role}
+          recipientImage={selectedUser.image}
+          currentUser={currentUser}
         />
       )}
     </>
