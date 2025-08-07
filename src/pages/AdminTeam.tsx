@@ -1,4 +1,4 @@
-import { Protected } from "@/lib/protected-page";
+import { AdminProtected } from "@/lib/admin-protected-page";
 import { AdminNavBar } from "@/components/admin/admin-navbar";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -12,24 +12,27 @@ import {
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Home, Users, Calendar, BarChart } from "lucide-react";
+import { Home, Users, Calendar, BarChart, Settings } from "lucide-react";
 
 export default function AdminTeam() {
   const adminNavItems = [
     { name: 'Dashboard', url: '/admin-dashboard', icon: Home },
-    { name: 'Team', url: '/admin-team', icon: Users },
     { name: 'Events', url: '/admin-events', icon: Calendar },
+    { name: 'Team', url: '/admin-team', icon: Users },
     { name: 'Communication', url: '/admin-communication', icon: BarChart },
+    { name: 'Settings', url: '/admin-settings', icon: Settings },
   ];
 
   const members = useQuery(api.users.listMembers);
 
   return (
-    <Protected>
+    <AdminProtected>
       <div className="min-h-screen bg-background">
         <AdminNavBar items={adminNavItems} />
         <div className="container mx-auto px-4 py-20">
-          <h1 className="text-3xl font-bold mb-6">Team Members</h1>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold">Team Members</h1>
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -62,6 +65,6 @@ export default function AdminTeam() {
           </Table>
         </div>
       </div>
-    </Protected>
+    </AdminProtected>
   );
 }
