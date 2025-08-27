@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Users } from "lucide-react";
+import { Users, Home, Calendar, Settings } from "lucide-react";
+import { MenuBar } from "@/components/ui/glow-menu";
+import { useNavigate } from "react-router";
 
 type CombinedAdmin = {
   _id: Id<"admins">;
@@ -62,6 +64,37 @@ export default function AdminTeam() {
 
   // Hover state for team member cards
   const [hoveredMemberId, setHoveredMemberId] = useState<string | null>(null);
+
+  // ADD: Navigation state and handlers for Glow Menu
+  const navigate = useNavigate();
+  const [activeMenuItem, setActiveMenuItem] = useState("Team");
+
+  const menuItems = [
+    { name: 'Dashboard', label: 'Dashboard', href: '/admin-dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500', iconColor: 'text-blue-500' },
+    { name: 'Events', label: 'Events', href: '/admin-events', icon: Calendar, gradient: 'from-green-500 to-emerald-500', iconColor: 'text-green-500' },
+    { name: 'Team', label: 'Team', href: '/admin-team', icon: Users, gradient: 'from-purple-500 to-violet-500', iconColor: 'text-purple-500' },
+    { name: 'Settings', label: 'Settings', href: '/admin-settings', icon: Settings, gradient: 'from-red-500 to-orange-500', iconColor: 'text-red-500' }
+  ];
+
+  const handleMenuItemClick = (itemName: string) => {
+    setActiveMenuItem(itemName);
+    switch (itemName) {
+      case 'Dashboard':
+        navigate('/admin-dashboard');
+        break;
+      case 'Events':
+        navigate('/admin-events');
+        break;
+      case 'Team':
+        navigate('/admin-team');
+        break;
+      case 'Settings':
+        navigate('/admin-settings');
+        break;
+      default:
+        break;
+    }
+  };
 
   // Edit modal state
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -141,6 +174,11 @@ export default function AdminTeam() {
           </div>
         </div>
       </header>
+
+      {/* Floating Navbar */}
+      <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
+        <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={handleMenuItemClick} />
+      </div>
 
       <main className="container mx-auto px-4 py-8">
         {/* Loading state */}
