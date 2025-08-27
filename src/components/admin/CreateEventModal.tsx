@@ -123,14 +123,7 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="flex flex-row items-center justify-between">
           <DialogTitle className="text-2xl font-bold tracking-tight">CREATE NEW EVENT</DialogTitle>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleClose}
-            className="h-6 w-6 rounded-full"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
