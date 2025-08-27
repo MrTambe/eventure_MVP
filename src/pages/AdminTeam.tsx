@@ -1,539 +1,356 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useAction } from 'convex/react';
-import { api } from '@/convex/_generated/api';
-import { Id } from '@/convex/_generated/dataModel';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Loader2, Users, UserCheck, UserX, PlusCircle } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MenuBar } from "@/components/ui/glow-menu";
-import { ThemeProvider, useTheme } from "next-themes";
-import { BackgroundPaths } from "@/components/ui/background-paths";
-import { useNavigate } from "react-router";
-import { Settings, Home, Calendar } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import MemberCard from "@/components/ui/member-card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { Users } from "lucide-react";
 
-type TeamUser = NonNullable<ReturnType<typeof useQuery<typeof api.team.getCombinedTeamWithProfileStatus>>>[0];
-
-// Stats Card Component
-const StatsCard = ({ icon: Icon, title, value, className }: { 
-  icon: React.ElementType; 
-  title: string; 
-  value: number; 
-  className?: string; 
-}) => (
-  <div className={`bg-white text-black border-4 border-black shadow-[8px_8px_0px_#000] p-6 font-mono ${className}`}>
-    <div className="flex items-center space-x-4">
-      <Icon className="h-8 w-8" />
-      <div>
-        <p className="text-sm font-bold uppercase tracking-wider">{title}</p>
-        <p className="text-3xl font-bold">{value}</p>
-      </div>
-    </div>
-  </div>
-);
-
-// Brutalist-style Card for each team user
-const TeamUserCard = ({ user, onEdit, onDelete }: { user: TeamUser; onEdit: (user: TeamUser) => void; onDelete: (user: TeamUser) => void; }) => {
-  return (
-    <div className="bg-white text-black border-4 border-black shadow-[8px_8px_0px_#000] p-6 flex flex-col justify-between font-mono">
-      <div>
-        <div className="flex justify-between items-start mb-4">
-          <h3 className="text-2xl font-bold uppercase tracking-tighter">{user.name}</h3>
-          <div className="flex flex-col items-end space-y-2">
-            <div
-              className={`text-sm font-bold border-2 border-black px-2 py-1 ${
-                user.isProfileComplete ? 'bg-green-400' : 'bg-red-400'
-              }`}
-            >
-              {user.isProfileComplete ? '✅ COMPLETE' : '❌ INCOMPLETE'}
-            </div>
-            <div className="text-xs font-bold bg-yellow-400 border-2 border-black px-2 py-1 uppercase">
-              {user.type}
-            </div>
-          </div>
-        </div>
-        <div className="space-y-2 text-sm">
-          <p><span className="font-bold">BRANCH:</span> {user.branch || 'N/A'}</p>
-          <p><span className="font-bold">ROLL NO:</span> {user.rollNo || 'N/A'}</p>
-          <p><span className="font-bold">EMAIL:</span> {user.email}</p>
-          <p><span className="font-bold">MOBILE:</span> {user.mobileNumber || 'N/A'}</p>
-        </div>
-      </div>
-      <div className="flex space-x-2 mt-6">
-        <Button
-          onClick={() => onEdit(user)}
-          className="w-full bg-black text-white border-2 border-black rounded-none hover:bg-gray-800 font-bold text-lg"
-        >
-          [ EDIT PROFILE ]
-        </Button>
-        <Button
-          onClick={() => onDelete(user)}
-          className="w-auto bg-red-500 text-white border-2 border-black rounded-none hover:bg-red-700 font-bold text-lg px-4"
-        >
-          [ DELETE ]
-        </Button>
-      </div>
-    </div>
-  );
+type CombinedAdmin = {
+  _id: Id<"admins">;
+  name?: string;
+  email: string;
+  role: string;
+  branch?: string;
+  rollNo?: string;
+  mobileNumber?: string;
+  type: "admin";
+  isProfileComplete: boolean;
 };
 
-// Edit Modal Component
-const EditProfileModal = ({
-  user,
-  isOpen,
-  onClose,
-}: {
-  user: TeamUser | null;
-  isOpen: boolean;
-  onClose: () => void;
-}) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    branch: '',
-    rollNo: '',
-    mobileNumber: '',
-    department: '',
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+type CombinedTeamMember = {
+  _id: Id<"teamMembers">;
+  userId: Id<"users">;
+  name: string;
+  email: string;
+  role: string;
+  department?: string;
+  branch?: string;
+  rollNo?: string;
+  mobileNumber?: string;
+  joinedAt: number;
+  type: "teammember";
+  isProfileComplete: boolean;
+};
+
+type CombinedUser = CombinedAdmin | CombinedTeamMember;
+
+export default function AdminTeam() {
+  const combined = useQuery(api.team.getCombinedTeamWithProfileStatus);
   const updateTeamMember = useMutation(api.team.updateTeamMemberProfile);
   const updateAdmin = useMutation(api.team.updateAdminProfile);
 
-  React.useEffect(() => {
-    if (user) {
-      setFormData({
-        name: user.name || '',
-        branch: user.branch || '',
-        rollNo: user.rollNo || '',
-        mobileNumber: user.mobileNumber || '',
-        department: user.type === 'teammember' ? user.department || '' : '',
-      });
+  // Admin session (from AdminProtected/sessionStorage)
+  const [adminSession, setAdminSession] = useState<{ _id: string; role: string } | null>(null);
+  useEffect(() => {
+    const stored = sessionStorage.getItem("adminUser");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setAdminSession({ _id: parsed._id, role: String(parsed.role || "").toLowerCase().trim() });
+      } catch {
+        setAdminSession(null);
+      }
     }
-  }, [user]);
+  }, []);
 
-  if (!user) return null;
+  const isAdmin = adminSession?.role === "admin";
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setFormData((prev) => ({ ...prev, [id]: value }));
-  };
+  // Hover state for team member cards
+  const [hoveredMemberId, setHoveredMemberId] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      const adminUserString = sessionStorage.getItem('adminUser');
-      if (!adminUserString) {
-        toast.error('Authentication error. Please sign in again.');
-        setIsSubmitting(false);
-        return;
-      }
-      const loggedInAdmin = JSON.parse(adminUserString);
-      if (loggedInAdmin.role !== 'admin') {
-        toast.error('Authorization error. Admin access required.');
-        setIsSubmitting(false);
-        return;
-      }
+  // Edit modal state
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<CombinedUser | null>(null);
+  const [form, setForm] = useState({
+    name: "",
+    branch: "",
+    rollNo: "",
+    mobileNumber: "",
+    department: "", // team member only
+  });
 
-      if (user.type === 'teammember') {
-        await updateTeamMember({
-          teamMemberId: user._id as Id<'teamMembers'>,
-          adminId: loggedInAdmin._id,
-          ...formData,
-        });
-      } else { // user.type === 'admin'
-        const { department, ...adminFormData } = formData;
-        await updateAdmin({
-          adminToUpdateId: user._id as Id<'admins'>,
-          loggedInAdminId: loggedInAdmin._id,
-          ...adminFormData,
-        });
-      }
+  const admins = useMemo(() => (combined ? (combined as CombinedUser[]).filter(u => u.type === "admin") as CombinedAdmin[] : []), [combined]);
+  const teamMembers = useMemo(() => (combined ? (combined as CombinedUser[]).filter(u => u.type === "teammember") as CombinedTeamMember[] : []), [combined]);
 
-      toast.success(`Profile for ${formData.name} updated successfully!`);
-      onClose();
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to update profile.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white text-black border-4 border-black shadow-[8px_8px_0px_#000] font-mono rounded-none">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold uppercase tracking-tighter">Edit Profile: {user.name}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="name" className="font-bold text-sm">NAME</Label>
-            <Input id="name" value={formData.name} onChange={handleChange} className="rounded-none border-2 border-black" />
-          </div>
-          <div>
-            <Label htmlFor="branch" className="font-bold text-sm">BRANCH</Label>
-            <Input id="branch" value={formData.branch} onChange={handleChange} className="rounded-none border-2 border-black" />
-          </div>
-          <div>
-            <Label htmlFor="rollNo" className="font-bold text-sm">ROLL NO</Label>
-            <Input id="rollNo" value={formData.rollNo} onChange={handleChange} className="rounded-none border-2 border-black" />
-          </div>
-          <div>
-            <Label htmlFor="mobileNumber" className="font-bold text-sm">MOBILE NUMBER</Label>
-            <Input id="mobileNumber" value={formData.mobileNumber} onChange={handleChange} className="rounded-none border-2 border-black" />
-          </div>
-          {user.type === 'teammember' && (
-            <div>
-              <Label htmlFor="department" className="font-bold text-sm">DEPARTMENT</Label>
-              <Input id="department" value={formData.department} onChange={handleChange} className="rounded-none border-2 border-black" />
-            </div>
-          )}
-          <DialogFooter className="!justify-start pt-4">
-            <Button type="submit" disabled={isSubmitting} className="bg-black text-white border-2 border-black rounded-none hover:bg-gray-800 font-bold text-lg">
-              {isSubmitting ? <Loader2 className="animate-spin" /> : 'SAVE CHANGES'}
-            </Button>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" className="border-2 border-black rounded-none font-bold text-lg">
-                CANCEL
-              </Button>
-            </DialogClose>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-// Create User Modal Component
-const CreateUserModal = ({
-  isOpen,
-  onClose,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-}) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'admin' | 'teammember'>('teammember');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const createUserAction = useAction(api.user_creation.createUser);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      toast.error("Email and password are required.");
+  const openEdit = (user: CombinedUser) => {
+    if (!isAdmin) {
+      toast.error("Only admins can edit profiles.");
       return;
     }
-    setIsSubmitting(true);
-    try {
-      await createUserAction({ email, password, role });
-      toast.success(`User ${email} created successfully as a ${role}.`);
-      onClose();
-      // Reset form
-      setEmail('');
-      setPassword('');
-      setRole('teammember');
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error.message || 'Failed to create user.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white text-black border-4 border-black shadow-[8px_8px_0px_#000] font-mono rounded-none">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold uppercase tracking-tighter">Create New User</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="email-create" className="font-bold text-sm">EMAIL</Label>
-            <Input id="email-create" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="rounded-none border-2 border-black" required />
-          </div>
-          <div>
-            <Label htmlFor="password-create" className="font-bold text-sm">PASSWORD</Label>
-            <Input id="password-create" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="rounded-none border-2 border-black" required />
-          </div>
-          <div>
-            <Label htmlFor="role-create" className="font-bold text-sm">ROLE</Label>
-            <Select value={role} onValueChange={(value: 'admin' | 'teammember') => setRole(value)}>
-              <SelectTrigger className="rounded-none border-2 border-black">
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent className="font-mono rounded-none border-2 border-black bg-white">
-                <SelectItem value="teammember">Team Member</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter className="!justify-start pt-4">
-            <Button type="submit" disabled={isSubmitting} className="bg-black text-white border-2 border-black rounded-none hover:bg-gray-800 font-bold text-lg">
-              {isSubmitting ? <Loader2 className="animate-spin" /> : 'CREATE USER'}
-            </Button>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" className="border-2 border-black rounded-none font-bold text-lg">
-                CANCEL
-              </Button>
-            </DialogClose>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-function AdminTeamContent() {
-  const teamUsers = useQuery(api.team.getCombinedTeamWithProfileStatus);
-  const deleteUserMutation = useMutation(api.team.deleteUser);
-  const [selectedUser, setSelectedUser] = useState<TeamUser | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<TeamUser | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const handleEdit = (user: TeamUser) => {
     setSelectedUser(user);
-    setIsEditModalOpen(true);
+    setForm({
+      name: user.name || "",
+      branch: user.branch || "",
+      rollNo: user.rollNo || "",
+      mobileNumber: user.mobileNumber || "",
+      department: user.type === "teammember" ? (user.department || "") : "",
+    });
+    setIsEditOpen(true);
   };
 
-  const handleCloseEditModal = () => {
-    setIsEditModalOpen(false);
+  const closeEdit = () => {
+    setIsEditOpen(false);
     setSelectedUser(null);
   };
 
-  const handleDeleteClick = (user: TeamUser) => {
-    setUserToDelete(user);
-  };
+  const saveEdit = async () => {
+    if (!selectedUser || !adminSession?._id) return;
 
-  const handleCancelDelete = () => {
-    setUserToDelete(null);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!userToDelete) return;
-
-    setIsDeleting(true);
     try {
-      const adminUserString = sessionStorage.getItem('adminUser');
-      if (!adminUserString) {
-        toast.error('Authentication error. Please sign in again.');
-        setIsDeleting(false);
-        return;
+      if (selectedUser.type === "teammember") {
+        await updateTeamMember({
+          teamMemberId: selectedUser._id,
+          name: form.name || undefined,
+          branch: form.branch || undefined,
+          rollNo: form.rollNo || undefined,
+          mobileNumber: form.mobileNumber || undefined,
+          department: form.department || undefined,
+          adminId: adminSession._id as Id<"admins">,
+        });
+      } else {
+        await updateAdmin({
+          adminToUpdateId: selectedUser._id,
+          name: form.name || undefined,
+          branch: form.branch || undefined,
+          rollNo: form.rollNo || undefined,
+          mobileNumber: form.mobileNumber || undefined,
+          loggedInAdminId: adminSession._id as Id<"admins">,
+        });
       }
-      const loggedInAdmin = JSON.parse(adminUserString);
-      if (loggedInAdmin.role !== 'admin') {
-        toast.error('Authorization error. Admin access required.');
-        setIsDeleting(false);
-        return;
-      }
-
-      await deleteUserMutation({
-        userIdToDelete: userToDelete._id,
-        userType: userToDelete.type,
-        loggedInAdminId: loggedInAdmin._id,
-      });
-
-      toast.success(`User ${userToDelete.name} has been deleted.`);
-      setUserToDelete(null);
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error.message || 'Failed to delete user.');
-    } finally {
-      setIsDeleting(false);
+      toast.success("Profile updated successfully");
+      closeEdit();
+    } catch (e) {
+      toast.error((e as Error).message || "Failed to update profile");
     }
-  };
-
-  // Calculate stats
-  const stats = React.useMemo(() => {
-    if (!teamUsers) return { total: 0, complete: 0, incomplete: 0 };
-    
-    const complete = teamUsers.filter((user: any) => user.isProfileComplete).length;
-    const incomplete = teamUsers.length - complete;
-    
-    return {
-      total: teamUsers.length,
-      complete,
-      incomplete,
-    };
-  }, [teamUsers]);
-
-  if (teamUsers === undefined) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-100">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
-          <p className="font-mono text-xl font-bold">LOADING TEAM DATA...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
-  const [activeMenuItem, setActiveMenuItem] = useState("Team");
-
-  const menuItems = [
-    { name: "Dashboard", label: "Dashboard", href: "/admin-dashboard", icon: Home, gradient: "from-blue-500 to-cyan-500", iconColor: "text-blue-500" },
-    { name: "Events", label: "Events", href: "/admin-events", icon: Calendar, gradient: "from-green-500 to-emerald-500", iconColor: "text-green-500" },
-    { name: "Team", label: "Team", href: "/admin-team", icon: Users, gradient: "from-purple-500 to-violet-500", iconColor: "text-purple-500" },
-    { name: "Settings", label: "Settings", href: "/admin-settings", icon: Settings, gradient: "from-red-500 to-orange-500", iconColor: "text-red-500" },
-  ];
-
-  const handleMenuItemClick = (itemName: string) => {
-    setActiveMenuItem(itemName);
-    switch (itemName) {
-      case "Dashboard":
-        navigate("/admin-dashboard");
-        break;
-      case "Events":
-        navigate("/admin-events");
-        break;
-      case "Team":
-        navigate("/admin-team");
-        break;
-      case "Settings":
-        navigate("/admin-settings");
-        break;
-      default:
-        break;
-    }
-  };
-
-  const getCurrentDate = () => {
-    return new Date().toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    }).toUpperCase();
   };
 
   return (
     <div className="min-h-screen bg-background text-foreground font-mono relative">
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <BackgroundPaths title="" />
-      </div>
-      <div className="relative z-10">
-        {/* Header Section (same style as AdminDashboard) */}
-        <header className="border-b-2 border-black dark:border-white/20 p-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">TEAM ADMIN PANEL</h1>
-            <div className="flex items-center gap-4 md:gap-6">
-              <div className="text-right hidden md:block">
-                <div className="text-sm font-bold">{getCurrentDate()}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">ADMIN PANEL</div>
+      <header className="border-b-4 border-black dark:border-white p-4 bg-card/80 backdrop-blur-sm">
+        <div className="container mx-auto flex justify-between items-center">
+          <h1 className="text-2xl md:text-3xl font-black tracking-tight">TEAM MANAGEMENT</h1>
+          <div className="flex items-center gap-3">
+            <div className="px-3 py-1 border-2 border-black dark:border-white uppercase text-xs font-extrabold">
+              {isAdmin ? "Admin" : "Team"}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8">
+        {/* Loading state */}
+        {combined === undefined && (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-black dark:border-white mx-auto mb-4"></div>
+              <p className="text-sm text-muted-foreground">Loading team...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {combined && (combined as CombinedUser[]).length === 0 && (
+          <div className="bg-gray-100 dark:bg-gray-900 border-4 border-black dark:border-white p-8 text-center">
+            <Users className="w-10 h-10 mx-auto mb-3" />
+            <h2 className="font-black text-xl tracking-tight">NO TEAM MEMBERS YET</h2>
+            <p className="text-sm text-muted-foreground mt-1">Add admins or team members to get started.</p>
+          </div>
+        )}
+
+        {combined && (combined as CombinedUser[]).length > 0 && (
+          <div className="space-y-10">
+            {/* Admins Section */}
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-black tracking-tight">ADMINS</h2>
+                <div className="text-xs font-bold text-muted-foreground">
+                  {admins.length} {admins.length === 1 ? "admin" : "admins"}
+                </div>
               </div>
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-lg">
-                AB
+              {admins.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No admins found.</div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {admins.map((admin) => (
+                    <div
+                      key={admin._id}
+                      className="relative bg-white dark:bg-gray-800 border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] transition-all duration-300 rounded-lg p-6"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="text-lg font-black uppercase">{admin.name || admin.email.split("@")[0]}</h3>
+                          <div className="mt-1 text-xs font-bold text-muted-foreground break-all">{admin.email}</div>
+                        </div>
+                        <div className={`px-2 py-1 text-[10px] font-black uppercase border-2 border-black ${admin.isProfileComplete ? "bg-green-400 text-black" : "bg-red-400 text-black"}`}>
+                          {admin.isProfileComplete ? "Complete" : "Incomplete"}
+                        </div>
+                      </div>
+                      <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                        <div className="border-2 border-black dark:border-white p-2">
+                          <div className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase">Branch</div>
+                          <div className="font-bold">{admin.branch || "—"}</div>
+                        </div>
+                        <div className="border-2 border-black dark:border-white p-2">
+                          <div className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase">Roll No</div>
+                          <div className="font-bold">{admin.rollNo || "—"}</div>
+                        </div>
+                        <div className="border-2 border-black dark:border-white p-2">
+                          <div className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase">Mobile</div>
+                          <div className="font-bold">{admin.mobileNumber || "—"}</div>
+                        </div>
+                        <div className="border-2 border-black dark:border-white p-2">
+                          <div className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase">Role</div>
+                          <div className="font-bold uppercase">{admin.role}</div>
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <Button
+                          variant="outline"
+                          className="w-full border-2 border-black dark:border-white font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
+                          onClick={() => openEdit(admin)}
+                        >
+                          EDIT
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Team Members Section */}
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-black tracking-tight">TEAM MEMBERS</h2>
+                <div className="text-xs font-bold text-muted-foreground">
+                  {teamMembers.length} {teamMembers.length === 1 ? "member" : "members"}
+                </div>
               </div>
-              <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="p-2 border-2 border-black dark:border-white"
+
+              {teamMembers.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No team members found.</div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {teamMembers.map((member) => (
+                    <div
+                      key={member._id}
+                      onMouseEnter={() => setHoveredMemberId(String(member._id))}
+                      onMouseLeave={() => setHoveredMemberId(null)}
+                    >
+                      <div className="mb-2">
+                        <div className={`inline-block px-2 py-1 text-[10px] font-black uppercase border-2 border-black ${member.isProfileComplete ? "bg-green-400 text-black" : "bg-red-400 text-black"}`}>
+                          {member.isProfileComplete ? "Complete" : "Incomplete"}
+                        </div>
+                      </div>
+                      <MemberCard
+                        member={{
+                          _id: member._id,
+                          name: member.name,
+                          rollNo: member.rollNo || "—",
+                          branch: member.branch || "—",
+                          phone: member.mobileNumber || "—",
+                          email: member.email,
+                          role: member.role || "Volunteer",
+                          volunteerEvents: [] as Id<"events">[],
+                        }}
+                        onEdit={() => openEdit(member)}
+                        isHovered={hoveredMemberId === String(member._id)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+        )}
+      </main>
+
+      {/* Edit Modal */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-lg bg-white dark:bg-black border-4 border-black dark:border-white">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black tracking-tight">
+              {selectedUser?.type === "teammember" ? "Edit Team Member" : "Edit Admin"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-bold">NAME</Label>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                className="border-2 border-black dark:border-white"
+                placeholder="Enter full name"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-bold">BRANCH</Label>
+                <Input
+                  value={form.branch}
+                  onChange={(e) => setForm((p) => ({ ...p, branch: e.target.value }))}
+                  className="border-2 border-black dark:border-white"
+                  placeholder="e.g., CSE"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-bold">ROLL NO</Label>
+                <Input
+                  value={form.rollNo}
+                  onChange={(e) => setForm((p) => ({ ...p, rollNo: e.target.value }))}
+                  className="border-2 border-black dark:border-white"
+                  placeholder="e.g., 23XX123"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-bold">MOBILE NUMBER</Label>
+              <Input
+                value={form.mobileNumber}
+                onChange={(e) => setForm((p) => ({ ...p, mobileNumber: e.target.value }))}
+                className="border-2 border-black dark:border-white"
+                placeholder="e.g., 9876543210"
+              />
+            </div>
+
+            {selectedUser?.type === "teammember" && (
+              <div>
+                <Label className="text-sm font-bold">DEPARTMENT</Label>
+                <Input
+                  value={form.department}
+                  onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))}
+                  className="border-2 border-black dark:border-white"
+                  placeholder="e.g., Operations"
+                />
+              </div>
+            )}
+
+            <div className="pt-2 flex gap-3">
+              <Button
+                onClick={saveEdit}
+                className="flex-1 bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-base py-3 border-2 border-black dark:border-white"
               >
-                {theme === "dark" ? "Light" : "Dark"}
-              </button>
+                SAVE
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditOpen(false)}
+                className="flex-1 border-2 border-black dark:border-white font-mono text-base py-3 hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                CANCEL
+              </Button>
             </div>
           </div>
-        </header>
-
-        {/* Floating Navbar */}
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
-          <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={handleMenuItemClick} />
-        </div>
-
-        {/* Main content container below navbar */}
-        <div className="container mx-auto px-4 py-8 pt-20">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-5xl font-bold uppercase tracking-tighter font-mono">Team Management</h1>
-            <Button 
-              onClick={() => setIsCreateModalOpen(true)}
-              className="bg-black text-white border-2 border-black rounded-none hover:bg-gray-800 font-bold text-lg flex items-center space-x-2"
-            >
-              <PlusCircle className="h-6 w-6" />
-              <span>[ CREATE USER ]</span>
-            </Button>
-          </div>
-          
-          {/* Stats Section */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <StatsCard icon={Users} title="Total Users" value={stats.total} />
-            <StatsCard icon={UserCheck} title="Complete Profiles" value={stats.complete} className="bg-green-100" />
-            <StatsCard icon={UserX} title="Incomplete Profiles" value={stats.incomplete} className="bg-red-100" />
-          </div>
-
-          {teamUsers.length === 0 ? (
-            <div className="text-center py-20 border-4 border-dashed border-black">
-                <p className="font-mono text-2xl font-bold">NO TEAM MEMBERS OR ADMINS FOUND.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-              {teamUsers.map((user: any) => (
-                <TeamUserCard key={user._id} user={user} onEdit={handleEdit} onDelete={handleDeleteClick} />
-              ))}
-            </div>
-          )}
-          <EditProfileModal user={selectedUser} isOpen={isEditModalOpen} onClose={handleCloseEditModal} />
-          <CreateUserModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
-          <AlertDialog open={!!userToDelete} onOpenChange={(isOpen) => !isOpen && handleCancelDelete()}>
-            <AlertDialogContent className="bg-white text-black border-4 border-black shadow-[8px_8px_0px_#000] font-mono rounded-none">
-              <AlertDialogHeader>
-                <AlertDialogTitle className="text-2xl font-bold uppercase tracking-tighter">
-                  Are you absolutely sure?
-                </AlertDialogTitle>
-                <AlertDialogDescription className="text-base">
-                  This action cannot be undone. This will permanently delete the user account for{' '}
-                  <span className="font-bold">{userToDelete?.name}</span>.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter className="!justify-start pt-4">
-                <AlertDialogCancel 
-                    onClick={handleCancelDelete}
-                    className="border-2 border-black rounded-none font-bold text-lg"
-                >
-                    CANCEL
-                </AlertDialogCancel>
-                <AlertDialogAction
-                    onClick={handleConfirmDelete}
-                    disabled={isDeleting}
-                    className="bg-red-500 text-white border-2 border-black rounded-none hover:bg-red-700 font-bold text-lg"
-                >
-                    {isDeleting ? <Loader2 className="animate-spin" /> : 'YES, DELETE USER'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
-}
-
-export default function AdminTeam() {
-  return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <AdminTeamContent />
-    </ThemeProvider>
   );
 }
