@@ -31,7 +31,7 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
   const [selectedVolunteers, setSelectedVolunteers] = useState<Set<Id<"users">>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createEvent = useMutation(api.events.createEvent);
+  const createEvent = useMutation(api.events.createEventAsAdmin);
   const teamMembers = useQuery(api.users.listMembers);
 
   const handleInputChange = (field: string, value: string) => {
@@ -98,9 +98,9 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
       } else {
         toast.error(result?.message || "Failed to create event");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Event creation error:", error);
-      toast.error("Failed to create event. Please try again.");
+      toast.error(error?.message || "Failed to create event. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
