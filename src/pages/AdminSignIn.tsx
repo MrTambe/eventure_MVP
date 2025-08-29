@@ -27,15 +27,6 @@ export default function AdminSignIn() {
 
     setIsLoading(true);
     try {
-      // TEMPORARY BYPASS FOR DEBUGGING: START
-      // In a production environment, this bypass should be removed.
-      toast.success("Bypassing login for debugging purposes.");
-      sessionStorage.setItem("adminUser", JSON.stringify({ _id: "debug_admin_id", email: email.trim(), role: "admin", name: "Debug Admin" }));
-      setLoginSuccess(true);
-      // TEMPORARY BYPASS FOR DEBUGGING: END
-
-      // Original login logic (commented out for bypass):
-      /*
       const result = await adminLogin({
         email: email.trim(),
         password: password.trim(),
@@ -52,7 +43,6 @@ export default function AdminSignIn() {
       } else {
         toast.error(result.message);
       }
-      */
     } catch (error) {
       console.error("Admin login error:", error);
       toast.error("Login failed. Please try again.");
