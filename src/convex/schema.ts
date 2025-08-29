@@ -36,9 +36,10 @@ const schema = defineSchema({
     startDate: v.number(),
     endDate: v.number(),
     maxParticipants: v.optional(v.number()),
-    createdBy: v.id("users"),
+    // Allow events created by either a user (users id) or an admin email string
+    createdBy: v.union(v.id("users"), v.string()),
     status: v.union(v.literal("active"), v.literal("cancelled"), v.literal("completed")),
-  }).index("by_creator", ["createdBy"])
+  })
     .index("by_start_date", ["startDate"])
     .index("by_status", ["status"]),
 

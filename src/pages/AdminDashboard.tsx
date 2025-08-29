@@ -94,6 +94,18 @@ function AdminDashboardContent() {
 
     setIsCreatingEvent(true);
     try {
+      // Pull admin email from admin session (set by AdminSignIn)
+      let adminEmail: string | undefined = undefined;
+      try {
+        const adminSession = sessionStorage.getItem("adminUser");
+        if (adminSession) {
+          const parsed = JSON.parse(adminSession);
+          if (parsed?.email) adminEmail = parsed.email as string;
+        }
+      } catch {
+        // ignore parse errors
+      }
+
       const result = await createEventAsAdmin({
         name: eventName.trim(),
         description: eventDescription.trim(),
@@ -102,6 +114,8 @@ function AdminDashboardContent() {
         eventTime: eventTime,
         maxParticipants: maxParticipants ? parseInt(maxParticipants) : undefined,
         volunteerIds: selectedVolunteers,
+        // Provide adminEmail so backend can validate admin access without relying only on Convex auth identity
+        adminEmail,
       });
 
       if (result?.success) {

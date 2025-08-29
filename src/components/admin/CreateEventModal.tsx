@@ -82,6 +82,18 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
       // Convert selected volunteers to array
       const volunteerIds = Array.from(selectedVolunteers);
 
+      // Pull admin email from admin session (set by AdminSignIn)
+      let adminEmail: string | undefined = undefined;
+      try {
+        const adminSession = sessionStorage.getItem("adminUser");
+        if (adminSession) {
+          const parsed = JSON.parse(adminSession);
+          if (parsed?.email) adminEmail = parsed.email as string;
+        }
+      } catch {
+        // ignore parse errors, adminEmail stays undefined
+      }
+
       const result = await createEvent({
         name: formData.name.trim(),
         description: formData.description.trim(),
@@ -90,6 +102,8 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
         eventTime: formData.eventTime,
         maxParticipants: formData.maxParticipants ? parseInt(formData.maxParticipants) : undefined,
         volunteerIds,
+        // Provide adminEmail so backend can validate admin access without relying only on Convex auth identity
+        adminEmail,
       });
 
       if (result?.success) {
