@@ -10,12 +10,18 @@ interface BrutalistSportsCardProps {
   time: string;
   venue: string;
   icon: React.ComponentType<any>;
+  viewPath?: string;
 }
 
-const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title, date, time, venue, icon: Icon }) => {
+const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title, date, time, venue, icon: Icon, viewPath }) => {
   const navigate = useNavigate();
 
   const handleViewDetails = () => {
+    // Prefer explicit viewPath when provided
+    if (viewPath) {
+      navigate(viewPath);
+      return;
+    }
     const eventSlug = sport.toLowerCase().replace(/\s+/g, '-');
     navigate(`/event/${eventSlug}`);
   };
