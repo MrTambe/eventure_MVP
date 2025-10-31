@@ -74,11 +74,13 @@ export class ResendProvider implements EmailProvider {
 }
 
 export class VlyEmailProvider implements EmailProvider {
+  constructor(private apiKey: string) {}
+  
   async sendOtp(email: string, otp: string, appName: string): Promise<void> {
     const response = await fetch("https://email.vly.ai/send_otp", {
       method: "POST",
       headers: {
-        "x-api-key": "vlytothemoon2025",
+        "x-api-key": this.apiKey,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -97,7 +99,7 @@ export class VlyEmailProvider implements EmailProvider {
     const response = await fetch("https://email.vly.ai/send_magic_link", {
       method: "POST",
       headers: {
-        "x-api-key": "vlytothemoon2025",
+        "x-api-key": this.apiKey,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -126,6 +128,10 @@ export function createEmailProvider(): EmailProvider {
       return new ResendProvider(resendApiKey);
     case "vly":
     default:
-      return new VlyEmailProvider();
+      const vlyApiKey = process.env.VLY_API_KEY;
+      if (!vlyApiKey) {
+        throw new Error("VLY_API_KEY environment variable is required");
+      }
+      return new VlyEmailProvider(vlyApiKey);
   }
 }
