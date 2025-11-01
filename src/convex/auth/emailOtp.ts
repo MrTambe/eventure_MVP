@@ -1,4 +1,4 @@
- // @ts-nocheck
+// @ts-nocheck
 import { Email } from "@convex-dev/auth/providers/Email";
 import { alphabet, generateRandomString } from "oslo/crypto";
 import { createEmailProvider } from "./emailProvider";
@@ -32,7 +32,7 @@ export const emailOtp = Email({
           );
         }
 
-        // Record the attempt as pending
+        // Record the attempt
         await ctxAny.runMutation(internal.auth.rateLimit.recordAttempt, {
           identifier: email,
           type: "otp",
@@ -42,7 +42,7 @@ export const emailOtp = Email({
 
       // Send OTP using the configured email provider
       const emailProvider = createEmailProvider();
-      const appName = process.env.VLY_APP_NAME || "a vly.ai application";
+      const appName = process.env.VLY_APP_NAME || "EventHub";
       await emailProvider.sendOtp(email, token, appName);
 
       // Mark attempt as successful if context is available
@@ -53,6 +53,8 @@ export const emailOtp = Email({
           success: true,
         });
       }
+
+      console.log(`OTP sent successfully to ${email}`);
 
     } catch (error) {
       console.error("Failed to send OTP:", error);
