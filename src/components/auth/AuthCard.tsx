@@ -3,16 +3,14 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Mail, Shield, Sparkles } from "lucide-react";
+import { Mail } from "lucide-react";
 
 export function AuthCard() {
   const { signIn } = useAuthActions();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"email" | "code">("email");
-  const [authMethod, setAuthMethod] = useState<"otp" | "magic-link">("otp");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSendCode = async (e: React.FormEvent) => {
@@ -33,29 +31,6 @@ export function AuthCard() {
         error instanceof Error 
           ? error.message 
           : "Failed to send verification code"
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSendMagicLink = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) {
-      toast.error("Please enter your email address");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await signIn("magic-link", { email });
-      toast.success("Magic link sent to your email! Check your inbox and click the link to sign in.");
-    } catch (error) {
-      console.error("Failed to send magic link:", error);
-      toast.error(
-        error instanceof Error 
-          ? error.message 
-          : "Failed to send magic link"
       );
     } finally {
       setIsLoading(false);
@@ -95,7 +70,7 @@ export function AuthCard() {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-          <Shield className="h-6 w-6 text-primary" />
+          <Mail className="h-6 w-6 text-primary" />
         </div>
         <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
         <CardDescription>
@@ -103,102 +78,62 @@ export function AuthCard() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs value={authMethod} onValueChange={(value) => setAuthMethod(value as "otp" | "magic-link")}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="otp" className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              OTP Code
-            </TabsTrigger>
-            <TabsTrigger value="magic-link" className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              Magic Link
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="otp" className="space-y-4">
-            {step === "email" ? (
-              <form onSubmit={handleSendCode} className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">
-                    Email Address
-                  </label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Sending..." : "Send Verification Code"}
-                </Button>
-              </form>
-            ) : (
-              <form onSubmit={handleVerifyCode} className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="code" className="text-sm font-medium">
-                    Verification Code
-                  </label>
-                  <Input
-                    id="code"
-                    type="text"
-                    placeholder="Enter 6-digit code"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    maxLength={6}
-                    required
-                    disabled={isLoading}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Check your email for the verification code
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Verifying..." : "Verify & Sign In"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="w-full"
-                    onClick={resetForm}
-                    disabled={isLoading}
-                  >
-                    Use Different Email
-                  </Button>
-                </div>
-              </form>
-            )}
-          </TabsContent>
-
-          <TabsContent value="magic-link" className="space-y-4">
-            <form onSubmit={handleSendMagicLink} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="magic-email" className="text-sm font-medium">
-                  Email Address
-                </label>
-                <Input
-                  id="magic-email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={isLoading}
-                />
-                <p className="text-xs text-muted-foreground">
-                  We'll send you a secure link to sign in instantly
-                </p>
-              </div>
+        {step === "email" ? (
+          <form onSubmit={handleSendCode} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium">
+                Email Address
+              </label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Sending..." : "Send Verification Code"}
+            </Button>
+          </form>
+        ) : (
+          <form onSubmit={handleVerifyCode} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="code" className="text-sm font-medium">
+                Verification Code
+              </label>
+              <Input
+                id="code"
+                type="text"
+                placeholder="Enter 6-digit code"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                maxLength={6}
+                required
+                disabled={isLoading}
+              />
+              <p className="text-xs text-muted-foreground">
+                Check your email for the verification code
+              </p>
+            </div>
+            <div className="space-y-2">
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Sending..." : "Send Magic Link"}
+                {isLoading ? "Verifying..." : "Verify & Sign In"}
               </Button>
-            </form>
-          </TabsContent>
-        </Tabs>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={resetForm}
+                disabled={isLoading}
+              >
+                Use Different Email
+              </Button>
+            </div>
+          </form>
+        )}
 
         <div className="mt-6 text-center">
           <p className="text-xs text-muted-foreground">
