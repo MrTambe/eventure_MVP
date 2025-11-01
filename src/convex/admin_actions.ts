@@ -12,27 +12,31 @@ export const createAdmin = action({
     password: v.string(),
     role: v.string(),
   },
-  handler: async (ctx, args): Promise<{ success: boolean; message: string; id: any }> => {
+  handler: async (ctx, args) => {
     try {
       // Hash the password
       const saltRounds = 12;
-      const hashedPassword: string = await bcrypt.hash(args.password, saltRounds);
+      const hashedPassword = await bcrypt.hash(args.password, saltRounds);
 
       // Call internal mutation to save the admin
-      // Further relax type inference to avoid deep instantiation
-      const result = (await (ctx as any).runMutation(
-        (internal as any).admin_creation.createAdminInternal,
+      const result = await ctx.runMutation(
+        internal.admin_creation.createAdminInternal,
         {
           email: args.email,
           passwordHash: hashedPassword,
           role: args.role,
         }
-      )) as { success: boolean; message: string; id: any };
+      );
 
       return result;
     } catch (error) {
       console.error("Error creating admin:", error);
-      throw new Error("Failed to create admin");
+      // Return structured error instead of throwing
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to create admin",
+        id: undefined,
+      };
     }
   },
 });

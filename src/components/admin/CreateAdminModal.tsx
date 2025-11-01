@@ -25,14 +25,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ROLES } from '@/convex/schema';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 
 export function CreateAdminModal() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  // Default to Admin to simplify initial seeding
   const [role, setRole] = useState<string>(ROLES.ADMIN);
   const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const createAdmin = useAction(api.admin_actions.createAdmin);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,17 +42,30 @@ export function CreateAdminModal() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       // Always normalize email for consistent uniqueness and lookups
       const normalizedEmail = email.trim().toLowerCase();
-      await createAdmin({ email: normalizedEmail, password, role });
-      toast.success("New user created successfully!");
-      setIsOpen(false);
-      setEmail('');
-      setPassword('');
-      setRole(ROLES.ADMIN);
+      const result = await createAdmin({ 
+        email: normalizedEmail, 
+        password, 
+        role 
+      });
+      
+      if (result?.success) {
+        toast.success("New user created successfully!");
+        setIsOpen(false);
+        setEmail('');
+        setPassword('');
+        setRole(ROLES.ADMIN);
+      } else {
+        toast.error(result?.message || "Failed to create user");
+      }
     } catch (error) {
-      toast.error((error as Error).message);
+      console.error("Create admin error:", error);
+      toast.error(error instanceof Error ? error.message : "An error occurred while creating the user");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -82,10 +95,11 @@ export function CreateAdminModal() {
               className="border-2 border-black dark:border-white font-mono text-base p-3"
               placeholder="Enter email address"
               required
+              disabled={isSubmitting}
             />
           </div>
           <div>
-            <Label htmlFor="password"className="text-sm font-bold mb-2 block">PASSWORD</Label>
+            <Label htmlFor="password" className="text-sm font-bold mb-2 block">PASSWORD</Label>
             <Input
               id="password"
               type="password"
@@ -94,11 +108,12 @@ export function CreateAdminModal() {
               className="border-2 border-black dark:border-white font-mono text-base p-3"
               placeholder="Enter password"
               required
+              disabled={isSubmitting}
             />
           </div>
           <div>
             <Label htmlFor="role" className="text-sm font-bold mb-2 block">ROLE</Label>
-            <Select onValueChange={setRole} defaultValue={role}>
+            <Select onValueChange={setRole} defaultValue={role} disabled={isSubmitting}>
               <SelectTrigger className="w-full border-2 border-black dark:border-white font-mono text-base p-3">
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
@@ -112,10 +127,27 @@ export function CreateAdminModal() {
             </Select>
           </div>
           <div className="flex gap-4 pt-4">
-            <Button type="submit" className="flex-1 bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-base py-3 border-2 border-black dark:border-white">
-              SAVE
+            <Button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="flex-1 bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-base py-3 border-2 border-black dark:border-white"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                  CREATING...
+                </>
+              ) : (
+                'SAVE'
+              )}
             </Button>
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="flex-1 border-2 border-black dark:border-white font-mono text-base py-3 hover:bg-gray-100 dark:hover:bg-gray-800">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsOpen(false)} 
+              disabled={isSubmitting}
+              className="flex-1 border-2 border-black dark:border-white font-mono text-base py-3 hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
               CANCEL
             </Button>
           </div>
