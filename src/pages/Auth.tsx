@@ -10,15 +10,25 @@ function SignIn() {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    // Once authenticated, redirect to dashboard
-    if (!isLoading && isAuthenticated) {
-      console.log("User is authenticated, redirecting to dashboard");
-      navigate(searchParams.get("redirect") || "/dashboard");
+    // Redirect authenticated users to dashboard
+    if (isAuthenticated && !isLoading) {
+      const redirectPath = searchParams.get("redirect") || "/dashboard";
+      console.log("User authenticated, redirecting to:", redirectPath);
+      navigate(redirectPath, { replace: true });
     }
-  }, [isLoading, isAuthenticated, searchParams, navigate]);
+  }, [isAuthenticated, isLoading, searchParams, navigate]);
 
   // Show loading spinner while checking auth state
   if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Spinner className="h-12 w-12" />
+      </div>
+    );
+  }
+
+  // If already authenticated, show loading while redirecting
+  if (isAuthenticated) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Spinner className="h-12 w-12" />
