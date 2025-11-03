@@ -55,10 +55,10 @@ export function AuthCard() {
       console.log("Sign in result:", result);
       toast.success("Successfully signed in! Redirecting...");
       
-      // Add a small delay to ensure auth state is updated, then navigate
+      // Add a longer delay to ensure auth state is fully updated
       setTimeout(() => {
         navigate("/dashboard", { replace: true });
-      }, 100);
+      }, 500);
     } catch (error) {
       console.error("Failed to verify code:", error);
       console.error("Error details:", JSON.stringify(error, null, 2));
