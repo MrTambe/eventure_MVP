@@ -52,8 +52,8 @@ export function AuthCard() {
       const result = await signIn("email-otp", { email, code });
       console.log("Sign in result:", result);
       toast.success("Successfully signed in! Redirecting...");
-      // Don't manually navigate - let Auth.tsx handle the redirect when auth state updates
-      // Keep loading state true so the form stays disabled while redirecting
+      // Reset loading state to allow Auth.tsx to detect the authentication state change
+      setIsLoading(false);
     } catch (error) {
       console.error("Failed to verify code:", error);
       console.error("Error details:", JSON.stringify(error, null, 2));
