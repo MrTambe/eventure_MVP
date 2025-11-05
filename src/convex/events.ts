@@ -4,18 +4,6 @@ import { getCurrentUser } from "./users";
 
 export const list = query({
   args: {},
-  returns: v.array(v.object({
-    _id: v.id("events"),
-    name: v.string(),
-    description: v.string(),
-    venue: v.string(),
-    startDate: v.number(),
-    endDate: v.number(),
-    maxParticipants: v.optional(v.number()),
-    // Accept union for createdBy to match schema
-    createdBy: v.union(v.id("users"), v.string()),
-    status: v.union(v.literal("active"), v.literal("cancelled"), v.literal("completed")),
-  })),
   handler: async (ctx) => {
     return await ctx.db.query("events").collect();
   },
