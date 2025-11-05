@@ -12,7 +12,7 @@ export function BentoGrid({ children, className }: BentoGridProps) {
   return (
     <div
       className={cn(
-        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full",
+        "grid gap-4 w-full",
         className
       )}
     >
@@ -36,21 +36,10 @@ export function BentoCard({
   description,
   children,
   className,
-  colSpan = "1",
-  rowSpan = "1",
+  colSpan,
+  rowSpan,
   gradient = "from-primary/10 to-primary/5",
 }: BentoCardProps) {
-  const colSpanClass = {
-    "1": "md:col-span-1",
-    "2": "md:col-span-2",
-    "3": "md:col-span-3",
-  };
-
-  const rowSpanClass = {
-    "1": "md:row-span-1",
-    "2": "md:row-span-2",
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -63,8 +52,6 @@ export function BentoCard({
         "shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff]",
         "hover:shadow-[12px_12px_0px_#000] dark:hover:shadow-[12px_12px_0px_#fff]",
         "hover:-translate-y-1 transition-all duration-300",
-        colSpanClass[colSpan],
-        rowSpanClass[rowSpan],
         className
       )}
     >

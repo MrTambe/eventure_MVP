@@ -35,48 +35,65 @@ export default function Dashboard() {
       </div>
 
       <div className="container mx-auto px-4 pt-48 pb-24">
-        <BentoGrid>
+        <BentoGrid className="grid-cols-1 md:grid-cols-6 lg:grid-cols-6 auto-rows-[200px]">
+          {/* Top Left - Quick Stats */}
           <BentoCard 
             title="Quick Stats" 
-            colSpan="3"
+            className="md:col-span-2 md:row-span-1"
             gradient="from-blue-500/20 via-cyan-500/10 to-blue-500/5"
           >
             <QuickStatsWidget />
           </BentoCard>
 
+          {/* Top Middle - Discover Events */}
           <BentoCard 
             title="Discover Events" 
             description="Find and register for upcoming events" 
-            colSpan="2" 
-            rowSpan="2"
+            className="md:col-span-2 md:row-span-1"
             gradient="from-green-500/20 via-emerald-500/10 to-green-500/5"
           >
             <EventDiscoveryWidget />
           </BentoCard>
 
+          {/* Top Right - Profile (Tall) */}
           <BentoCard 
             title="Your Profile" 
-            rowSpan="2"
+            className="md:col-span-2 md:row-span-3"
             gradient="from-purple-500/20 via-violet-500/10 to-purple-500/5"
           >
             <ProfileWidget />
           </BentoCard>
 
+          {/* Middle Left - Registered Events (Wide & Tall) */}
           <BentoCard 
             title="Registered Events" 
             description="Your upcoming events" 
-            colSpan="2"
+            className="md:col-span-4 md:row-span-2"
             gradient="from-orange-500/20 via-amber-500/10 to-orange-500/5"
           >
             <RegisteredEventsWidget />
           </BentoCard>
 
+          {/* Bottom Left - Certificates */}
           <BentoCard 
             title="Certificates" 
             description="Your achievements"
+            className="md:col-span-2 md:row-span-1"
             gradient="from-pink-500/20 via-rose-500/10 to-pink-500/5"
           >
             <CertificatesWidget />
+          </BentoCard>
+
+          {/* Bottom Middle - Additional Card */}
+          <BentoCard 
+            title="Event Discovery" 
+            description="Explore more"
+            className="md:col-span-2 md:row-span-1"
+            gradient="from-cyan-500/20 via-teal-500/10 to-cyan-500/5"
+          >
+            <div className="flex items-center justify-center h-full">
+              <p className="text-sm text-muted-foreground">Coming soon...</p>
+            </div>
           </BentoCard>
         </BentoGrid>
       </div>
