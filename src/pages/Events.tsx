@@ -1,6 +1,6 @@
 // @ts-nocheck
 /* eslint-disable */
-import { NavBar } from "@/components/ui/tubelight-navbar";
+import { Navbar } from "@/components/navigation/Navbar";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher-1";
 import { BrutalistSportsCard } from "@/components/ui/brutalist-sports-card";
 import {
@@ -27,7 +27,7 @@ export default function Events() {
 
   return (
     <div className="min-h-screen relative">
-      <NavBar items={navItems} />
+      <Navbar items={navItems} />
       
       <div className="fixed top-0 right-6 z-50 pt-6">
         <ThemeSwitcher />
