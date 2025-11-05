@@ -6,7 +6,6 @@ import { internal } from "../_generated/api";
 
 export const emailOtp = Email({
   id: "email-otp",
-  apiKey: process.env.RESEND_API_KEY || process.env.VLY_API_KEY,
   maxAge: 60 * 15, // 15 minutes
   
   // Generate a secure 6-digit OTP
