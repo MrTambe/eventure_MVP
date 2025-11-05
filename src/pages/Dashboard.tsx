@@ -2,6 +2,12 @@ import { Protected } from "@/lib/protected-page";
 import { NavBar } from "@/components/ui/tubelight-navbar";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher-1";
 import { Home, Calendar, Trophy, User, Settings } from "lucide-react";
+import { BentoGrid, BentoCard } from "@/components/ui/bento-grid";
+import { EventDiscoveryWidget } from "@/components/dashboard/EventDiscoveryWidget";
+import { RegisteredEventsWidget } from "@/components/dashboard/RegisteredEventsWidget";
+import { CertificatesWidget } from "@/components/dashboard/CertificatesWidget";
+import { QuickStatsWidget } from "@/components/dashboard/QuickStatsWidget";
+import { ProfileWidget } from "@/components/dashboard/ProfileWidget";
 
 export default function Dashboard() {
   const navItems = [
@@ -28,8 +34,28 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="pt-48 flex flex-wrap justify-center">
-        <p className="text-muted-foreground">Welcome to your dashboard! The events have been moved to the Events page.</p>
+      <div className="container mx-auto px-4 pt-48 pb-24">
+        <BentoGrid>
+          <BentoCard title="Quick Stats" colSpan="3">
+            <QuickStatsWidget />
+          </BentoCard>
+
+          <BentoCard title="Discover Events" description="Find and register for upcoming events" colSpan="2" rowSpan="2">
+            <EventDiscoveryWidget />
+          </BentoCard>
+
+          <BentoCard title="Your Profile" rowSpan="2">
+            <ProfileWidget />
+          </BentoCard>
+
+          <BentoCard title="Registered Events" description="Your upcoming events" colSpan="2">
+            <RegisteredEventsWidget />
+          </BentoCard>
+
+          <BentoCard title="Certificates" description="Your achievements">
+            <CertificatesWidget />
+          </BentoCard>
+        </BentoGrid>
       </div>
     </Protected>
   );
