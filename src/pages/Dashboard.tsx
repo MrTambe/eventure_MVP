@@ -36,13 +36,13 @@ export default function Dashboard() {
 
       <div className="container mx-auto px-4 pt-48 pb-24">
         <BentoGrid className="grid-cols-1 md:grid-cols-6 auto-rows-[220px] gap-4">
-          {/* Top Left - Quick Stats */}
+          {/* Top Left - Profile (Tall) */}
           <BentoCard 
-            title="Quick Stats" 
-            className="md:col-span-2 md:row-span-1"
-            gradient="from-blue-500/20 via-cyan-500/10 to-blue-500/5"
+            title="Your Profile" 
+            className="md:col-span-2 md:row-span-3"
+            gradient="from-purple-500/20 via-violet-500/10 to-purple-500/5"
           >
-            <QuickStatsWidget />
+            <ProfileWidget />
           </BentoCard>
 
           {/* Top Middle - Discover Events */}
@@ -55,13 +55,13 @@ export default function Dashboard() {
             <EventDiscoveryWidget />
           </BentoCard>
 
-          {/* Top Right - Profile (Tall) */}
+          {/* Top Right - Quick Stats */}
           <BentoCard 
-            title="Your Profile" 
-            className="md:col-span-2 md:row-span-3"
-            gradient="from-purple-500/20 via-violet-500/10 to-purple-500/5"
+            title="Quick Stats" 
+            className="md:col-span-2 md:row-span-1"
+            gradient="from-blue-500/20 via-cyan-500/10 to-blue-500/5"
           >
-            <ProfileWidget />
+            <QuickStatsWidget />
           </BentoCard>
 
           {/* Middle Left - Registered Events (Wide & Tall) */}
