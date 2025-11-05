@@ -97,10 +97,10 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title,
           overflow: hidden;
           text-decoration: none;
           margin-bottom: 1rem;
-          cursor: pointer;
-          pointer-events: auto;
+          cursor: pointer !important;
+          pointer-events: auto !important;
           user-select: none;
-          z-index: 1;
+          z-index: 100;
         }
         .brutalist-card__button--read {
           background-color: #000;
@@ -153,18 +153,20 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title,
             <p>Time: {time}</p>
             <p>Venue: {venue}</p>
           </div>
-          <div className="brutalist-card__actions" style={{ pointerEvents: 'auto' }}>
+          <div className="brutalist-card__actions" style={{ pointerEvents: 'auto', position: 'relative', zIndex: 100 }}>
             <button 
               className="brutalist-card__button brutalist-card__button--mark" 
               onClick={handleViewDetails}
-              style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+              style={{ pointerEvents: 'auto', cursor: 'pointer', position: 'relative', zIndex: 101 }}
+              type="button"
             >
               View Details
             </button>
             <button 
               className="brutalist-card__button brutalist-card__button--read" 
               onClick={handleRegisterNow}
-              style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+              style={{ pointerEvents: 'auto', cursor: 'pointer', position: 'relative', zIndex: 101 }}
+              type="button"
             >
               Register Now
             </button>
