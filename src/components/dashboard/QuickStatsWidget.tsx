@@ -31,7 +31,7 @@ export function QuickStatsWidget() {
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-2 h-full">
+    <div className="grid grid-cols-3 gap-2 h-full items-center">
       {statItems.map((item, index) => (
         <motion.div
           key={item.label}
@@ -40,11 +40,11 @@ export function QuickStatsWidget() {
           transition={{ delay: index * 0.1 }}
           className="text-center flex flex-col items-center justify-center"
         >
-          <div className={`${item.bgColor} rounded-xl p-3 mb-2 inline-flex`}>
-            <item.icon className={`h-6 w-6 ${item.color}`} />
+          <div className={`${item.bgColor} rounded-xl p-2 mb-1.5 inline-flex`}>
+            <item.icon className={`h-5 w-5 ${item.color}`} />
           </div>
-          <div className="text-xl font-black">{item.value}</div>
-          <p className="text-xs text-muted-foreground uppercase font-bold">{item.label}</p>
+          <div className="text-lg font-black">{item.value}</div>
+          <p className="text-[10px] text-muted-foreground uppercase font-bold leading-tight">{item.label}</p>
         </motion.div>
       ))}
     </div>
