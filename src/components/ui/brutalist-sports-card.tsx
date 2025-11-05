@@ -40,6 +40,7 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title,
           box-shadow: 10px 10px 0 #000;
           font-family: "Arial", sans-serif;
           margin: 1rem;
+          pointer-events: auto;
         }
         .brutalist-card__header {
           display: flex;
@@ -94,6 +95,8 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title,
           text-decoration: none;
           margin-bottom: 1rem;
           cursor: pointer;
+          pointer-events: auto;
+          user-select: none;
         }
         .brutalist-card__button--read {
           background-color: #000;
