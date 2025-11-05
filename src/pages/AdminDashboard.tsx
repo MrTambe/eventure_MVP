@@ -193,17 +193,17 @@ function AdminDashboardContent() {
   // Format events for calendar with status
   const now = Date.now();
   const calendarEvents = allEvents?.map((event: any) => {
-    let status: 'completed' | 'ongoing' | 'upcoming';
+    const eventDate = new Date(event.startDate).toISOString().split('T')[0];
+    let status: 'upcoming' | 'ongoing' | 'completed' = 'upcoming';
+    
     if (event.endDate < now) {
       status = 'completed';
     } else if (event.startDate <= now && event.endDate >= now) {
       status = 'ongoing';
-    } else {
-      status = 'upcoming';
     }
     
     return {
-      date: new Date(event.startDate).toISOString().split('T')[0],
+      date: eventDate,
       title: event.name,
       status,
       startDate: event.startDate,
@@ -212,15 +212,6 @@ function AdminDashboardContent() {
       description: event.description,
     };
   }) || [];
-
-  // Group events by date
-  const eventsByDate = calendarEvents.reduce((acc: any, event: any) => {
-    if (!acc[event.date]) {
-      acc[event.date] = [];
-    }
-    acc[event.date].push(event);
-    return acc;
-  }, {});
 
   const menuItems = [
     { name: 'Dashboard', label: 'Dashboard', href: '/admin-dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500', iconColor: 'text-blue-500' },
@@ -409,27 +400,10 @@ function AdminDashboardContent() {
                 </p>
               </div>
 
-              {/* Enhanced Calendar */}
+              {/* Calendar */}
               <div className="bg-card/80 backdrop-blur-sm border-4 border-black dark:border-white p-6">
                 <h2 className="text-xl font-bold mb-4 tracking-tighter">CALENDAR</h2>
-                
-                {/* Legend */}
-                <div className="flex flex-wrap gap-2 mb-4 text-xs font-bold">
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-blue-400 border border-black"></div>
-                    <span>COMPLETED</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-yellow-400 border border-black"></div>
-                    <span>ONGOING</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-green-400 border border-black"></div>
-                    <span>UPCOMING</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-7 gap-2 text-center font-bold text-sm">
+                <div className="grid grid-cols-7 gap-2 text-center font-bold text-sm mb-2">
                   {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
                     <div key={day}>{day}</div>
                   ))}
@@ -437,27 +411,27 @@ function AdminDashboardContent() {
                 <div className="grid grid-cols-7 gap-2 mt-2">
                   {Array.from({ length: 35 }).map((_, i) => {
                     const currentDate = new Date();
-                    const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+                    const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+                    const startOffset = firstDay.getDay();
+                    const day = i - startOffset + 1;
                     const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-                    const day = i - firstDay + 1;
-                    const isValidDay = day > 0 && day <= daysInMonth;
                     
-                    const dateStr = isValidDay 
+                    const dateStr = day > 0 && day <= daysInMonth 
                       ? `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
                       : '';
                     
-                    const dayEvents = dateStr ? eventsByDate[dateStr] : null;
+                    const eventsOnDate = calendarEvents.filter((e: any) => e.date === dateStr);
+                    const hasEvent = eventsOnDate.length > 0;
                     
-                    // Determine background color based on event status
+                    // Determine primary status color (if multiple events, prioritize ongoing > upcoming > completed)
                     let bgColor = '';
-                    if (dayEvents && dayEvents.length > 0) {
-                      // Priority: ongoing > upcoming > completed
-                      if (dayEvents.some((e: any) => e.status === 'ongoing')) {
-                        bgColor = 'bg-yellow-400/80';
-                      } else if (dayEvents.some((e: any) => e.status === 'upcoming')) {
-                        bgColor = 'bg-green-400/80';
-                      } else {
+                    if (hasEvent) {
+                      if (eventsOnDate.some((e: any) => e.status === 'ongoing')) {
                         bgColor = 'bg-blue-400/80';
+                      } else if (eventsOnDate.some((e: any) => e.status === 'upcoming')) {
+                        bgColor = 'bg-yellow-400/80';
+                      } else {
+                        bgColor = 'bg-green-400/80';
                       }
                     }
                     
@@ -466,39 +440,43 @@ function AdminDashboardContent() {
                         key={i}
                         className={`
                           relative p-2 text-center text-sm border-2 border-black dark:border-white
-                          ${!isValidDay ? 'text-muted-foreground bg-muted/20' : ''}
-                          ${bgColor}
-                          ${dayEvents ? 'text-black font-bold cursor-pointer hover:scale-110 hover:z-10 hover:border-4 transition-all duration-200 group' : ''}
+                          ${day > 0 && day <= daysInMonth ? 'cursor-pointer' : 'text-muted-foreground'}
+                          ${bgColor} ${hasEvent ? 'text-black font-bold' : ''}
+                          transition-all duration-200 hover:scale-110 hover:z-10 hover:border-4
+                          group
                         `}
                       >
-                        {isValidDay ? day : ''}
+                        {day > 0 && day <= daysInMonth ? day : ''}
                         
-                        {/* Hover Popup */}
-                        {dayEvents && dayEvents.length > 0 && (
-                          <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block z-50 w-64">
-                            <div className="bg-white dark:bg-gray-900 border-4 border-black dark:border-white p-3 shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff]">
-                              <div className="space-y-2 max-h-48 overflow-y-auto">
-                                {dayEvents.map((event: any, idx: number) => {
-                                  const { eventDate, eventTime } = formatEventDateTime(event.startDate);
+                        {/* Hover popup for event details */}
+                        {hasEvent && (
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 w-64">
+                            <div className="bg-card border-4 border-black dark:border-white p-4 shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff]">
+                              <div className="space-y-2">
+                                {eventsOnDate.map((event: any, idx: number) => {
                                   const statusColor = 
-                                    event.status === 'ongoing' ? 'bg-yellow-400' :
-                                    event.status === 'upcoming' ? 'bg-green-400' :
-                                    'bg-blue-400';
+                                    event.status === 'ongoing' ? 'bg-blue-400' :
+                                    event.status === 'upcoming' ? 'bg-yellow-400' :
+                                    'bg-green-400';
+                                  
+                                  const eventTime = formatEventDateTime(event.startDate);
                                   
                                   return (
-                                    <div key={idx} className={`${statusColor} border-2 border-black dark:border-white p-2 text-left`}>
-                                      <div className="font-bold text-xs uppercase tracking-tight">{event.title}</div>
-                                      <div className="text-xs mt-1 space-y-0.5">
+                                    <div key={idx} className={`${statusColor} text-black p-3 border-2 border-black`}>
+                                      <div className="font-bold text-xs uppercase mb-1">
+                                        {event.status}
+                                      </div>
+                                      <div className="font-bold text-sm mb-1">
+                                        {event.title}
+                                      </div>
+                                      <div className="text-xs space-y-1">
                                         <div className="flex items-center gap-1">
                                           <Clock className="h-3 w-3" />
-                                          {eventTime}
+                                          {eventTime.eventTime}
                                         </div>
                                         <div className="flex items-center gap-1">
                                           <MapPin className="h-3 w-3" />
                                           {event.venue}
-                                        </div>
-                                        <div className="font-bold uppercase text-[10px] mt-1">
-                                          {event.status}
                                         </div>
                                       </div>
                                     </div>
@@ -510,12 +488,28 @@ function AdminDashboardContent() {
                         )}
                         
                         {/* Multiple events indicator */}
-                        {dayEvents && dayEvents.length > 1 && (
-                          <div className="absolute top-0 right-0 w-2 h-2 bg-black dark:bg-white rounded-full"></div>
+                        {eventsOnDate.length > 1 && (
+                          <div className="absolute top-0 right-0 w-2 h-2 bg-black dark:bg-white rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
                         )}
                       </div>
                     );
                   })}
+                </div>
+                
+                {/* Legend */}
+                <div className="mt-4 flex flex-wrap gap-3 text-xs font-bold">
+                  <div className="flex items-center gap-1">
+                    <div className="w-4 h-4 bg-yellow-400 border-2 border-black dark:border-white"></div>
+                    <span>UPCOMING</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-4 h-4 bg-blue-400 border-2 border-black dark:border-white"></div>
+                    <span>ONGOING</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-4 h-4 bg-green-400 border-2 border-black dark:border-white"></div>
+                    <span>COMPLETED</span>
+                  </div>
                 </div>
               </div>
             </div>
