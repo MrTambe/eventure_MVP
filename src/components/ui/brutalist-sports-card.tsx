@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
+import { Calendar, Clock, MapPin } from "lucide-react";
 
 interface BrutalistSportsCardProps {
   sport: string;
@@ -12,19 +13,23 @@ interface BrutalistSportsCardProps {
   viewPath?: string;
 }
 
-const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title, date, time, venue, icon: Icon, viewPath }) => {
+const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ 
+  sport, 
+  title, 
+  date, 
+  time, 
+  venue, 
+  icon: Icon, 
+  viewPath 
+}) => {
   const navigate = useNavigate();
 
   const handleViewDetails = () => {
     console.log("View Details clicked for:", title);
     toast.info(`Opening details for ${title}...`);
-    // Prefer explicit viewPath when provided
     if (viewPath) {
       navigate(viewPath);
-      return;
     }
-    const eventSlug = sport.toLowerCase().replace(/\s+/g, '-');
-    navigate(`/event/${eventSlug}`);
   };
   
   const handleRegisterNow = () => {
@@ -35,144 +40,226 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title,
   return (
     <>
       <style>{`
-        .brutalist-card {
+        .event-card {
           width: 320px;
-          border: 4px solid #000;
-          background-color: #fff;
-          padding: 1.5rem;
-          box-shadow: 10px 10px 0 #000;
-          font-family: "Arial", sans-serif;
+          padding: 20px;
+          background: #fff;
+          border: 6px solid #000;
+          box-shadow: 12px 12px 0 #000;
+          transition: transform 0.3s, box-shadow 0.3s;
           margin: 1rem;
-          pointer-events: auto;
+          position: relative;
+          z-index: 10;
         }
-        .brutalist-card__header {
+        
+        .dark .event-card {
+          background: #1a1a1a;
+          border-color: #fff;
+          box-shadow: 12px 12px 0 #fff;
+        }
+        
+        .event-card:hover {
+          transform: translate(-5px, -5px);
+          box-shadow: 17px 17px 0 #000;
+        }
+        
+        .dark .event-card:hover {
+          box-shadow: 17px 17px 0 #fff;
+        }
+        
+        .event-card__header {
           display: flex;
           align-items: center;
-          gap: 1rem;
-          margin-bottom: 1rem;
-          border-bottom: 2px solid #000;
-          padding-bottom: 1rem;
+          gap: 12px;
+          margin-bottom: 15px;
+          padding-bottom: 15px;
+          border-bottom: 3px solid #000;
         }
-        .brutalist-card__icon {
+        
+        .dark .event-card__header {
+          border-bottom-color: #fff;
+        }
+        
+        .event-card__icon {
           flex-shrink: 0;
+          background: #000;
+          color: #fff;
+          padding: 10px;
           display: flex;
           align-items: center;
           justify-content: center;
-          background-color: #000;
-          padding: 0.5rem;
-          width: 50px;
-          height: 50px;
-          color: #fff;
         }
-        .brutalist-card__alert {
+        
+        .dark .event-card__icon {
+          background: #fff;
+          color: #000;
+        }
+        
+        .event-card__title {
+          font-size: 24px;
           font-weight: 900;
           color: #000;
-          font-size: 1.5rem;
           text-transform: uppercase;
-        }
-        .brutalist-card__message {
-          margin-top: 1rem;
-          color: #000;
-          font-size: 0.9rem;
-          line-height: 1.4;
-          border-bottom: 2px solid #000;
-          padding-bottom: 1rem;
-          font-weight: 600;
-        }
-        .brutalist-card__actions { 
-          margin-top: 1rem;
           position: relative;
-          z-index: 1000;
+          overflow: hidden;
+          flex: 1;
         }
-        .brutalist-card__button {
-          display: block;
-          width: 100%;
-          padding: 0.75rem;
-          text-align: center;
-          font-size: 1rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          border: 3px solid #000;
-          background-color: #fff;
-          color: #000;
-          position: relative;
-          transition: all 0.2s ease;
-          box-shadow: 5px 5px 0 #000;
-          overflow: visible;
-          text-decoration: none;
-          margin-bottom: 1rem;
-          cursor: pointer !important;
-          pointer-events: auto !important;
-          user-select: none;
-          z-index: 1001;
-        }
-        .brutalist-card__button--read {
-          background-color: #000;
+        
+        .dark .event-card__title {
           color: #fff;
         }
-        .brutalist-card__button::before {
+        
+        .event-card__title::after {
           content: "";
           position: absolute;
+          bottom: -3px;
+          left: 0;
+          width: 100%;
+          height: 3px;
+          background-color: #000;
+          transform: translateX(-100%);
+          transition: transform 0.3s;
+        }
+        
+        .dark .event-card__title::after {
+          background-color: #fff;
+        }
+        
+        .event-card:hover .event-card__title::after {
+          transform: translateX(0);
+        }
+        
+        .event-card__content {
+          margin-bottom: 20px;
+        }
+        
+        .event-card__detail {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          color: #000;
+          margin-bottom: 8px;
+        }
+        
+        .dark .event-card__detail {
+          color: #fff;
+        }
+        
+        .event-card__detail svg {
+          flex-shrink: 0;
+        }
+        
+        .event-card__actions {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        
+        .event-card__button {
+          border: 3px solid #000;
+          background: #000;
+          color: #fff;
+          padding: 12px;
+          font-size: 16px;
+          font-weight: bold;
+          text-transform: uppercase;
+          cursor: pointer;
+          position: relative;
+          overflow: hidden;
+          transition: transform 0.3s;
+          width: 100%;
+          font-family: inherit;
+        }
+        
+        .dark .event-card__button {
+          border-color: #fff;
+          background: #fff;
+          color: #000;
+        }
+        
+        .event-card__button--primary::before {
+          content: "View →";
+          position: absolute;
           top: 0;
-          left: -100%;
+          left: 0;
           width: 100%;
           height: 100%;
-          background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-          transition: all 0.6s;
+          background-color: #5ad641;
+          color: #000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transform: translateY(100%);
+          transition: transform 0.3s;
+          font-weight: bold;
         }
-        .brutalist-card__button:hover::before { left: 100%; }
-        .brutalist-card__button:hover {
-          transform: translate(-2px, -2px);
-          box-shadow: 7px 7px 0 #000;
-        }
-        .brutalist-card__button--mark:hover {
-          background-color: #296fbb;
-          border-color: #296fbb;
+        
+        .event-card__button--secondary::before {
+          content: "Register!";
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: #ff6b6b;
           color: #fff;
-          box-shadow: 7px 7px 0 #004280;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transform: translateY(100%);
+          transition: transform 0.3s;
+          font-weight: bold;
         }
-        .brutalist-card__button--read:hover {
-          background-color: #ff0000;
-          border-color: #ff0000;
-          color: #fff;
-          box-shadow: 7px 7px 0 #800000;
+        
+        .event-card__button:hover::before {
+          transform: translateY(0);
         }
-        .brutalist-card__button:active {
-          transform: translate(5px, 5px);
-          box-shadow: none;
+        
+        .event-card__button:active {
+          transform: scale(0.95);
         }
       `}</style>
 
-      <div style={{ pointerEvents: 'auto', position: 'relative', zIndex: 10 }}>
-        <div className="brutalist-card">
-          <div className="brutalist-card__header">
-            <div className="brutalist-card__icon">
-              <Icon size={32} />
-            </div>
-            <div className="brutalist-card__alert">{sport}</div>
+      <div className="event-card">
+        <div className="event-card__header">
+          <div className="event-card__icon">
+            <Icon size={24} />
           </div>
-          <div className="brutalist-card__message">
-            <p className="font-bold text-lg">{title}</p>
-            <p>Date: {date}</p>
-            <p>Time: {time}</p>
-            <p>Venue: {venue}</p>
+          <span className="event-card__title">{sport}</span>
+        </div>
+        
+        <div className="event-card__content">
+          <div className="event-card__detail">
+            <Calendar size={16} />
+            <span>{date}</span>
           </div>
-          <div className="brutalist-card__actions">
-            <button 
-              className="brutalist-card__button brutalist-card__button--mark" 
-              onClick={handleViewDetails}
-              type="button"
-            >
-              View Details
-            </button>
-            <button 
-              className="brutalist-card__button brutalist-card__button--read" 
-              onClick={handleRegisterNow}
-              type="button"
-            >
-              Register Now
-            </button>
+          <div className="event-card__detail">
+            <Clock size={16} />
+            <span>{time}</span>
           </div>
+          <div className="event-card__detail">
+            <MapPin size={16} />
+            <span>{venue}</span>
+          </div>
+        </div>
+        
+        <div className="event-card__actions">
+          <button 
+            className="event-card__button event-card__button--primary" 
+            onClick={handleViewDetails}
+            type="button"
+          >
+            View Details
+          </button>
+          <button 
+            className="event-card__button event-card__button--secondary" 
+            onClick={handleRegisterNow}
+            type="button"
+          >
+            Register Now
+          </button>
         </div>
       </div>
     </>
