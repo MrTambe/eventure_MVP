@@ -9,7 +9,9 @@ import "./index.css";
 import Landing from "./pages/Landing.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import Events from "./pages/Events.tsx";
+import Certificates from "./pages/Certificates.tsx";
 import Profile from "./pages/Profile.tsx";
+import Settings from "./pages/Settings.tsx";
 import Auth from "./pages/Auth.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { Toaster } from "@/components/ui/sonner";
@@ -34,7 +36,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/" element={<Landing />} />
             <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
             <Route path="/events" element={<Protected><Events /></Protected>} />
+            <Route path="/certificates" element={<Protected><Certificates /></Protected>} />
             <Route path="/profile" element={<Protected><Profile /></Protected>} />
+            <Route path="/settings" element={<Protected><Settings /></Protected>} />
             <Route path="/event/:eventId" element={<Protected><EventInfo /></Protected>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin-signIn" element={<AdminSignIn />} />
