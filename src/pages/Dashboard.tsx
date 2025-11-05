@@ -36,23 +36,46 @@ export default function Dashboard() {
 
       <div className="container mx-auto px-4 pt-48 pb-24">
         <BentoGrid>
-          <BentoCard title="Quick Stats" colSpan="3">
+          <BentoCard 
+            title="Quick Stats" 
+            colSpan="3"
+            gradient="from-blue-500/20 via-cyan-500/10 to-blue-500/5"
+          >
             <QuickStatsWidget />
           </BentoCard>
 
-          <BentoCard title="Discover Events" description="Find and register for upcoming events" colSpan="2" rowSpan="2">
+          <BentoCard 
+            title="Discover Events" 
+            description="Find and register for upcoming events" 
+            colSpan="2" 
+            rowSpan="2"
+            gradient="from-green-500/20 via-emerald-500/10 to-green-500/5"
+          >
             <EventDiscoveryWidget />
           </BentoCard>
 
-          <BentoCard title="Your Profile" rowSpan="2">
+          <BentoCard 
+            title="Your Profile" 
+            rowSpan="2"
+            gradient="from-purple-500/20 via-violet-500/10 to-purple-500/5"
+          >
             <ProfileWidget />
           </BentoCard>
 
-          <BentoCard title="Registered Events" description="Your upcoming events" colSpan="2">
+          <BentoCard 
+            title="Registered Events" 
+            description="Your upcoming events" 
+            colSpan="2"
+            gradient="from-orange-500/20 via-amber-500/10 to-orange-500/5"
+          >
             <RegisteredEventsWidget />
           </BentoCard>
 
-          <BentoCard title="Certificates" description="Your achievements">
+          <BentoCard 
+            title="Certificates" 
+            description="Your achievements"
+            gradient="from-pink-500/20 via-rose-500/10 to-pink-500/5"
+          >
             <CertificatesWidget />
           </BentoCard>
         </BentoGrid>
