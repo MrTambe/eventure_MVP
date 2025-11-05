@@ -1,6 +1,6 @@
 // @ts-nocheck
 /* eslint-disable */
-import { NavBar } from "@/components/ui/tubelight-navbar";
+import { Dock } from "@/components/ui/dock";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher-1";
 import { BrutalistSportsCard } from "@/components/ui/brutalist-sports-card";
 import {
@@ -14,12 +14,12 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
 export default function Events() {
-  const navItems = [
-    { name: 'Dashboard', url: '/dashboard', icon: Home },
-    { name: 'Events', url: '/events', icon: Calendar },
-    { name: 'Certificates', url: '/certificates', icon: Trophy },
-    { name: 'Profile', url: '/profile', icon: User },
-    { name: 'Settings', url: '/settings', icon: Settings }
+  const dockItems = [
+    { icon: <Home size={20} />, label: 'Dashboard', href: '/dashboard' },
+    { icon: <Calendar size={20} />, label: 'Events', href: '/events' },
+    { icon: <Trophy size={20} />, label: 'Certificates', href: '/certificates' },
+    { icon: <User size={20} />, label: 'Profile', href: '/profile' },
+    { icon: <Settings size={20} />, label: 'Settings', href: '/settings' }
   ];
 
   // Load events from backend (active, completed, etc. — all events)
@@ -27,7 +27,7 @@ export default function Events() {
 
   return (
     <div className="min-h-screen relative">
-      <NavBar items={navItems} />
+      <Dock items={dockItems} />
       
       <div className="fixed top-0 right-6 z-50 pt-6">
         <ThemeSwitcher />
