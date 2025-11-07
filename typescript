@@ -1,3 +1,1 @@
-   const redirectPath = searchParams.get("redirect") || "/dashboard";
-   navigate(redirectPath, { replace: true });
-   
+<Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
