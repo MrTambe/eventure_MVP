@@ -49,8 +49,8 @@ export function BentoCard({
         "relative overflow-hidden bg-gradient-to-br",
         gradient,
         "border-4 border-black dark:border-white p-6",
-        "shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff]",
-        "hover:shadow-[12px_12px_0px_#000] dark:hover:shadow-[12px_12px_0px_#fff]",
+        "shadow-[6px_6px_0px_#000] dark:shadow-[6px_6px_0px_#fff]",
+        "hover:shadow-[10px_10px_0px_#000] dark:hover:shadow-[10px_10px_0px_#fff]",
         "hover:-translate-y-1 transition-all duration-300",
         className
       )}
