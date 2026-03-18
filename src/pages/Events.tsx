@@ -32,6 +32,12 @@ function getPlaceholderImage(id: string) {
   return PLACEHOLDER_IMAGES[idx];
 }
 
+function toTimestamp(val: number | Date | unknown): number {
+  if (val instanceof Date) return val.getTime();
+  if (typeof val === "number") return val;
+  return 0;
+}
+
 function formatDate(ts: number) {
   return new Date(ts).toLocaleDateString("en-US", {
     month: "short",
@@ -78,7 +84,7 @@ function EventCard({
     toast.success(`Reminder set for ${event.name}!`);
   };
 
-  const daysUntil = Math.ceil((event.startDate - Date.now()) / (1000 * 60 * 60 * 24));
+  const daysUntil = Math.ceil((toTimestamp(event.startDate) - Date.now()) / (1000 * 60 * 60 * 24));
 
   return (
     <motion.div
@@ -194,9 +200,9 @@ export default function Events() {
   const events = useQuery(api.events.list);
   const now = Date.now();
 
-  const ongoingEvents = events?.filter((e) => e.startDate <= now && e.endDate >= now) ?? [];
-  const upcomingEvents = events?.filter((e) => e.startDate > now) ?? [];
-  const completedEvents = events?.filter((e) => e.endDate < now) ?? [];
+  const ongoingEvents = events?.filter((e) => toTimestamp(e.startDate) <= now && toTimestamp(e.endDate) >= now) ?? [];
+  const upcomingEvents = events?.filter((e) => toTimestamp(e.startDate) > now) ?? [];
+  const completedEvents = events?.filter((e) => toTimestamp(e.endDate) < now) ?? [];
   const totalLive = ongoingEvents.length + upcomingEvents.length;
 
   return (
