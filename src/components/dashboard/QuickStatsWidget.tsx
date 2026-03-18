@@ -1,26 +1,33 @@
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Calendar, Award, CheckCircle } from "lucide-react";
+import { Calendar, Award, Activity } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function QuickStatsWidget() {
-  const stats = useQuery(api.dashboard.getUserStats);
+  const allEvents = useQuery(api.events.list);
+  const completedEvents = useQuery(api.dashboard.getCompletedEvents);
+
+  const now = Date.now();
+
+  const totalEvents = allEvents?.length ?? 0;
+  const totalCertificates = completedEvents?.filter(e => e.hasCertificate).length ?? 0;
+  const activeEvents = allEvents?.filter(e => e.startDate <= now && e.endDate >= now).length ?? 0;
 
   const statItems = [
     {
       icon: Calendar,
       label: "EVENTS",
-      value: stats?.totalEventsJoined ?? 0,
+      value: totalEvents,
     },
     {
       icon: Award,
       label: "CERTIFICATES",
-      value: stats?.totalCertificates ?? 0,
+      value: totalCertificates,
     },
     {
-      icon: CheckCircle,
-      label: "ACTIVE STATUS",
-      isCheck: true,
+      icon: Activity,
+      label: "ACTIVE EVENTS",
+      value: activeEvents,
     },
   ];
 
@@ -38,11 +45,7 @@ export function QuickStatsWidget() {
             <item.icon className="h-4 w-4 text-black dark:text-white" />
             <span className="text-[11px] font-black uppercase tracking-wide">{item.label}</span>
           </div>
-          {item.isCheck ? (
-            <CheckCircle className="h-5 w-5 text-green-500" />
-          ) : (
-            <span className="text-lg font-black">{item.value}</span>
-          )}
+          <span className="text-lg font-black">{item.value}</span>
         </motion.div>
       ))}
     </div>

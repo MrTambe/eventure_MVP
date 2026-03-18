@@ -37,7 +37,7 @@ export default function Dashboard() {
         {/* Main 3-column grid */}
         <div className="grid grid-cols-1 md:grid-cols-[260px_1fr_280px] gap-4 mb-12">
           {/* Left Column - Profile */}
-          <div className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 p-5">
+          <div className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 p-5 shadow-[6px_6px_0px_#000] dark:shadow-[6px_6px_0px_#fff]">
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4">YOUR PROFILE</p>
             <ProfileWidget />
           </div>
@@ -45,13 +45,13 @@ export default function Dashboard() {
           {/* Middle Column - Discover Events + Certificates */}
           <div className="flex flex-col gap-4">
             {/* Discover Events */}
-            <div className="border-2 border-black dark:border-white bg-[#c8f0e0] dark:bg-emerald-900/30 p-5">
+            <div className="border-2 border-black dark:border-white bg-[#c8f0e0] dark:bg-emerald-900/30 p-5 shadow-[6px_6px_0px_#000] dark:shadow-[6px_6px_0px_#fff]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-black/60 dark:text-white/60 mb-3">DISCOVER EVENTS</p>
               <EventDiscoveryWidget />
             </div>
 
             {/* Certificates */}
-            <div className="border-2 border-black dark:border-white bg-[#f5c8e8] dark:bg-pink-900/30 p-5">
+            <div className="border-2 border-black dark:border-white bg-[#f5c8e8] dark:bg-pink-900/30 p-5 shadow-[6px_6px_0px_#000] dark:shadow-[6px_6px_0px_#fff]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-black/60 dark:text-white/60 mb-3">CERTIFICATES</p>
               <CertificatesWidget />
             </div>
@@ -60,13 +60,13 @@ export default function Dashboard() {
           {/* Right Column - Quick Stats + Registered Events */}
           <div className="flex flex-col gap-4">
             {/* Quick Stats */}
-            <div className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 p-5">
+            <div className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 p-5 shadow-[6px_6px_0px_#000] dark:shadow-[6px_6px_0px_#fff]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4">QUICK STATS</p>
               <QuickStatsWidget />
             </div>
 
             {/* Registered Events */}
-            <div className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 p-5 flex-1">
+            <div className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 p-5 flex-1 shadow-[6px_6px_0px_#000] dark:shadow-[6px_6px_0px_#fff]">
               <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4">REGISTERED EVENTS</p>
               <RegisteredEventsWidget />
             </div>

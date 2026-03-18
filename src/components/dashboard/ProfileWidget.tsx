@@ -27,10 +27,10 @@ export function ProfileWidget() {
         <User className="h-10 w-10 text-black/60 dark:text-white/60" />
       </div>
 
-      {/* Name & Role */}
-      <div className="text-center">
+      {/* Name & Email */}
+      <div className="text-center w-full">
         <h4 className="font-bold text-base">{user?.name || "User"}</h4>
-        <p className="text-xs text-muted-foreground">Event Enthusiast</p>
+        <p className="text-xs text-muted-foreground break-all">{user?.email || "—"}</p>
       </div>
 
       {/* Progress Bar */}
