@@ -10,39 +10,58 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import jsPDF from "jspdf";
 
-const TEMPLATE_URL = "/assets/Blue_White_Aesthetic_Elegant_Completion_Certificate__1_.png";
+const TEMPLATE_URL = "/assets/Certificate_template.png";
+
+async function loadFont(name: string, url: string): Promise<void> {
+  try {
+    const font = new FontFace(name, `url(${url})`);
+    const loaded = await font.load();
+    document.fonts.add(loaded);
+  } catch {
+    // Font failed to load; will fall back to system fonts
+  }
+}
 
 async function generateCertificate(userName: string, eventName: string): Promise<void> {
+  // Load fonts before rendering
+  await Promise.all([
+    loadFont("Liana", "/assets/Liana.ttf"),
+    loadFont("Open Sans", "https://fonts.gstatic.com/s/opensans/v40/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0B4gaVI.woff2"),
+  ]);
+
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.onload = () => {
+    img.onload = async () => {
+      // Ensure fonts are ready
+      await document.fonts.ready;
+
       const scale = 3; // High resolution
       const canvas = document.createElement("canvas");
       canvas.width = img.naturalWidth * scale;
       canvas.height = img.naturalHeight * scale;
       const ctx = canvas.getContext("2d")!;
       ctx.scale(scale, scale);
+
+      // 1. Draw template image
       ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight);
 
-      // Overlay user name
+      // 2. Draw user name
       ctx.save();
-      ctx.font = "bold 48px 'Playfair Display', serif";
+      ctx.font = `52.2px 'Liana', cursive`;
       ctx.fillStyle = "#1f2a44";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      const x = img.naturalWidth / 2;
-      const y = img.naturalHeight * 0.47;
-      ctx.fillText(userName, x, y);
+      ctx.fillText(userName, img.naturalWidth / 2, img.naturalHeight * 0.445);
       ctx.restore();
 
-      // Overlay event name (smaller, below name)
+      // 3. Draw event name
       ctx.save();
-      ctx.font = "bold 28px 'Playfair Display', serif";
-      ctx.fillStyle = "#1f2a44";
+      ctx.font = `12px 'Open Sans', sans-serif`;
+      ctx.fillStyle = "#333";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(eventName, img.naturalWidth / 2, img.naturalHeight * 0.57);
+      ctx.fillText(eventName, img.naturalWidth / 2, img.naturalHeight * 0.535);
       ctx.restore();
 
       const imgData = canvas.toDataURL("image/png", 1.0);
