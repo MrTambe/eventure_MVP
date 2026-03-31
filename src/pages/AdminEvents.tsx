@@ -475,14 +475,20 @@ function AdminEventsContent() {
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-sm px-4 py-2 border-2 border-black dark:border-white" size="sm">
+                      <Button className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-sm px-4 py-2 border-2 border-black dark:border-white rounded-none" size="sm">
                         <Download className="mr-2 h-4 w-4" />EXPORT
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56">
-                      <DropdownMenuItem onClick={() => handleParticipantExport('pdf')}>📄 Export as PDF</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleParticipantExport('xlsx')}>📊 Export as Excel (.xlsx)</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleParticipantExport('csv')}>📑 Export as CSV (.csv)</DropdownMenuItem>
+                    <DropdownMenuContent className="w-56 rounded-none border-2 border-black dark:border-white bg-white dark:bg-black font-mono p-0">
+                      <DropdownMenuItem onClick={() => handleParticipantExport('pdf')} className="rounded-none font-mono uppercase text-xs font-bold px-4 py-3 border-b border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black cursor-pointer">
+                        PDF EXPORT
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleParticipantExport('xlsx')} className="rounded-none font-mono uppercase text-xs font-bold px-4 py-3 border-b border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black cursor-pointer">
+                        EXCEL EXPORT (.XLSX)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleParticipantExport('csv')} className="rounded-none font-mono uppercase text-xs font-bold px-4 py-3 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black cursor-pointer">
+                        CSV EXPORT (.CSV)
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
