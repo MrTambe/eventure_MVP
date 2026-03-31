@@ -42,11 +42,9 @@ export default function EventInfo() {
     id: eventId as Id<"events">
   });
 
-  const participants = useQuery(api.events.getEventParticipants, {
-    eventId: eventId as Id<"events">
-  });
+  const allTeamMembers = useQuery(api.team.getAllTeamMembers);
 
-  if (event === undefined || participants === undefined) {
+  if (event === undefined || allTeamMembers === undefined) {
     return (
       <div className="min-h-screen bg-[#f5f0e8] dark:bg-neutral-950 flex items-center justify-center">
         <div className="text-sm font-black uppercase text-muted-foreground">
@@ -95,6 +93,12 @@ export default function EventInfo() {
     Upcoming: "bg-blue-500 text-white border-blue-700 dark:border-blue-300",
     Completed: "bg-neutral-400 text-black border-black dark:border-white",
   };
+
+  // Filter team members to only those assigned as volunteers for this event
+  const volunteerIds = (event as any).volunteerIds as Id<"teamMembers">[] | undefined;
+  const volunteers = volunteerIds && volunteerIds.length > 0
+    ? allTeamMembers.filter((m) => volunteerIds.includes(m._id as Id<"teamMembers">))
+    : [];
 
   return (
     <div className="min-h-screen bg-[#f5f0e8] dark:bg-neutral-950">
@@ -203,17 +207,17 @@ export default function EventInfo() {
             </p>
           </div>
 
-          {/* Volunteers/Participants */}
+          {/* Volunteers */}
           <div>
             <h2 className="text-2xl font-black uppercase text-black dark:text-white mb-4 border-b-2 border-black dark:border-white pb-2">
               Volunteers
             </h2>
 
-            {participants && participants.length > 0 ? (
+            {volunteers.length > 0 ? (
               <div className="space-y-3">
-                {participants.map((participant, index) => (
+                {volunteers.map((volunteer, index) => (
                   <motion.div
-                    key={participant._id}
+                    key={volunteer._id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 + index * 0.05 }}
@@ -224,11 +228,18 @@ export default function EventInfo() {
                     </div>
                     <div>
                       <p className="text-sm font-black uppercase text-black dark:text-white">
-                        {participant.user?.name || participant.user?.email || "Volunteer"}
+                        {volunteer.name || "Unknown"}
                       </p>
-                      <p className="text-xs font-semibold text-muted-foreground">
-                        Status: {participant.status}
-                      </p>
+                      {volunteer.branch && (
+                        <p className="text-xs font-semibold text-muted-foreground">
+                          {volunteer.branch}
+                        </p>
+                      )}
+                      {volunteer.email && (
+                        <p className="text-xs text-muted-foreground">
+                          {volunteer.email}
+                        </p>
+                      )}
                     </div>
                   </motion.div>
                 ))}
