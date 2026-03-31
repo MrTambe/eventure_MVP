@@ -98,3 +98,25 @@ export const updateRole = mutation({
     });
   },
 });
+
+export const updateCurrentUserProfile = mutation({
+  args: {
+    name: v.string(),
+    rollNo: v.string(),
+    branch: v.string(),
+    mobileNumber: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+    await ctx.db.patch(user._id, {
+      name: args.name,
+      rollNo: args.rollNo,
+      branch: args.branch,
+      mobileNumber: args.mobileNumber,
+    });
+    return { success: true, message: "Profile updated successfully" };
+  },
+});

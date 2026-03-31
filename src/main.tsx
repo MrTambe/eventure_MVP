@@ -25,6 +25,7 @@ import AdminTeam from "@/pages/AdminTeam.tsx";
 import AdminDashboard from "./pages/AdminDashboard.tsx";
 import { Protected } from "@/lib/protected-page.tsx";
 import { AdminProtected } from "@/lib/admin-protected-page.tsx";
+import CompleteProfile from "./pages/CompleteProfile.tsx";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
@@ -41,6 +42,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/profile" element={<Protected><Profile /></Protected>} />
             <Route path="/settings" element={<Protected><Settings /></Protected>} />
             <Route path="/event/:eventId" element={<Protected><EventInfo /></Protected>} />
+            <Route path="/complete-profile" element={<CompleteProfile />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin-signIn" element={<AdminSignIn />} />
             <Route path="/admin-dashboard" element={<AdminProtected><AdminDashboard /></AdminProtected>} />
