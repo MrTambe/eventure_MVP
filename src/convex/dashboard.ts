@@ -230,3 +230,82 @@ export const registerForEvent = mutation({
     return { success: true, message: "Successfully registered for event" };
   },
 });
+
+export const getAllUserRegisteredEvents = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) return [];
+
+    const now = Date.now();
+    const eventIdSet = new Set<string>();
+    const results: Array<{ _id: any; name: string; venue: string; startDate: number; endDate: number; registrationType: string }> = [];
+
+    // 1. Individual registrations
+    const individualRegs = await ctx.db
+      .query("eventRegistrations")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    for (const reg of individualRegs) {
+      const event = await ctx.db.get(reg.eventId);
+      if (event && event.startDate > now && !eventIdSet.has(event._id)) {
+        eventIdSet.add(event._id);
+        results.push({
+          _id: event._id,
+          name: event.name,
+          venue: event.venue,
+          startDate: event.startDate,
+          endDate: event.endDate,
+          registrationType: "individual",
+        });
+      }
+    }
+
+    // 2. Team registrations where user is the leader
+    const teamRegsAsLeader = await ctx.db
+      .query("teamRegistrations")
+      .withIndex("by_user", (q) => q.eq("registeredByUserId", user._id))
+      .collect();
+
+    for (const reg of teamRegsAsLeader) {
+      const event = await ctx.db.get(reg.eventId);
+      if (event && event.startDate > now && !eventIdSet.has(event._id)) {
+        eventIdSet.add(event._id);
+        results.push({
+          _id: event._id,
+          name: event.name,
+          venue: event.venue,
+          startDate: event.startDate,
+          endDate: event.endDate,
+          registrationType: "team",
+        });
+      }
+    }
+
+    // 3. Team registrations where user's email matches a member
+    if (user.email) {
+      const allTeamRegs = await ctx.db.query("teamRegistrations").collect();
+      for (const reg of allTeamRegs) {
+        if (eventIdSet.has(reg.eventId)) continue;
+        const isMember = reg.members.some((m: any) => m.email === user.email);
+        if (isMember) {
+          const event = await ctx.db.get(reg.eventId);
+          if (event && event.startDate > now && !eventIdSet.has(event._id)) {
+            eventIdSet.add(event._id);
+            results.push({
+              _id: event._id,
+              name: event.name,
+              venue: event.venue,
+              startDate: event.startDate,
+              endDate: event.endDate,
+              registrationType: "team-member",
+            });
+          }
+        }
+      }
+    }
+
+    return results.sort((a, b) => a.startDate - b.startDate);
+  },
+});
