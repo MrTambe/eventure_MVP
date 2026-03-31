@@ -55,13 +55,13 @@ async function generateCertificate(userName: string, eventName: string): Promise
       ctx.fillText(userName, img.naturalWidth / 2, img.naturalHeight * 0.46);
       ctx.restore();
 
-      // 3. Draw event name (inline with "for completing the")
+      // 3. Draw event name (centered below "for completing the")
       ctx.save();
-      ctx.font = `14px 'Open Sans', sans-serif`;
+      ctx.font = `bold 18px 'Open Sans', sans-serif`;
       ctx.fillStyle = "#1f2a44";
-      ctx.textAlign = "left";
+      ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(eventName, img.naturalWidth * 0.56, img.naturalHeight * 0.585);
+      ctx.fillText(eventName, img.naturalWidth / 2, img.naturalHeight * 0.60);
       ctx.restore();
 
       const imgData = canvas.toDataURL("image/png", 1.0);
