@@ -62,6 +62,7 @@ export default function EventInfo() {
   const userRegistration = useQuery(api.events.getUserRegistration, { eventId: eventId as Id<"events"> });
   const teamRegistration = useQuery(api.events.getTeamRegistration, { eventId: eventId as Id<"events"> });
   const participants = useQuery(api.events.getEventParticipants, { eventId: eventId as Id<"events"> });
+  const allTeamRegistrations = useQuery(api.events.getEventTeamRegistrations, { eventId: eventId as Id<"events"> });
   const registerForEvent = useMutation(api.events.registerForEvent);
   const registerTeamForEvent = useMutation(api.events.registerTeamForEvent);
 
@@ -70,7 +71,8 @@ export default function EventInfo() {
     allTeamMembers === undefined ||
     userRegistration === undefined ||
     teamRegistration === undefined ||
-    participants === undefined
+    participants === undefined ||
+    allTeamRegistrations === undefined
   ) {
     return (
       <div className="min-h-screen bg-[#f5f0e8] dark:bg-neutral-950 flex items-center justify-center">
@@ -121,8 +123,13 @@ export default function EventInfo() {
     : [];
 
   const isEventClosed = eventStatus === "Completed" || event.status === "cancelled";
-  const registrationCount = participants.length;
   const eventType = (event as any).eventType as "individual" | "team" | undefined ?? "individual";
+
+  // Unified participant counts
+  const totalIndividuals = participants.length;
+  const totalTeams = allTeamRegistrations.length;
+  const totalTeamMembers = allTeamRegistrations.reduce((sum, tr) => sum + tr.members.length, 0);
+  const totalParticipants = totalIndividuals + totalTeamMembers;
 
   // Individual registration
   const isAlreadyRegistered = !!userRegistration;
@@ -310,13 +317,23 @@ export default function EventInfo() {
           transition={{ delay: 0.3 }}
           className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] p-8"
         >
-          <div className="flex items-center justify-between mb-4 border-b-2 border-black dark:border-white pb-2">
+          <div className="flex items-center justify-between mb-4 border-b-2 border-black dark:border-white pb-2 flex-wrap gap-3">
             <h2 className="text-2xl font-black uppercase text-black dark:text-white">Registration</h2>
-            <div className="flex items-center gap-2 border-2 border-black dark:border-white px-3 py-1 bg-[#f5f0e8] dark:bg-neutral-800">
-              <Users className="h-4 w-4 text-black dark:text-white" />
-              <span className="text-sm font-black text-black dark:text-white">
-                {registrationCount} {registrationCount === 1 ? "person" : "people"} registered
-              </span>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 border-2 border-black dark:border-white px-3 py-1 bg-[#f5f0e8] dark:bg-neutral-800">
+                <Users className="h-4 w-4 text-black dark:text-white" />
+                <span className="text-sm font-black text-black dark:text-white">
+                  {totalParticipants} {totalParticipants === 1 ? "participant" : "participants"}
+                </span>
+              </div>
+              {totalTeams > 0 && (
+                <div className="flex items-center gap-2 border-2 border-black dark:border-white px-3 py-1 bg-[#f5f0e8] dark:bg-neutral-800">
+                  <Users className="h-4 w-4 text-black dark:text-white" />
+                  <span className="text-sm font-black text-black dark:text-white">
+                    {totalTeams} {totalTeams === 1 ? "team" : "teams"} registered
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

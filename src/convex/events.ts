@@ -524,3 +524,13 @@ export const getTeamRegistration = query({
       .unique();
   },
 });
+
+export const getEventTeamRegistrations = query({
+  args: { eventId: v.id("events") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("teamRegistrations")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .collect();
+  },
+});
