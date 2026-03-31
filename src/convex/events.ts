@@ -391,3 +391,67 @@ export const getEventParticipants = query({
     return participants;
   },
 });
+
+export const registerForEvent = mutation({
+  args: {
+    eventId: v.id("events"),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      return { success: false, message: "User not authenticated" };
+    }
+
+    // Check if already registered
+    const existing = await ctx.db
+      .query("eventRegistrations")
+      .withIndex("by_user_and_event", (q) =>
+        q.eq("userId", user._id).eq("eventId", args.eventId)
+      )
+      .unique();
+
+    if (existing) {
+      return { success: false, message: "Already registered for this event" };
+    }
+
+    // Check max participants
+    const event = await ctx.db.get(args.eventId);
+    if (!event) {
+      return { success: false, message: "Event not found" };
+    }
+
+    if (event.maxParticipants) {
+      const registrations = await ctx.db
+        .query("eventRegistrations")
+        .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+        .collect();
+      if (registrations.length >= event.maxParticipants) {
+        return { success: false, message: "Event is full" };
+      }
+    }
+
+    await ctx.db.insert("eventRegistrations", {
+      eventId: args.eventId,
+      userId: user._id,
+      registrationDate: Date.now(),
+      status: "registered",
+    });
+
+    return { success: true, message: "Successfully registered for the event!" };
+  },
+});
+
+export const getUserRegistration = query({
+  args: { eventId: v.id("events") },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) return null;
+
+    return await ctx.db
+      .query("eventRegistrations")
+      .withIndex("by_user_and_event", (q) =>
+        q.eq("userId", user._id).eq("eventId", args.eventId)
+      )
+      .unique();
+  },
+});

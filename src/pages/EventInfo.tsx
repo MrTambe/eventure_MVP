@@ -1,14 +1,17 @@
 import { useParams, useNavigate } from "react-router";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { motion } from "framer-motion";
+import { useState } from "react";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   Calendar,
   Clock,
   MapPin,
   Users,
+  CheckCircle,
 } from "lucide-react";
 
 // Helper to normalize date/timestamp to timestamp
@@ -37,14 +40,19 @@ function formatTime(ts: number) {
 export default function EventInfo() {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const event = useQuery(api.events.getById, {
     id: eventId as Id<"events">
   });
 
   const allTeamMembers = useQuery(api.team.getAllTeamMembers);
+  const userRegistration = useQuery(api.events.getUserRegistration, {
+    eventId: eventId as Id<"events">
+  });
+  const registerForEvent = useMutation(api.events.registerForEvent);
 
-  if (event === undefined || allTeamMembers === undefined) {
+  if (event === undefined || allTeamMembers === undefined || userRegistration === undefined) {
     return (
       <div className="min-h-screen bg-[#f5f0e8] dark:bg-neutral-950 flex items-center justify-center">
         <div className="text-sm font-black uppercase text-muted-foreground">
@@ -99,6 +107,25 @@ export default function EventInfo() {
   const volunteers = volunteerIds && volunteerIds.length > 0
     ? allTeamMembers.filter((m) => volunteerIds.includes(m._id as Id<"teamMembers">))
     : [];
+
+  const isAlreadyRegistered = !!userRegistration;
+  const isEventClosed = eventStatus === "Completed" || event.status === "cancelled";
+
+  const handleRegister = async () => {
+    setIsRegistering(true);
+    try {
+      const result = await registerForEvent({ eventId: eventId as Id<"events"> });
+      if (result.success) {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Registration failed. Please try again.");
+    } finally {
+      setIsRegistering(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f5f0e8] dark:bg-neutral-950">
@@ -254,7 +281,7 @@ export default function EventInfo() {
           </div>
         </motion.div>
 
-        {/* BOTTOM SECTION - Registration Placeholder */}
+        {/* BOTTOM SECTION - Registration */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -262,13 +289,46 @@ export default function EventInfo() {
           className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] p-8"
         >
           <h2 className="text-2xl font-black uppercase text-black dark:text-white mb-4 border-b-2 border-black dark:border-white pb-2">
-            Registration Section
+            Registration
           </h2>
-          <div className="border-2 border-dashed border-black dark:border-white p-8 text-center">
-            <p className="text-sm font-bold text-muted-foreground">
-              Registration functionality coming soon
-            </p>
-          </div>
+
+          {isEventClosed ? (
+            <div className="border-2 border-black dark:border-white bg-[#f5f0e8] dark:bg-neutral-800 p-6 text-center">
+              <p className="text-sm font-bold text-muted-foreground uppercase">
+                {event.status === "cancelled" ? "This event has been cancelled" : "Registration is closed"}
+              </p>
+            </div>
+          ) : isAlreadyRegistered ? (
+            <div className="border-2 border-black dark:border-white bg-[#c8f0e0] dark:bg-emerald-900/30 p-6 flex items-center gap-4">
+              <CheckCircle className="h-8 w-8 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-black uppercase text-black dark:text-white">
+                  You're Registered!
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Registered on {new Date(userRegistration.registrationDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground">
+                  Register to participate in this event.
+                  {event.maxParticipants && (
+                    <span className="ml-1 font-semibold">Max {event.maxParticipants} participants.</span>
+                  )}
+                </p>
+              </div>
+              <button
+                onClick={handleRegister}
+                disabled={isRegistering}
+                className="border-2 border-black dark:border-white bg-black dark:bg-white text-white dark:text-black px-8 py-3 text-sm font-black uppercase hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all shadow-[4px_4px_0px_#555] dark:shadow-[4px_4px_0px_#aaa] hover:shadow-[2px_2px_0px_#555] hover:translate-x-[2px] hover:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isRegistering ? "Registering..." : "Register for Event"}
+              </button>
+            </div>
+          )}
         </motion.div>
       </div>
     </div>
