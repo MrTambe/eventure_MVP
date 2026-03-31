@@ -27,6 +27,7 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
     eventTime: "",
     maxParticipants: "",
     volunteerIds: [] as Id<"teamMembers">[],
+    eventType: "individual" as "individual" | "team",
   });
 
   const [selectedVolunteers, setSelectedVolunteers] = useState<Set<Id<"teamMembers">>>(new Set());
@@ -52,6 +53,7 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
       eventTime: "",
       maxParticipants: "",
       volunteerIds: [],
+      eventType: "individual",
     });
     setSelectedVolunteers(new Set());
     onClose();
@@ -103,6 +105,7 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
         eventTime: formData.eventTime,
         maxParticipants: formData.maxParticipants ? parseInt(formData.maxParticipants) : undefined,
         volunteerIds,
+        eventType: formData.eventType,
         // Provide adminEmail so backend can validate admin access without relying only on Convex auth identity
         adminEmail,
       });
@@ -173,6 +176,27 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
               onChange={(e) => handleInputChange('description', e.target.value)}
               className="border-2 border-black dark:border-white min-h-[100px]"
             />
+          </div>
+
+          {/* Event Type Selector */}
+          <div className="space-y-2">
+            <Label className="text-sm font-bold">EVENT TYPE *</Label>
+            <div className="flex gap-3">
+              {(["individual", "team"] as const).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, eventType: type }))}
+                  className={`flex-1 py-2 px-4 border-2 text-sm font-black uppercase transition-all ${
+                    formData.eventType === type
+                      ? "border-black dark:border-white bg-black dark:bg-white text-white dark:text-black shadow-[3px_3px_0px_#555] dark:shadow-[3px_3px_0px_#aaa]"
+                      : "border-black dark:border-white bg-white dark:bg-neutral-900 text-black dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  }`}
+                >
+                  {type === "individual" ? "Individual" : "Team"}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

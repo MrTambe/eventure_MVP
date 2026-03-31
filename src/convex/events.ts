@@ -95,6 +95,7 @@ export const createEvent = mutation({
     eventTime: v.string(),
     maxParticipants: v.optional(v.number()),
     volunteerIds: v.optional(v.array(v.id("teamMembers"))),
+    eventType: v.optional(v.union(v.literal("individual"), v.literal("team"))),
   },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
@@ -117,6 +118,7 @@ export const createEvent = mutation({
       createdBy: user._id,
       status: "active",
       volunteerIds: args.volunteerIds ?? [],
+      eventType: args.eventType ?? "individual",
     });
 
     return {
@@ -136,6 +138,7 @@ export const createEventAsAdmin = mutation({
     eventTime: v.string(),
     maxParticipants: v.optional(v.number()),
     volunteerIds: v.optional(v.array(v.id("teamMembers"))),
+    eventType: v.optional(v.union(v.literal("individual"), v.literal("team"))),
     // New optional admin email for validation from admin session
     adminEmail: v.optional(v.string()),
   },
@@ -203,6 +206,7 @@ export const createEventAsAdmin = mutation({
       createdBy,
       status: "active",
       volunteerIds: args.volunteerIds ?? [],
+      eventType: args.eventType ?? "individual",
     });
 
     return {
