@@ -128,9 +128,9 @@ export function createEmailProvider(): EmailProvider {
       return new ResendProvider(resendApiKey);
     case "vly":
     default:
-      const vlyApiKey = process.env.VLY_API_KEY;
+      const vlyApiKey = process.env.VLY_API_KEY || process.env.VLY_INTEGRATION_KEY;
       if (!vlyApiKey) {
-        throw new Error("VLY_API_KEY environment variable is required");
+        throw new Error("VLY_API_KEY or VLY_INTEGRATION_KEY environment variable is required");
       }
       return new VlyEmailProvider(vlyApiKey);
   }
