@@ -98,6 +98,20 @@ function formatTimestamp(ts: number) {
 
 const REACTION_EMOJIS = ['👍', '🔥', '❤️', '😂', '🎉', '👀'];
 
+function highlightMentions(text: string): React.ReactNode[] {
+  const parts = text.split(/(@\w+)/g);
+  return parts.map((part, i) => {
+    if (/^@\w+$/.test(part)) {
+      return (
+        <span key={i} className="text-[#6D28D9] font-bold">
+          {part}
+        </span>
+      );
+    }
+    return <React.Fragment key={i}>{part}</React.Fragment>;
+  });
+}
+
 function MessageCard({ message, index }: { message: any; index: number }) {
   const { user } = useAuth();
   const toggleReaction = useMutation(api.communication.toggleEmojiReaction);
@@ -161,7 +175,7 @@ function MessageCard({ message, index }: { message: any; index: number }) {
             </span>
           </div>
           <p className="text-sm text-black dark:text-white leading-relaxed whitespace-pre-wrap break-words">
-            {message.content}
+            {highlightMentions(message.content)}
           </p>
 
           {/* Reactions row */}
