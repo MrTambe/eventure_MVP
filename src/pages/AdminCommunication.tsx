@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AdminNavBar } from '@/components/admin/admin-navbar';
 import { Dock } from '@/components/ui/dock';
-import { Home, Calendar, Users, Settings, MessageSquare, Radio, Hash, Megaphone } from 'lucide-react';
+import { Home, Calendar, Users, Settings, MessageSquare, Radio, Hash, Megaphone, Send } from 'lucide-react';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { useAuth } from '@/hooks/use-auth';
+import { toast } from 'sonner';
 
 const ADMIN_NAV_ITEMS = [
   { name: 'Dashboard', url: '/admin-dashboard', icon: Home },
@@ -83,23 +87,174 @@ function EventChannelsSidebar() {
   );
 }
 
+function formatTimestamp(ts: number) {
+  const d = new Date(ts);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  if (isToday) return `Today, ${time}`;
+  return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${time}`;
+}
+
+function MessageCard({ message, index }: { message: any; index: number }) {
+  const initials = (message.authorName || 'U')
+    .split(' ')
+    .map((w: string) => w.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, delay: index * 0.04 }}
+      className="border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_#fff] bg-white dark:bg-neutral-900 p-4"
+    >
+      <div className="flex items-start gap-3">
+        {/* Avatar */}
+        <div className="w-10 h-10 flex-shrink-0 border-2 border-black dark:border-white rounded-lg overflow-hidden bg-neutral-200 dark:bg-neutral-700">
+          {message.authorImage ? (
+            <img src={message.authorImage} alt={message.authorName || 'User'} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-black dark:bg-white text-white dark:text-black text-xs font-black">
+              {initials}
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-sm font-black uppercase tracking-wide text-black dark:text-white">
+              {message.authorName || 'Unknown'}
+            </span>
+            <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500">
+              {formatTimestamp(message._creationTime)}
+            </span>
+          </div>
+          <p className="text-sm text-black dark:text-white leading-relaxed whitespace-pre-wrap break-words">
+            {message.content}
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 function BroadcastsContent() {
+  const { user } = useAuth();
+  const messages = useQuery(api.communication.listMessages);
+  const sendMessage = useMutation(api.communication.sendMessage);
+  const [content, setContent] = useState('');
+  const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Determine if user is admin (via Convex user role or admin session)
+  const isAdmin = (() => {
+    if (user?.role === 'admin') return true;
+    try {
+      const adminSession = sessionStorage.getItem('adminUser');
+      if (adminSession) return true;
+    } catch {}
+    return false;
+  })();
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages?.length]);
+
+  const handleSend = async () => {
+    const trimmed = content.trim();
+    if (!trimmed) return;
+    setSending(true);
+    try {
+      const result = await sendMessage({ content: trimmed });
+      if (result?.success) {
+        setContent('');
+        toast.success('Broadcast sent!');
+      } else {
+        toast.error(result?.message || 'Failed to send');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to send broadcast');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="flex-1 flex flex-col items-center justify-center gap-4 py-16"
+      className="flex-1 flex flex-col"
     >
-      <div className="w-20 h-20 border-[3px] border-black dark:border-white bg-[#6D28D9]/10 flex items-center justify-center">
-        <Radio size={36} className="text-[#6D28D9]" />
+      {/* Header */}
+      <div className="mb-4">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-black dark:text-white">
+          Broadcast
+        </h2>
       </div>
-      <h3 className="text-2xl font-black uppercase tracking-tight text-black dark:text-white">
-        Broadcasts
-      </h3>
-      <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center max-w-sm">
-        Send announcements and updates to all users. Select a channel from the sidebar to get started.
-      </p>
+
+      {/* Compose box (admin only) */}
+      {isAdmin ? (
+        <div className="mb-5">
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Write a broadcast message..."
+            rows={3}
+            className="w-full border-2 border-black dark:border-white bg-[#FDF8F3] dark:bg-neutral-800 px-4 py-3 text-sm font-bold text-black dark:text-white outline-none resize-none focus:shadow-[3px_3px_0px_0px_#6D28D9] transition-shadow placeholder:text-neutral-400 dark:placeholder:text-neutral-500"
+          />
+          <button
+            onClick={handleSend}
+            disabled={sending || !content.trim()}
+            className="mt-2 flex items-center justify-center gap-2 w-full bg-[#6D28D9] border-2 border-black dark:border-white text-white font-black uppercase tracking-wide text-sm py-3 shadow-[4px_4px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_#fff] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] dark:hover:shadow-[2px_2px_0px_0px_#fff] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Send size={16} />
+            {sending ? 'Sending...' : 'Send Broadcast'}
+          </button>
+        </div>
+      ) : (
+        <div className="mb-5 border-2 border-black/30 dark:border-white/30 bg-neutral-100 dark:bg-neutral-800 px-4 py-3">
+          <p className="text-xs font-bold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            Team members can view broadcasts but cannot send
+          </p>
+        </div>
+      )}
+
+      {/* Messages list */}
+      <div className="flex-1 flex flex-col gap-3 overflow-y-auto max-h-[500px] pr-1">
+        {messages === undefined ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-6 h-6 border-2 border-black dark:border-white border-t-transparent animate-spin" />
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className="w-16 h-16 border-[3px] border-black dark:border-white bg-[#6D28D9]/10 flex items-center justify-center">
+              <Radio size={28} className="text-[#6D28D9]" />
+            </div>
+            <p className="text-sm font-bold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+              No broadcasts yet
+            </p>
+          </div>
+        ) : (
+          messages.map((msg, i) => (
+            <MessageCard key={msg._id} message={msg} index={i} />
+          ))
+        )}
+        <div ref={messagesEndRef} />
+      </div>
     </motion.div>
   );
 }
