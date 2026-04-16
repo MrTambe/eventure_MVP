@@ -1,11 +1,11 @@
 import { Protected } from "@/lib/protected-page";
 import { Dock } from "@/components/ui/dock";
-import { Home, Calendar, User, LayoutGrid, Pencil, LogOut, Moon, Sun } from "lucide-react";
+import { Home, Calendar, User, LayoutGrid, Pencil, LogOut, Moon, Sun, Settings, Trophy, CheckCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/components/theme-provider";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
@@ -193,57 +193,25 @@ function ActionButtons({ onEdit, onLogout }: { onEdit: () => void; onLogout: () 
   );
 }
 
-function StatsAndDock() {
-  const dockItems = [
-    { icon: <LayoutGrid size={18} />, label: "Dashboard", href: "/dashboard" },
-    { icon: <Calendar size={18} />, label: "Events", href: "/events" },
-    { icon: <Calendar size={18} />, label: "Calendar", href: "/certificates" },
-    { icon: <User size={18} />, label: "Profile", href: "/profile" },
-  ];
+function EventsDoneStat() {
+  const completedEvents = useQuery(api.dashboard.getCompletedEvents);
+  const count = completedEvents?.length ?? 0;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.6 }}
-      className="flex items-stretch justify-center gap-0 w-full max-w-2xl mx-auto"
+      transition={{ duration: 0.35, delay: 0.55 }}
+      className="border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_#fff] bg-[#EDE9E0] dark:bg-neutral-800 p-5 flex items-center gap-4"
     >
-      {/* Left stat */}
-      <div className="flex flex-col items-center justify-center px-5 py-3 bg-[#EDE9E0] dark:bg-neutral-800 border-2 border-black dark:border-white rounded-l-xl">
-        <span className="text-2xl md:text-3xl font-black text-black dark:text-white">24</span>
-        <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-600 dark:text-neutral-400">Events Done</span>
-      </div>
-
-      {/* Dock center */}
-      <div className="flex items-center bg-white dark:bg-neutral-900 border-y-2 border-black dark:border-white px-2 gap-1">
-        {dockItems.map((item, i) => {
-          const isActive = item.href === "/profile";
-          return (
-            <a
-              key={i}
-              href={item.href}
-              className={`flex flex-col items-center justify-center px-3 md:px-4 py-2 rounded-lg transition-colors min-w-[52px] ${
-                isActive
-                  ? "bg-green-100 dark:bg-green-900/40 text-black dark:text-white"
-                  : "text-black dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800"
-              }`}
-            >
-              <span className="flex items-center justify-center relative">
-                {item.icon}
-                {isActive && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-green-400" />
-                )}
-              </span>
-              <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-wide mt-0.5">{item.label}</span>
-            </a>
-          );
-        })}
-      </div>
-
-      {/* Right stat */}
-      <div className="flex flex-col items-center justify-center px-5 py-3 bg-[#EDE9E0] dark:bg-neutral-800 border-2 border-black dark:border-white rounded-r-xl">
-        <span className="text-2xl md:text-3xl font-black text-black dark:text-white">4.9</span>
-        <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-600 dark:text-neutral-400">Rating</span>
+      <CheckCircle className="w-8 h-8 text-black dark:text-white flex-shrink-0" />
+      <div>
+        <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400 mb-1">
+          Events Done
+        </p>
+        <p className="text-3xl md:text-4xl font-black text-black dark:text-white leading-none">
+          {count}
+        </p>
       </div>
     </motion.div>
   );
@@ -259,12 +227,23 @@ export default function Profile() {
     navigate("/");
   };
 
+  const dockItems = [
+    { icon: <Home size={20} />, label: "Home", href: "/dashboard" },
+    { icon: <Calendar size={20} />, label: "Events", href: "/events" },
+    { icon: <Trophy size={20} />, label: "Trophy", href: "/certificates" },
+    { icon: <User size={20} />, label: "Profile", href: "/profile" },
+    { icon: <Settings size={20} />, label: "Settings", href: "/settings" },
+  ];
+
   return (
     <Protected>
+      {/* Top Dock */}
+      <Dock items={dockItems} />
+
       <div className="min-h-screen bg-[#FDF8F3] dark:bg-neutral-950 flex flex-col">
         <ProfileHeader />
 
-        <main className="flex-1 w-full max-w-3xl mx-auto px-4 md:px-6 pt-8 pb-32 flex flex-col gap-5">
+        <main className="flex-1 w-full max-w-3xl mx-auto px-4 md:px-6 pt-8 pb-16 flex flex-col gap-5">
           <ProfileCard user={user} />
 
           {/* Info Grid */}
@@ -276,9 +255,9 @@ export default function Profile() {
           </div>
           <InfoField label="Contact Number" value={user?.mobileNumber || "—"} delay={0.35} />
 
-          <ActionButtons onEdit={() => setEditOpen(true)} onLogout={handleLogout} />
+          <EventsDoneStat />
 
-          <StatsAndDock />
+          <ActionButtons onEdit={() => setEditOpen(true)} onLogout={handleLogout} />
         </main>
 
         {editOpen && <EditProfileModal user={user} onClose={() => setEditOpen(false)} />}
