@@ -123,8 +123,8 @@ importers:
         specifier: ^0.177.0
         version: 0.177.0
       '@vly-ai/integrations':
-        specifier: 0.6.2
-        version: 0.6.2
+        specifier: 0.6.6
+        version: 0.6.6
       '@zumer/snapdom':
         specifier: ^1.7.1
         version: 1.7.1
@@ -2130,8 +2130,8 @@ packages:
     peerDependencies:
       vite: ^4.2.0 || ^5.0.0 || ^6.0.0
 
-  '@vly-ai/integrations@0.6.2':
-    resolution: {integrity: sha512-YmyXU7dC43vj5kYXdZhXfv+MKV3cYXP5bAmqCsQLcXPTPx7nDlDO1NH7UnECdJ/VhB7IYnbpPqAVVxVU4WcgLw==}
+  '@vly-ai/integrations@0.6.6':
+    resolution: {integrity: sha512-W8UMoiDVOkE4pPDKHuJTTXxu7PbFdxwZQAqFiS7BOFKEwPDxxs2aJI4oxIiiRdz8jhrJYoo8PFwRcCKVRpr2gg==}
     engines: {node: '>=18'}
 
   '@webgpu/types@0.1.61':
@@ -5504,7 +5504,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vly-ai/integrations@0.6.2':
+  '@vly-ai/integrations@0.6.6':
     dependencies:
       '@ai-sdk/openai-compatible': 1.0.34(zod@3.25.46)
       ai: 5.0.154(zod@3.25.46)
