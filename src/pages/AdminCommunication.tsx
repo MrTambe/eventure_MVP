@@ -96,13 +96,40 @@ function formatTimestamp(ts: number) {
   return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${time}`;
 }
 
+const REACTION_EMOJIS = ['👍', '🔥', '❤️', '😂', '🎉', '👀'];
+
 function MessageCard({ message, index }: { message: any; index: number }) {
+  const { user } = useAuth();
+  const toggleReaction = useMutation(api.communication.toggleEmojiReaction);
+  const [showPicker, setShowPicker] = useState(false);
+
   const initials = (message.authorName || 'U')
     .split(' ')
     .map((w: string) => w.charAt(0))
     .join('')
     .toUpperCase()
     .slice(0, 2);
+
+  // Group reactions by emoji
+  const reactionGroups: Record<string, { count: number; hasReacted: boolean }> = {};
+  (message.reactions || []).forEach((r: any) => {
+    if (!reactionGroups[r.emoji]) {
+      reactionGroups[r.emoji] = { count: 0, hasReacted: false };
+    }
+    reactionGroups[r.emoji].count++;
+    if (user && r.userId === user._id) {
+      reactionGroups[r.emoji].hasReacted = true;
+    }
+  });
+
+  const handleReaction = async (emoji: string) => {
+    try {
+      await toggleReaction({ messageId: message._id, emoji });
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to react');
+    }
+    setShowPicker(false);
+  };
 
   return (
     <motion.div
@@ -136,6 +163,47 @@ function MessageCard({ message, index }: { message: any; index: number }) {
           <p className="text-sm text-black dark:text-white leading-relaxed whitespace-pre-wrap break-words">
             {message.content}
           </p>
+
+          {/* Reactions row */}
+          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+            {Object.entries(reactionGroups).map(([emoji, data]) => (
+              <button
+                key={emoji}
+                onClick={() => handleReaction(emoji)}
+                className={`inline-flex items-center gap-1 border border-black dark:border-white px-2 py-1 text-xs font-bold transition-colors cursor-pointer ${
+                  data.hasReacted
+                    ? 'bg-[#6D28D9]/20 border-[#6D28D9] text-black dark:text-white'
+                    : 'bg-white dark:bg-neutral-800 text-black dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                }`}
+              >
+                <span>{emoji}</span>
+                <span>{data.count}</span>
+              </button>
+            ))}
+
+            {/* Add reaction button */}
+            <div className="relative">
+              <button
+                onClick={() => setShowPicker(!showPicker)}
+                className="inline-flex items-center border border-black/30 dark:border-white/30 px-2 py-1 text-xs font-bold bg-white dark:bg-neutral-800 text-neutral-400 hover:text-black dark:hover:text-white hover:border-black dark:hover:border-white transition-colors cursor-pointer"
+              >
+                +
+              </button>
+              {showPicker && (
+                <div className="absolute bottom-full left-0 mb-1 z-10 flex gap-1 border-2 border-black dark:border-white bg-white dark:bg-neutral-900 p-1.5 shadow-[3px_3px_0px_0px_#000] dark:shadow-[3px_3px_0px_0px_#fff]">
+                  {REACTION_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => handleReaction(emoji)}
+                      className="w-7 h-7 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer text-sm"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </motion.div>

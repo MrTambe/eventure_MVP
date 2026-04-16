@@ -79,6 +79,10 @@ const schema = defineSchema({
   admin_communication_messages: defineTable({
     authorId: v.id("users"),
     content: v.string(),
+    reactions: v.optional(v.array(v.object({
+      userId: v.id("users"),
+      emoji: v.string(),
+    }))),
   }).index("by_author", ["authorId"]),
 
   teamMembers: defineTable({

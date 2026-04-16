@@ -13,6 +13,7 @@ export const listMessages = query({
           ...message,
           authorName: author?.name,
           authorImage: author?.image,
+          reactions: message.reactions || [],
         };
       })
     );
@@ -83,16 +84,29 @@ export const toggleEmojiReaction = mutation({
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
     if (!user) {
-      return { success: false, message: "Not authenticated" };
+      throw new Error("Not authenticated");
     }
 
-    try {
-      // For now, just return success since we don't have reactions in the schema
-      return { success: true, message: "Reaction toggled successfully" };
-    } catch (error) {
-      console.error("Error toggling reaction:", error);
-      return { success: false, message: "Failed to toggle reaction" };
+    const message = await ctx.db.get(args.messageId);
+    if (!message) {
+      throw new Error("Message not found");
     }
+
+    const reactions = message.reactions || [];
+    const existingIndex = reactions.findIndex(
+      (r) => r.userId === user._id && r.emoji === args.emoji
+    );
+
+    if (existingIndex >= 0) {
+      // Remove reaction
+      reactions.splice(existingIndex, 1);
+    } else {
+      // Add reaction
+      reactions.push({ userId: user._id, emoji: args.emoji });
+    }
+
+    await ctx.db.patch(args.messageId, { reactions });
+    return { success: true };
   },
 });
 
