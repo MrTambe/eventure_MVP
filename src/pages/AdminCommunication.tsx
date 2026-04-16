@@ -145,7 +145,7 @@ function MessageCard({ message, index }: { message: any; index: number }) {
 function BroadcastsContent() {
   const { user } = useAuth();
   const messages = useQuery(api.communication.listMessages);
-  const sendMessage = useMutation(api.communication.sendMessage);
+  const sendMessage = useMutation(api.communication.postMessage);
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -170,13 +170,9 @@ function BroadcastsContent() {
     if (!trimmed) return;
     setSending(true);
     try {
-      const result = await sendMessage({ content: trimmed });
-      if (result?.success) {
-        setContent('');
-        toast.success('Broadcast sent!');
-      } else {
-        toast.error(result?.message || 'Failed to send');
-      }
+      await sendMessage({ content: trimmed });
+      setContent('');
+      toast.success('Broadcast sent!');
     } catch (e: any) {
       toast.error(e.message || 'Failed to send broadcast');
     } finally {
