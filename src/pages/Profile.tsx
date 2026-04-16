@@ -15,7 +15,7 @@ function ProfileHeader() {
   return (
     <header className="w-full border-b-[3px] border-black dark:border-white bg-[#FDF8F3] dark:bg-neutral-950 px-6 py-4 flex items-center justify-between">
       <span className="text-xl md:text-2xl font-black tracking-tight uppercase font-sans text-black dark:text-white">
-        EVENT.FLOW
+        Eventure
       </span>
       <button
         onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -259,11 +259,6 @@ export default function Profile() {
     navigate("/");
   };
 
-  // Generate a membership ID from user id
-  const membershipId = user?._id
-    ? `EF-2024-${String(user._id).slice(-4).toUpperCase()}`
-    : "—";
-
   return (
     <Protected>
       <div className="min-h-screen bg-[#FDF8F3] dark:bg-neutral-950 flex flex-col">
@@ -276,7 +271,7 @@ export default function Profile() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <InfoField label="Full Name" value={user?.name?.toUpperCase() || "—"} delay={0.15} />
             <InfoField label="Email Address" value={user?.email || "—"} delay={0.2} />
-            <InfoField label="Membership ID" value={membershipId} delay={0.25} />
+            <InfoField label="Roll No" value={user?.rollNo?.toUpperCase() || "—"} delay={0.25} />
             <InfoField label="Department" value={user?.branch?.toUpperCase() || "—"} delay={0.3} />
           </div>
           <InfoField label="Contact Number" value={user?.mobileNumber || "—"} delay={0.35} />
