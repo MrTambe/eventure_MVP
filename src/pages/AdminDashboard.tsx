@@ -30,7 +30,8 @@ import {
   Home,
   Calendar,
   Users2,
-  Ticket
+  Ticket,
+  ScanLine
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation, useQuery } from 'convex/react';

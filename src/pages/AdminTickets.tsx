@@ -15,6 +15,7 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
+  ScanLine,
 } from 'lucide-react';
 import { MenuBar } from '@/components/ui/glow-menu';
 import { BackgroundPaths } from '@/components/ui/background-paths';
@@ -287,6 +288,7 @@ function AdminTicketsContent() {
   const menuItems = [
     { name: 'Dashboard', label: 'Dashboard', href: '/admin-dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500', iconColor: 'text-blue-500' },
     { name: 'Events', label: 'Events', href: '/admin-events', icon: Calendar, gradient: 'from-green-500 to-emerald-500', iconColor: 'text-green-500' },
+    { name: 'Check-In', label: 'Check-In', href: '/admin-checkin', icon: ScanLine, gradient: 'from-teal-500 to-cyan-500', iconColor: 'text-teal-500' },
     { name: 'Tickets', label: 'Tickets', href: '/admin-tickets', icon: Ticket, gradient: 'from-amber-500 to-yellow-500', iconColor: 'text-amber-500' },
     { name: 'Team', label: 'Team', href: '/admin-team', icon: Users, gradient: 'from-purple-500 to-violet-500', iconColor: 'text-purple-500' },
     { name: 'Settings', label: 'Settings', href: '/admin-settings', icon: Settings, gradient: 'from-red-500 to-orange-500', iconColor: 'text-red-500' },
@@ -297,6 +299,7 @@ function AdminTicketsContent() {
     const routes: Record<string, string> = {
       Dashboard: '/admin-dashboard',
       Events: '/admin-events',
+      'Check-In': '/admin-checkin',
       Tickets: '/admin-tickets',
       Team: '/admin-team',
       Settings: '/admin-settings',
