@@ -27,6 +27,7 @@ import type * as generators_createSampleEvents from "../generators/createSampleE
 import type * as http from "../http.js";
 import type * as migrations from "../migrations.js";
 import type * as privateMessages from "../privateMessages.js";
+import type * as registration_emails from "../registration_emails.js";
 import type * as team from "../team.js";
 import type * as user_creation from "../user_creation.js";
 import type * as user_creation_internal from "../user_creation_internal.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   migrations: typeof migrations;
   privateMessages: typeof privateMessages;
+  registration_emails: typeof registration_emails;
   team: typeof team;
   user_creation: typeof user_creation;
   user_creation_internal: typeof user_creation_internal;

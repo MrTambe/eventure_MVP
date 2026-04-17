@@ -14,7 +14,9 @@ import {
   CheckCircle,
   Plus,
   Trash2,
+  CreditCard,
 } from "lucide-react";
+import { PaymentModal } from "@/components/PaymentModal";
 
 function toTimestamp(val: number | Date | unknown): number {
   if (val instanceof Date) return val.getTime();
@@ -52,6 +54,7 @@ export default function EventInfo() {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const [isRegistering, setIsRegistering] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   // Team registration state
   const [teamName, setTeamName] = useState("");
@@ -135,50 +138,51 @@ export default function EventInfo() {
   const isAlreadyRegistered = !!userRegistration;
   const isTeamAlreadyRegistered = !!teamRegistration;
 
-  const handleRegister = async () => {
-    setIsRegistering(true);
-    try {
-      const result = await registerForEvent({ eventId: eventId as Id<"events"> });
-      if (result.success) {
-        toast.success(result.message);
-      } else {
-        toast.error(result.message);
-      }
-    } catch (err: any) {
-      toast.error(err?.message || "Registration failed. Please try again.");
-    } finally {
-      setIsRegistering(false);
+  // Registration fee
+  const registrationFee = eventType === "team" ? 199 : 99;
+
+  const handleIndividualPaymentSuccess = async () => {
+    const result = await registerForEvent({ eventId: eventId as Id<"events"> });
+    if (result.success) {
+      toast.success(result.message);
+    } else {
+      throw new Error(result.message);
     }
   };
 
-  const handleTeamRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleTeamPaymentSuccess = async () => {
     if (!teamName.trim()) {
-      toast.error("Please enter a team name");
-      return;
+      throw new Error("Please enter a team name");
     }
     const validMembers = teamMembers.filter(m => m.name.trim());
     if (validMembers.length === 0) {
-      toast.error("Please add at least one team member");
-      return;
+      throw new Error("Please add at least one team member");
     }
-    setIsRegistering(true);
-    try {
-      const result = await registerTeamForEvent({
-        eventId: eventId as Id<"events">,
-        teamName: teamName.trim(),
-        members: validMembers,
-      });
-      if (result.success) {
-        toast.success(result.message);
-      } else {
-        toast.error(result.message);
+    const result = await registerTeamForEvent({
+      eventId: eventId as Id<"events">,
+      teamName: teamName.trim(),
+      members: validMembers,
+    });
+    if (result.success) {
+      toast.success(result.message);
+    } else {
+      throw new Error(result.message);
+    }
+  };
+
+  const handleOpenPayment = () => {
+    if (eventType === "team") {
+      if (!teamName.trim()) {
+        toast.error("Please enter a team name first");
+        return;
       }
-    } catch (err: any) {
-      toast.error(err?.message || "Team registration failed. Please try again.");
-    } finally {
-      setIsRegistering(false);
+      const validMembers = teamMembers.filter(m => m.name.trim());
+      if (validMembers.length === 0) {
+        toast.error("Please add at least one team member");
+        return;
+      }
     }
+    setShowPaymentModal(true);
   };
 
   const updateMember = (index: number, field: keyof TeamMember, value: string) => {
@@ -194,6 +198,17 @@ export default function EventInfo() {
 
   return (
     <div className="min-h-screen bg-[#f5f0e8] dark:bg-neutral-950">
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onSuccess={eventType === "team" ? handleTeamPaymentSuccess : handleIndividualPaymentSuccess}
+        eventName={event.name}
+        amount={registrationFee}
+        isTeam={eventType === "team"}
+        teamName={eventType === "team" ? teamName : undefined}
+      />
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -359,7 +374,7 @@ export default function EventInfo() {
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleTeamRegister} className="space-y-6">
+              <div className="space-y-6">
                 <p className="text-sm text-muted-foreground">Register your team for this event. Add all team members below.</p>
 
                 {/* Team Name */}
@@ -401,34 +416,38 @@ export default function EventInfo() {
                               value={member[field]}
                               onChange={e => updateMember(index, field, e.target.value)}
                               placeholder={field === "rollNo" ? "Roll No" : field === "mobileNumber" ? "Mobile Number" : field.charAt(0).toUpperCase() + field.slice(1)}
-                              className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 text-black dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+                              className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 text-black dark:text-white px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
                             />
                           ))}
                         </div>
                       </div>
                     ))}
                   </div>
-
                   <button
                     type="button"
                     onClick={addMember}
-                    className="mt-3 flex items-center gap-2 border-2 border-dashed border-black dark:border-white px-4 py-2 text-xs font-black uppercase text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors w-full justify-center"
+                    className="mt-3 flex items-center gap-2 border-2 border-dashed border-black dark:border-white px-4 py-2 text-xs font-black uppercase text-muted-foreground hover:text-black dark:hover:text-white hover:border-solid transition-all"
                   >
                     <Plus className="h-4 w-4" />
                     Add Member
                   </button>
                 </div>
 
-                <div className="flex justify-end">
+                {/* Pay to Register Button */}
+                <div className="border-2 border-black dark:border-white bg-[#f5f0e8] dark:bg-neutral-800 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-black uppercase text-muted-foreground">Registration Fee</span>
+                    <span className="text-xl font-black text-black dark:text-white">₹{registrationFee}</span>
+                  </div>
                   <button
-                    type="submit"
-                    disabled={isRegistering}
-                    className="border-2 border-black dark:border-white bg-black dark:bg-white text-white dark:text-black px-8 py-3 text-sm font-black uppercase hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all shadow-[4px_4px_0px_#555] dark:shadow-[4px_4px_0px_#aaa] hover:shadow-[2px_2px_0px_#555] hover:translate-x-[2px] hover:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleOpenPayment}
+                    className="w-full flex items-center justify-center gap-2 bg-black dark:bg-white text-white dark:text-black font-black uppercase tracking-wider text-sm py-3.5 border-2 border-black dark:border-white shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] dark:hover:shadow-[2px_2px_0px_#fff] transition-all"
                   >
-                    {isRegistering ? "Registering..." : "Register Team"}
+                    <CreditCard className="h-4 w-4" />
+                    Pay ₹{registrationFee} to Register Team
                   </button>
                 </div>
-              </form>
+              </div>
             )
           ) : (
             /* INDIVIDUAL REGISTRATION */
@@ -443,22 +462,21 @@ export default function EventInfo() {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">
-                    Register to participate in this event.
-                    {event.maxParticipants && (
-                      <span className="ml-1 font-semibold">Max {event.maxParticipants} participants.</span>
-                    )}
-                  </p>
+              <div className="border-2 border-black dark:border-white bg-[#f5f0e8] dark:bg-neutral-800 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-black uppercase text-muted-foreground">Registration Fee</span>
+                  <span className="text-xl font-black text-black dark:text-white">₹{registrationFee}</span>
                 </div>
                 <button
-                  onClick={handleRegister}
-                  disabled={isRegistering}
-                  className="border-2 border-black dark:border-white bg-black dark:bg-white text-white dark:text-black px-8 py-3 text-sm font-black uppercase hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all shadow-[4px_4px_0px_#555] dark:shadow-[4px_4px_0px_#aaa] hover:shadow-[2px_2px_0px_#555] hover:translate-x-[2px] hover:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setShowPaymentModal(true)}
+                  className="w-full flex items-center justify-center gap-2 bg-black dark:bg-white text-white dark:text-black font-black uppercase tracking-wider text-sm py-3.5 border-2 border-black dark:border-white shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] dark:hover:shadow-[2px_2px_0px_#fff] transition-all"
                 >
-                  {isRegistering ? "Registering..." : "Register for Event"}
+                  <CreditCard className="h-4 w-4" />
+                  Pay ₹{registrationFee} to Register
                 </button>
+                <p className="text-[10px] text-center text-muted-foreground mt-3">
+                  Secure mock payment — no real charges
+                </p>
               </div>
             )
           )}

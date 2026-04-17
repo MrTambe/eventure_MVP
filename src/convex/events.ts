@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUser } from "./users";
+import { internal } from "./_generated/api";
 
 export const list = query({
   args: {},
@@ -439,6 +440,24 @@ export const registerForEvent = mutation({
       status: "registered",
     });
 
+    // Schedule confirmation email
+    if (user.email) {
+      const eventDate = new Date(event.startDate).toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
+      await ctx.scheduler.runAfter(0, internal.registration_emails.sendRegistrationConfirmation, {
+        userEmail: user.email,
+        userName: user.name || "Participant",
+        eventName: event.name,
+        eventDate,
+        eventVenue: event.venue,
+        isTeam: false,
+      });
+    }
+
     return { success: true, message: "Successfully registered for the event!" };
   },
 });
@@ -503,6 +522,41 @@ export const registerTeamForEvent = mutation({
       registrationDate: Date.now(),
       members: args.members,
     });
+
+    // Schedule confirmation email to the registering user
+    const event = await ctx.db.get(args.eventId);
+    if (event && user.email) {
+      const eventDate = new Date(event.startDate).toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
+      await ctx.scheduler.runAfter(0, internal.registration_emails.sendRegistrationConfirmation, {
+        userEmail: user.email,
+        userName: user.name || "Team Captain",
+        eventName: event.name,
+        eventDate,
+        eventVenue: event.venue,
+        isTeam: true,
+        teamName: args.teamName.trim(),
+      });
+
+      // Also send to each team member
+      for (const member of args.members) {
+        if (member.email && member.email !== user.email) {
+          await ctx.scheduler.runAfter(0, internal.registration_emails.sendRegistrationConfirmation, {
+            userEmail: member.email,
+            userName: member.name,
+            eventName: event.name,
+            eventDate,
+            eventVenue: event.venue,
+            isTeam: true,
+            teamName: args.teamName.trim(),
+          });
+        }
+      }
+    }
 
     return { success: true, message: "Team registered successfully!" };
   },
