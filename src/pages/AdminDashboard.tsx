@@ -31,7 +31,8 @@ import {
   Calendar,
   Users2,
   Ticket,
-  ScanLine
+  ScanLine,
+  BarChart3
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation, useQuery } from 'convex/react';
