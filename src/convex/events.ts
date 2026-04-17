@@ -3,6 +3,15 @@ import { v } from "convex/values";
 import { getCurrentUser } from "./users";
 import { internal } from "./_generated/api";
 
+function generateCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I, O, 0, 1 to avoid confusion
+  let code = "";
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
 export const list = query({
   args: {},
   handler: async (ctx) => {
@@ -599,5 +608,185 @@ export const getEventTeamRegistrations = query({
       .query("teamRegistrations")
       .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
       .take(200);
+  },
+});
+
+export const generateCheckInCodes = mutation({
+  args: {
+    eventId: v.id("events"),
+  },
+  handler: async (ctx, args) => {
+    const event = await ctx.db.get(args.eventId);
+    if (!event) {
+      return { success: false, message: "Event not found", count: 0 };
+    }
+
+    const registrations = await ctx.db
+      .query("eventRegistrations")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .take(1000);
+
+    // Filter registrations that don't have a checkInCode yet
+    const needsCodes = registrations.filter((r) => !r.checkInCode);
+
+    if (needsCodes.length === 0) {
+      return { success: true, message: "All registrations already have check-in codes", count: 0 };
+    }
+
+    // Generate unique codes — collect existing codes first to avoid duplicates
+    const existingCodes = new Set(
+      registrations.filter((r) => r.checkInCode).map((r) => r.checkInCode!)
+    );
+
+    const patches = needsCodes.map((reg) => {
+      let code = generateCode();
+      // Ensure uniqueness within this event
+      while (existingCodes.has(code)) {
+        code = generateCode();
+      }
+      existingCodes.add(code);
+      return ctx.db.patch(reg._id, { checkInCode: code });
+    });
+
+    await Promise.all(patches);
+
+    return {
+      success: true,
+      message: `Generated ${needsCodes.length} check-in codes`,
+      count: needsCodes.length,
+    };
+  },
+});
+
+export const markAttendance = mutation({
+  args: {
+    checkInCode: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const code = args.checkInCode.trim().toUpperCase();
+    if (!code) {
+      return { success: false, message: "Check-in code is required" };
+    }
+
+    // Find registration by checkInCode
+    const registration = await ctx.db
+      .query("eventRegistrations")
+      .withIndex("by_checkInCode", (q) => q.eq("checkInCode", code))
+      .unique();
+
+    if (!registration) {
+      return { success: false, message: "Invalid check-in code" };
+    }
+
+    if (registration.attendedAt) {
+      return { success: false, message: "Already checked in" };
+    }
+
+    // Mark attendance
+    await ctx.db.patch(registration._id, {
+      attendedAt: Date.now(),
+      status: "attended",
+    });
+
+    // Get user info
+    const user = await ctx.db.get(registration.userId);
+
+    return {
+      success: true,
+      message: "Attendance marked successfully",
+      userName: user?.name || "Unknown",
+      userEmail: user?.email || "Unknown",
+    };
+  },
+});
+
+export const getEventAttendanceStats = query({
+  args: {
+    eventId: v.id("events"),
+  },
+  handler: async (ctx, args) => {
+    const registrations = await ctx.db
+      .query("eventRegistrations")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .take(1000);
+
+    const totalRegistered = registrations.length;
+    const attended = registrations.filter((r) => r.attendedAt);
+    const totalAttended = attended.length;
+
+    // Get user details for attendees
+    const attendees = await Promise.all(
+      attended.map(async (reg) => {
+        const user = await ctx.db.get(reg.userId);
+        return {
+          registrationId: reg._id,
+          userId: reg.userId,
+          name: user?.name || "Unknown",
+          email: user?.email || "Unknown",
+          attendedAt: reg.attendedAt!,
+          checkInCode: reg.checkInCode,
+        };
+      })
+    );
+
+    return {
+      totalRegistered,
+      totalAttended,
+      attendees,
+    };
+  },
+});
+
+export const addWinner = mutation({
+  args: {
+    eventId: v.id("events"),
+    rank: v.string(),
+    winnerName: v.string(),
+    photoUrl: v.optional(v.string()),
+    description: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const event = await ctx.db.get(args.eventId);
+    if (!event) {
+      return { success: false, message: "Event not found" };
+    }
+
+    const winnerId = await ctx.db.insert("event_winners", {
+      eventId: args.eventId,
+      rank: args.rank.trim(),
+      winnerName: args.winnerName.trim(),
+      photoUrl: args.photoUrl,
+      description: args.description,
+      createdAt: Date.now(),
+    });
+
+    return { success: true, message: "Winner added successfully", winnerId };
+  },
+});
+
+export const getEventWinners = query({
+  args: {
+    eventId: v.id("events"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("event_winners")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .take(50);
+  },
+});
+
+export const deleteWinner = mutation({
+  args: {
+    winnerId: v.id("event_winners"),
+  },
+  handler: async (ctx, args) => {
+    const winner = await ctx.db.get(args.winnerId);
+    if (!winner) {
+      return { success: false, message: "Winner not found" };
+    }
+
+    await ctx.db.delete(args.winnerId);
+    return { success: true, message: "Winner removed" };
   },
 });

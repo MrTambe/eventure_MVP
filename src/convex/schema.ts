@@ -66,7 +66,8 @@ const schema = defineSchema({
     attendedAt: v.optional(v.number()),
   }).index("by_event", ["eventId"])
     .index("by_user", ["userId"])
-    .index("by_user_and_event", ["userId", "eventId"]),
+    .index("by_user_and_event", ["userId", "eventId"])
+    .index("by_checkInCode", ["checkInCode"]),
 
   certificates: defineTable({
     eventId: v.id("events"),
