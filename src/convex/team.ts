@@ -28,8 +28,8 @@ export const getCombinedTeamWithProfileStatus = query({
   handler: async (ctx) => {
     // Use Promise.all to fetch both collections in parallel for better performance
     const [teamMembers, admins] = await Promise.all([
-      ctx.db.query("teamMembers").order("asc").collect(),
-      ctx.db.query("admins").order("asc").collect()
+      ctx.db.query("teamMembers").order("asc").take(100),
+      ctx.db.query("admins").order("asc").take(100)
     ]);
 
     const formattedTeamMembers = teamMembers.map((member) => ({
@@ -61,7 +61,7 @@ export const getCombinedTeamWithProfileStatus = query({
 export const getAllTeamMembers = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("teamMembers").order("asc").collect();
+    return await ctx.db.query("teamMembers").order("asc").take(100);
   },
 });
 

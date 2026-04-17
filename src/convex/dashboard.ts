@@ -19,13 +19,13 @@ export const getUserStats = query({
     const registrations = await ctx.db
       .query("eventRegistrations")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(500);
 
     // Count total certificates
     const certificates = await ctx.db
       .query("certificates")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(500);
 
     return {
       name: user.name || "User",
@@ -101,7 +101,7 @@ export const getCompletedEvents = query({
     const registrations = await ctx.db
       .query("eventRegistrations")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(200);
 
     const completedEvents = [];
     
@@ -148,7 +148,7 @@ export const getAllEvents = query({
     const events = await ctx.db
       .query("events")
       .withIndex("by_status", (q) => q.eq("status", "active"))
-      .collect();
+      .take(20);
 
     const eventsWithParticipants = [];
     
@@ -158,7 +158,7 @@ export const getAllEvents = query({
         .query("eventRegistrations")
         .withIndex("by_event", (q) => q.eq("eventId", event._id))
         .filter((q) => q.eq(q.field("status"), "registered"))
-        .collect();
+        .take(500);
 
       eventsWithParticipants.push({
         _id: event._id,

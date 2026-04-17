@@ -5,7 +5,7 @@ import { getCurrentUser } from "./users";
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("events").collect();
+    return await ctx.db.query("events").take(50);
   },
 });
 
@@ -287,7 +287,7 @@ export const getCurrentOngoingEvent = query({
     const events = await ctx.db
       .query("events")
       .withIndex("by_status", (q) => q.eq("status", "active"))
-      .collect();
+      .take(100);
     
     return events.find(event => 
       event.startDate <= now && event.endDate >= now
@@ -302,7 +302,7 @@ export const getNextUpcomingEvent = query({
     const events = await ctx.db
       .query("events")
       .withIndex("by_status", (q) => q.eq("status", "active"))
-      .collect();
+      .take(100);
     
     const upcomingEvents = events
       .filter(event => event.startDate > now)
@@ -315,7 +315,7 @@ export const getNextUpcomingEvent = query({
 export const getAllEventsWithDetails = query({
   args: {},
   handler: async (ctx) => {
-    const events = await ctx.db.query("events").collect();
+    const events = await ctx.db.query("events").take(20);
     
     const eventsWithDetails = await Promise.all(
       events.map(async (event) => {
@@ -335,7 +335,7 @@ export const getAllEventsWithDetails = query({
         const registrations = await ctx.db
           .query("eventRegistrations")
           .withIndex("by_event", (q) => q.eq("eventId", event._id))
-          .collect();
+          .take(50);
         
         return {
           ...event,
@@ -357,7 +357,7 @@ export const getCompletedEvents = query({
     return await ctx.db
       .query("events")
       .withIndex("by_status", (q) => q.eq("status", "completed"))
-      .collect();
+      .take(50);
   },
 });
 
@@ -368,7 +368,7 @@ export const getUpcomingEvents = query({
     const events = await ctx.db
       .query("events")
       .withIndex("by_status", (q) => q.eq("status", "active"))
-      .collect();
+      .take(100);
     
     return events.filter(event => event.startDate > now);
   },
