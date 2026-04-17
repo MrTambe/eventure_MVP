@@ -14,6 +14,7 @@ import { Id } from '@/convex/_generated/dataModel';
 const ADMIN_NAV_ITEMS = [
   { name: 'Dashboard', url: '/admin-dashboard', icon: Home },
   { name: 'Events', url: '/admin-events', icon: Calendar },
+  { name: 'Check-In', url: '/admin-checkin', icon: ScanLine },
   { name: 'Tickets', url: '/admin-tickets', icon: Ticket },
   { name: 'Communication', url: '/admin-communication', icon: MessageSquare },
   { name: 'Team', url: '/admin-team', icon: Users },

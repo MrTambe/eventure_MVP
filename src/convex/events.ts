@@ -737,6 +737,40 @@ export const getEventAttendanceStats = query({
   },
 });
 
+export const getRecentCheckIns = query({
+  args: {
+    eventId: v.id("events"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const registrations = await ctx.db
+      .query("eventRegistrations")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .take(500);
+
+    const attended = registrations
+      .filter((r) => r.attendedAt)
+      .sort((a, b) => (b.attendedAt || 0) - (a.attendedAt || 0))
+      .slice(0, args.limit ?? 10);
+
+    const checkIns = await Promise.all(
+      attended.map(async (reg) => {
+        const user = await ctx.db.get(reg.userId);
+        return {
+          registrationId: reg._id,
+          userId: reg.userId,
+          name: user?.name || "Unknown",
+          email: user?.email || "Unknown",
+          attendedAt: reg.attendedAt!,
+          checkInCode: reg.checkInCode,
+        };
+      })
+    );
+
+    return checkIns;
+  },
+});
+
 export const addWinner = mutation({
   args: {
     eventId: v.id("events"),
