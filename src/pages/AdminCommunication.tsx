@@ -252,7 +252,17 @@ function BroadcastsContent() {
     if (!trimmed) return;
     setSending(true);
     try {
-      await sendMessage({ content: trimmed });
+      // Pass adminEmail from session so backend can verify session-based admins
+      let adminEmail: string | undefined;
+      try {
+        const adminSession = sessionStorage.getItem('adminUser');
+        if (adminSession) {
+          const parsed = JSON.parse(adminSession);
+          if (parsed?.email) adminEmail = parsed.email;
+        }
+      } catch {}
+
+      await sendMessage({ content: trimmed, adminEmail });
       setContent('');
       toast.success('Broadcast sent!');
     } catch (e: any) {
