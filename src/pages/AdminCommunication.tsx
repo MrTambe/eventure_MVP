@@ -4,7 +4,7 @@ import { AdminNavBar } from '@/components/admin/admin-navbar';
 import { Dock } from '@/components/ui/dock';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { MentionAutocomplete } from '@/components/ui/MentionAutocomplete';
-import { Home, Calendar, Users, Settings, MessageSquare, Radio, Hash, Megaphone, Send, Ticket } from 'lucide-react';
+import { Home, Calendar, Users, Settings, MessageSquare, Radio, Hash, Megaphone, Send, Ticket, ScanLine } from 'lucide-react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useAuth } from '@/hooks/use-auth';

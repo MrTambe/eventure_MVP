@@ -221,14 +221,14 @@ function EventCheckInContent() {
     [markAttendance, isProcessing]
   );
 
-  const handleManualSubmit = (e: React.FormEvent) => {
+  const handleManualSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (manualCode.trim()) {
       handleCheckIn(manualCode);
     }
   };
 
-  const activeEvents = events?.filter((e) => e.status === "active") || [];
+  const activeEvents = events?.filter((ev: { status: string }) => ev.status === "active") || [];
 
   return (
     <div className="min-h-screen bg-[#FDF8F3] dark:bg-neutral-950 flex flex-col">
@@ -254,7 +254,7 @@ function EventCheckInContent() {
               <SelectValue placeholder="Select an event..." />
             </SelectTrigger>
             <SelectContent>
-              {activeEvents.map((event) => (
+              {activeEvents.map((event: { _id: string; name: string }) => (
                 <SelectItem key={event._id} value={event._id}>
                   {event.name}
                 </SelectItem>
@@ -425,7 +425,7 @@ function EventCheckInContent() {
                 <CardContent>
                   {recentCheckIns && recentCheckIns.length > 0 ? (
                     <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                      {recentCheckIns.map((checkIn, idx) => (
+                      {recentCheckIns.map((checkIn: { registrationId: string; name: string; email: string; checkInCode: string; attendedAt: number }, idx: number) => (
                         <motion.div
                           key={checkIn.registrationId}
                           initial={{ opacity: 0, x: -10 }}
@@ -498,7 +498,7 @@ function EventCheckInContent() {
 
 export default function EventCheckIn() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider defaultTheme="system">
       <EventCheckInContent />
     </ThemeProvider>
   );
