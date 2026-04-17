@@ -442,17 +442,24 @@ export const registerForEvent = mutation({
 
     // Schedule confirmation email
     if (user.email) {
-      const eventDate = new Date(event.startDate).toLocaleDateString("en-US", {
+      const startDateObj = new Date(event.startDate);
+      const eventDate = startDateObj.toLocaleDateString("en-US", {
         weekday: "long",
         month: "long",
         day: "numeric",
         year: "numeric",
+      });
+      const eventTime = startDateObj.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
       });
       await ctx.scheduler.runAfter(0, internal.registration_emails.sendRegistrationConfirmation, {
         userEmail: user.email,
         userName: user.name || "Participant",
         eventName: event.name,
         eventDate,
+        eventTime,
         eventVenue: event.venue,
         isTeam: false,
       });
@@ -526,17 +533,24 @@ export const registerTeamForEvent = mutation({
     // Schedule confirmation email to the registering user
     const event = await ctx.db.get(args.eventId);
     if (event && user.email) {
-      const eventDate = new Date(event.startDate).toLocaleDateString("en-US", {
+      const startDateObj = new Date(event.startDate);
+      const eventDate = startDateObj.toLocaleDateString("en-US", {
         weekday: "long",
         month: "long",
         day: "numeric",
         year: "numeric",
+      });
+      const eventTime = startDateObj.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
       });
       await ctx.scheduler.runAfter(0, internal.registration_emails.sendRegistrationConfirmation, {
         userEmail: user.email,
         userName: user.name || "Team Captain",
         eventName: event.name,
         eventDate,
+        eventTime,
         eventVenue: event.venue,
         isTeam: true,
         teamName: args.teamName.trim(),
@@ -550,6 +564,7 @@ export const registerTeamForEvent = mutation({
             userName: member.name,
             eventName: event.name,
             eventDate,
+            eventTime,
             eventVenue: event.venue,
             isTeam: true,
             teamName: args.teamName.trim(),

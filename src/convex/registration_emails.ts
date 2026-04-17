@@ -9,6 +9,7 @@ export const sendRegistrationConfirmation = internalAction({
     userName: v.string(),
     eventName: v.string(),
     eventDate: v.string(),
+    eventTime: v.string(),
     eventVenue: v.string(),
     isTeam: v.boolean(),
     teamName: v.optional(v.string()),
@@ -68,6 +69,7 @@ export const sendRegistrationConfirmation = internalAction({
           <div style="background: #f5f0e8; border: 2px solid #000; padding: 20px; margin-bottom: 24px;">
             <h3 style="margin: 0 0 12px; font-size: 20px; text-transform: uppercase; color: #000;">${args.eventName}</h3>
             <p style="font-size: 14px; color: #333; margin: 4px 0;">📅 <strong>Date:</strong> ${args.eventDate}</p>
+            <p style="font-size: 14px; color: #333; margin: 4px 0;">🕐 <strong>Time:</strong> ${args.eventTime}</p>
             <p style="font-size: 14px; color: #333; margin: 4px 0;">📍 <strong>Venue:</strong> ${args.eventVenue}</p>
             ${teamLine}
           </div>
@@ -82,8 +84,8 @@ export const sendRegistrationConfirmation = internalAction({
     `;
 
     const textContent = args.isTeam
-      ? `Hi ${args.userName}, your team "${args.teamName}" is registered for ${args.eventName} on ${args.eventDate} at ${args.eventVenue}.`
-      : `Hi ${args.userName}, you're registered for ${args.eventName} on ${args.eventDate} at ${args.eventVenue}.`;
+      ? `Hi ${args.userName}, your team "${args.teamName}" is registered for ${args.eventName} on ${args.eventDate} at ${args.eventTime} at ${args.eventVenue}.`
+      : `Hi ${args.userName}, you're registered for ${args.eventName} on ${args.eventDate} at ${args.eventTime} at ${args.eventVenue}.`;
 
     try {
       const body = provider === "resend"
