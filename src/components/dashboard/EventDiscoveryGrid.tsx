@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const CARDS_PER_PAGE = 4;
 
-// Category tag colors
 const categoryColors: Record<string, string> = {
   tech: "bg-black text-white dark:bg-white dark:text-black",
   art: "bg-black text-white dark:bg-white dark:text-black",
@@ -16,15 +15,21 @@ const categoryColors: Record<string, string> = {
   default: "bg-black text-white dark:bg-white dark:text-black",
 };
 
-// Placeholder cover images by index
-const placeholderImages = [
-  "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
-  "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop",
-  "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=400&h=300&fit=crop",
-  "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=400&h=300&fit=crop",
-  "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400&h=300&fit=crop",
-  "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=400&h=300&fit=crop",
-];
+// Brutalist fallback placeholder when no image is available
+function EventImageFallback({ name, category }: { name: string; category?: string }) {
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-100 dark:bg-neutral-800 border-b-2 border-black dark:border-white p-4">
+      <div className="text-4xl font-black uppercase text-black dark:text-white opacity-20 leading-none text-center break-all">
+        {name.slice(0, 2).toUpperCase()}
+      </div>
+      {category && (
+        <div className="mt-2 text-[9px] font-black uppercase text-muted-foreground tracking-widest">
+          {category.toUpperCase()}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function EventDiscoveryGrid() {
   const events = useQuery(api.events.list);
@@ -33,7 +38,7 @@ export function EventDiscoveryGrid() {
 
   const sortedEvents = events
     ?.slice()
-    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()) || [];
+    .sort((a: any, b: any) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()) || [];
 
   const totalPages = Math.ceil(sortedEvents.length / CARDS_PER_PAGE);
   const visibleEvents = sortedEvents.slice(page * CARDS_PER_PAGE, (page + 1) * CARDS_PER_PAGE);
@@ -83,12 +88,11 @@ export function EventDiscoveryGrid() {
             transition={{ duration: 0.2 }}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
           >
-            {visibleEvents.map((event, idx) => {
+            {visibleEvents.map((event: any, idx: number) => {
               const eventDate = new Date(event.startDate);
-              const globalIdx = page * CARDS_PER_PAGE + idx;
-              const imgSrc = placeholderImages[globalIdx % placeholderImages.length];
-              const category = (event as any).category || "";
+              const category = event.category || "";
               const colorClass = categoryColors[category?.toLowerCase()] || categoryColors.default;
+              const imageUrl: string | undefined = event.image;
 
               return (
                 <div
@@ -97,11 +101,15 @@ export function EventDiscoveryGrid() {
                 >
                   {/* Cover Image */}
                   <div className="relative h-44 overflow-hidden bg-gray-100 dark:bg-neutral-800">
-                    <img
-                      src={imgSrc}
-                      alt={event.name}
-                      className="w-full h-full object-cover"
-                    />
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={event.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <EventImageFallback name={event.name} category={category} />
+                    )}
                     {category && (
                       <span className={`absolute top-2 right-2 px-2 py-0.5 text-[10px] font-black uppercase ${colorClass}`}>
                         {category.toUpperCase()}

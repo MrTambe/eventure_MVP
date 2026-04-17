@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Calendar, MapPin, Clock } from "lucide-react";
 import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -12,7 +11,7 @@ export function EventDiscoveryWidget() {
 
   const sortedEvents = events
     ?.slice()
-    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()) || [];
+    .sort((a: any, b: any) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()) || [];
 
   useEffect(() => {
     if (!sortedEvents.length) return;
@@ -30,10 +29,11 @@ export function EventDiscoveryWidget() {
     );
   }
 
-  const currentEvent = sortedEvents[currentIndex];
+  const currentEvent = sortedEvents[currentIndex] as any;
   const eventDate = new Date(currentEvent.startDate);
   const isUpcoming = eventDate > new Date();
   const daysUntil = Math.ceil((eventDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  const imageUrl: string | undefined = currentEvent.image;
 
   return (
     <div className="flex flex-col gap-3">
@@ -49,6 +49,17 @@ export function EventDiscoveryWidget() {
             className="cursor-pointer"
             onClick={() => navigate(`/event/${currentEvent._id}`)}
           >
+            {/* Event image if available */}
+            {imageUrl && (
+              <div className="w-full h-28 mb-3 overflow-hidden border-2 border-black dark:border-white">
+                <img
+                  src={imageUrl}
+                  alt={currentEvent.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+
             {/* Latest badge */}
             {isUpcoming && daysUntil <= 7 && (
               <div className="inline-block bg-black dark:bg-white text-white dark:text-black px-2 py-0.5 text-[10px] font-black uppercase mb-2">
@@ -85,7 +96,7 @@ export function EventDiscoveryWidget() {
 
       {/* Dots */}
       <div className="flex gap-2">
-        {sortedEvents.slice(0, 5).map((_, index) => (
+        {sortedEvents.slice(0, 5).map((_: any, index: number) => (
           <button
             key={index}
             onClick={() => setCurrentIndex(index)}
