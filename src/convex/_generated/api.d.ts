@@ -11,11 +11,11 @@
 import type * as admin from "../admin.js";
 import type * as admin_actions from "../admin_actions.js";
 import type * as admin_creation from "../admin_creation.js";
+import type * as auth from "../auth.js";
 import type * as auth_emailOtp from "../auth/emailOtp.js";
 import type * as auth_emailProvider from "../auth/emailProvider.js";
 import type * as auth_magicLink from "../auth/magicLink.js";
 import type * as auth_rateLimit from "../auth/rateLimit.js";
-import type * as auth from "../auth.js";
 import type * as communication from "../communication.js";
 import type * as dashboard from "../dashboard.js";
 import type * as debug from "../debug.js";
@@ -40,23 +40,15 @@ import type {
   FunctionReference,
 } from "convex/server";
 
-/**
- * A utility for referencing Convex functions in your app's API.
- *
- * Usage:
- * ```js
- * const myFunctionReference = api.myModule.myFunction;
- * ```
- */
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   admin_actions: typeof admin_actions;
   admin_creation: typeof admin_creation;
+  auth: typeof auth;
   "auth/emailOtp": typeof auth_emailOtp;
   "auth/emailProvider": typeof auth_emailProvider;
   "auth/magicLink": typeof auth_magicLink;
   "auth/rateLimit": typeof auth_rateLimit;
-  auth: typeof auth;
   communication: typeof communication;
   dashboard: typeof dashboard;
   debug: typeof debug;
@@ -75,14 +67,30 @@ declare const fullApi: ApiFromModules<{
   users: typeof users;
   "utils/isAdmin": typeof utils_isAdmin;
 }>;
-declare const fullApiWithMounts: typeof fullApi;
 
+/**
+ * A utility for referencing Convex functions in your app's public API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = api.myModule.myFunction;
+ * ```
+ */
 export declare const api: FilterApi<
-  typeof fullApiWithMounts,
+  typeof fullApi,
   FunctionReference<any, "public">
 >;
+
+/**
+ * A utility for referencing Convex functions in your app's internal API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = internal.myModule.myFunction;
+ * ```
+ */
 export declare const internal: FilterApi<
-  typeof fullApiWithMounts,
+  typeof fullApi,
   FunctionReference<any, "internal">
 >;
 
