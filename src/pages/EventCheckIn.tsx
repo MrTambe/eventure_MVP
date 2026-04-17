@@ -231,7 +231,7 @@ function EventCheckInContent() {
   const activeEvents = events?.filter((ev: { status: string }) => ev.status === "active") || [];
 
   return (
-    <div className="min-h-screen bg-[#FDF8F3] dark:bg-neutral-950 flex flex-col">
+    <div className="min-h-screen bg-background text-foreground font-mono relative flex flex-col">
       <AdminNavBar items={ADMIN_NAV_ITEMS} />
       <div className="flex-1 pt-20 pb-12 px-4 md:px-8 max-w-5xl mx-auto w-full">
         <motion.h1
