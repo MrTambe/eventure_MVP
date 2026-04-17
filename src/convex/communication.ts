@@ -570,6 +570,32 @@ export const getUnreadNotificationCount = query({
   },
 });
 
+// Query for admin dashboard - get single latest broadcast message
+export const getLatestBroadcast = query({
+  args: {},
+  handler: async (ctx) => {
+    const latest = await ctx.db
+      .query("admin_communication_messages")
+      .order("desc")
+      .take(1);
+    if (!latest || latest.length === 0) return null;
+    const message = latest[0];
+    let authorName = "Admin";
+    try {
+      const author = await ctx.db.get(message.authorId);
+      if (author && (author as any).name) authorName = (author as any).name;
+      else if (author && (author as any).email) authorName = (author as any).email;
+    } catch {}
+    return {
+      _id: message._id,
+      content: message.content,
+      channel: (message as any).channel || "general",
+      authorName,
+      _creationTime: message._creationTime,
+    };
+  },
+});
+
 // Query for user dashboard - get latest broadcast messages
 export const getLatestBroadcasts = query({
   args: {},

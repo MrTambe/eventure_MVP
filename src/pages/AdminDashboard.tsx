@@ -42,12 +42,14 @@ import { CreateAdminModal } from '@/components/admin/CreateAdminModal';
 import { AdminNavBar } from '@/components/admin/admin-navbar';
 import { ADMIN_NAV_ITEMS } from '@/components/admin/admin-nav-items';
 import { getAdminSession } from '@/hooks/use-admin-session';
+import { MessageSquare, Megaphone, AlertTriangle } from 'lucide-react';
 
 function AdminDashboardContent() {
   const navigate = useNavigate();
   
   // Fetch real event data
   const currentOngoingEvent = useQuery(api.events.getCurrentOngoingEvent);
+  const latestBroadcast = useQuery(api.communication.getLatestBroadcast);
   const nextUpcomingEvent = useQuery(api.events.getNextUpcomingEvent);
   const allEvents = useQuery(api.events.getAllEventsWithDetails);
   const upcomingEvents = useQuery(api.events.getUpcomingEvents);
@@ -303,6 +305,53 @@ function AdminDashboardContent() {
                     </p>
                   </div>
                 )}
+              </div>
+
+              {/* Latest Broadcast Widget */}
+              <div className="bg-card/80 backdrop-blur-sm border-4 border-black dark:border-white shadow-[6px_6px_0px_#000] dark:shadow-[6px_6px_0px_#fff]">
+                <div className="border-b-4 border-black dark:border-white p-3 bg-black dark:bg-white flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-white dark:text-black" />
+                  <h2 className="text-sm font-black uppercase tracking-tight text-white dark:text-black">LATEST BROADCAST</h2>
+                </div>
+                <div className="p-4">
+                  {latestBroadcast === undefined ? (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="animate-spin h-5 w-5 border-2 border-black dark:border-white border-t-transparent" />
+                    </div>
+                  ) : !latestBroadcast ? (
+                    <div className="text-center py-4">
+                      <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                      <p className="text-xs font-black uppercase tracking-wide text-muted-foreground">No broadcasts yet</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        {latestBroadcast.channel === 'urgent' ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black uppercase border-2 border-black bg-red-400 text-black">
+                            <AlertTriangle className="h-2.5 w-2.5" /> URGENT
+                          </span>
+                        ) : latestBroadcast.channel === 'announcements' ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black uppercase border-2 border-black bg-blue-400 text-black">
+                            <Megaphone className="h-2.5 w-2.5" /> ANNOUNCEMENT
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black uppercase border-2 border-black bg-green-400 text-black">
+                            <MessageSquare className="h-2.5 w-2.5" /> GENERAL
+                          </span>
+                        )}
+                        <span className="text-[10px] font-bold text-muted-foreground">
+                          {new Date(latestBroadcast._creationTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </div>
+                      <p className="text-sm font-bold text-foreground leading-relaxed line-clamp-3 border-l-4 border-black dark:border-white pl-3">
+                        {latestBroadcast.content}
+                      </p>
+                      <p className="text-[10px] font-black text-muted-foreground mt-2 uppercase tracking-wide">
+                        — {latestBroadcast.authorName}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* List of Volunteers Section (no checkboxes) */}
