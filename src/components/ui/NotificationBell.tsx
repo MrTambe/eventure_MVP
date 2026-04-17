@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { Bell, Check } from 'lucide-react';
+import { Bell, Check, CheckCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Id } from '@/convex/_generated/dataModel';
 
@@ -25,17 +25,22 @@ export function NotificationBell({ recipientId }: NotificationBellProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Only query when recipientId is a non-empty string
+  const hasValidRecipient = !!recipientId && recipientId.length > 0;
+
   const unreadCount = useQuery(
     api.communication.getUnreadNotificationCount,
-    recipientId ? { recipientId } : "skip"
+    hasValidRecipient ? { recipientId } : "skip"
   );
 
+  // Always subscribe to notifications when dropdown is open AND recipientId is valid
   const notifications = useQuery(
     api.communication.getUserNotifications,
-    recipientId && isOpen ? { recipientId } : "skip"
+    hasValidRecipient && isOpen ? { recipientId } : "skip"
   );
 
   const markAsRead = useMutation(api.communication.markNotificationAsRead);
+  const markAllRead = useMutation(api.communication.markAllNotificationsAsRead);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -59,12 +64,27 @@ export function NotificationBell({ recipientId }: NotificationBellProps) {
   };
 
   const handleMarkAllRead = async () => {
-    if (!notifications) return;
-    const unread = notifications.filter((n: any) => !n.isRead);
-    await Promise.all(
-      unread.map((n: any) => markAsRead({ notificationId: n._id }))
-    );
+    if (!hasValidRecipient) return;
+    try {
+      await markAllRead({ recipientId: recipientId! });
+    } catch {
+      // silently fail
+    }
   };
+
+  // Don't render if no valid recipient
+  if (!hasValidRecipient) {
+    return (
+      <div className="relative">
+        <button
+          disabled
+          className="relative p-2 border-2 border-black/30 dark:border-white/30 bg-white dark:bg-neutral-900 opacity-50 cursor-not-allowed"
+        >
+          <Bell size={18} className="text-black dark:text-white" />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -100,8 +120,9 @@ export function NotificationBell({ recipientId }: NotificationBellProps) {
               {(unreadCount ?? 0) > 0 && (
                 <button
                   onClick={handleMarkAllRead}
-                  className="text-[10px] font-bold uppercase tracking-wide text-[#6D28D9] hover:underline cursor-pointer"
+                  className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-[#6D28D9] hover:underline cursor-pointer"
                 >
+                  <CheckCheck size={12} />
                   Mark all read
                 </button>
               )}

@@ -492,6 +492,26 @@ export const markNotificationAsRead = mutation({
   },
 });
 
+export const markAllNotificationsAsRead = mutation({
+  args: {
+    recipientId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const unread = await ctx.db
+      .query("notifications")
+      .withIndex("by_recipient_and_read", (q) =>
+        q.eq("recipientId", args.recipientId).eq("isRead", false)
+      )
+      .take(100);
+    
+    await Promise.all(
+      unread.map((n) => ctx.db.patch(n._id, { isRead: true }))
+    );
+    
+    return { success: true, count: unread.length };
+  },
+});
+
 export const getUnreadNotificationCount = query({
   args: {
     recipientId: v.string(),
