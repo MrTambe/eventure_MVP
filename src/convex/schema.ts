@@ -62,6 +62,8 @@ const schema = defineSchema({
     userId: v.id("users"),
     registrationDate: v.number(),
     status: v.union(v.literal("registered"), v.literal("attended"), v.literal("cancelled")),
+    checkInCode: v.optional(v.string()),
+    attendedAt: v.optional(v.number()),
   }).index("by_event", ["eventId"])
     .index("by_user", ["userId"])
     .index("by_user_and_event", ["userId", "eventId"]),
@@ -177,6 +179,15 @@ const schema = defineSchema({
     createdAt: v.number(),
   }).index("by_status", ["status"])
     .index("by_creator", ["creatorId"]),
+
+  event_winners: defineTable({
+    eventId: v.id("events"),
+    rank: v.string(),
+    winnerName: v.string(),
+    photoUrl: v.optional(v.string()),
+    description: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_event", ["eventId"]),
 
   ticket_replies: defineTable({
     ticketId: v.string(),
