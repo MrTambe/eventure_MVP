@@ -143,6 +143,18 @@ const schema = defineSchema({
     .index("by_user", ["registeredByUserId"])
     .index("by_user_and_event", ["registeredByUserId", "eventId"]),
 
+  event_channel_messages: defineTable({
+    eventId: v.id("events"),
+    authorId: v.string(), // Can be users id, admins id, or teamMembers id
+    authorName: v.string(),
+    content: v.string(),
+    reactions: v.optional(v.array(v.object({
+      userId: v.string(),
+      emoji: v.string(),
+    }))),
+  }).index("by_event", ["eventId"])
+    .index("by_author", ["authorId"]),
+
 },
 {
   schemaValidation: false
