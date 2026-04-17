@@ -107,7 +107,7 @@ function EventChannelsSidebar({ selectedEventId, onSelectEvent }: { selectedEven
       ) : events.length === 0 ? (
         <p className="text-xs text-neutral-500 dark:text-neutral-400 px-2">No active events</p>
       ) : (
-        events.map((ev, i) => (
+        events.map((ev: any, i: number) => (
           <motion.button
             key={ev._id}
             initial={{ opacity: 0, x: -10 }}
