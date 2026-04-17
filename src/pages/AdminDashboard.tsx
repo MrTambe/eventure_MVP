@@ -29,7 +29,8 @@ import {
   Bell,
   Home,
   Calendar,
-  Users2
+  Users2,
+  Ticket
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation, useQuery } from 'convex/react';
@@ -154,6 +155,9 @@ function AdminDashboardContent() {
       case 'Events':
         navigate('/admin-events');
         break;
+      case 'Tickets':
+        navigate('/admin-tickets');
+        break;
       case 'Team':
         navigate('/admin-team');
         break;
@@ -216,6 +220,7 @@ function AdminDashboardContent() {
   const menuItems = [
     { name: 'Dashboard', label: 'Dashboard', href: '/admin-dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500', iconColor: 'text-blue-500' },
     { name: 'Events', label: 'Events', href: '/admin-events', icon: Calendar, gradient: 'from-green-500 to-emerald-500', iconColor: 'text-green-500' },
+    { name: 'Tickets', label: 'Tickets', href: '/admin-tickets', icon: Ticket, gradient: 'from-amber-500 to-yellow-500', iconColor: 'text-amber-500' },
     { name: 'Team', label: 'Team', href: '/admin-team', icon: Users, gradient: 'from-purple-500 to-violet-500', iconColor: 'text-purple-500' },
     { name: 'Settings', label: 'Settings', href: '/admin-settings', icon: Settings, gradient: 'from-red-500 to-orange-500', iconColor: 'text-red-500' }
   ];

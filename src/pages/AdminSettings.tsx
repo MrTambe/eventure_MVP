@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { MenuBar } from "@/components/ui/glow-menu";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router";
-import { Home, Calendar, Users, Settings } from "lucide-react";
+import { Home, Calendar, Users, Settings, Ticket } from "lucide-react";
 
 interface AdminUser {
   _id: Id<"users">;
@@ -171,6 +171,7 @@ function AdminSettingsContent() {
   const menuItems = [
     { name: 'Dashboard', label: 'Dashboard', href: '/admin-dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500', iconColor: 'text-blue-500' },
     { name: 'Events', label: 'Events', href: '/admin-events', icon: Calendar, gradient: 'from-green-500 to-emerald-500', iconColor: 'text-green-500' },
+    { name: 'Tickets', label: 'Tickets', href: '/admin-tickets', icon: Ticket, gradient: 'from-amber-500 to-yellow-500', iconColor: 'text-amber-500' },
     { name: 'Team', label: 'Team', href: '/admin-team', icon: Users, gradient: 'from-purple-500 to-violet-500', iconColor: 'text-purple-500' },
     { name: 'Settings', label: 'Settings', href: '/admin-settings', icon: Settings, gradient: 'from-red-500 to-orange-500', iconColor: 'text-red-500' }
   ];

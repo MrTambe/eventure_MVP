@@ -4,7 +4,7 @@ import { AdminNavBar } from '@/components/admin/admin-navbar';
 import { Dock } from '@/components/ui/dock';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { MentionAutocomplete } from '@/components/ui/MentionAutocomplete';
-import { Home, Calendar, Users, Settings, MessageSquare, Radio, Hash, Megaphone, Send } from 'lucide-react';
+import { Home, Calendar, Users, Settings, MessageSquare, Radio, Hash, Megaphone, Send, Ticket } from 'lucide-react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useAuth } from '@/hooks/use-auth';
@@ -14,6 +14,7 @@ import { Id } from '@/convex/_generated/dataModel';
 const ADMIN_NAV_ITEMS = [
   { name: 'Dashboard', url: '/admin-dashboard', icon: Home },
   { name: 'Events', url: '/admin-events', icon: Calendar },
+  { name: 'Tickets', url: '/admin-tickets', icon: Ticket },
   { name: 'Communication', url: '/admin-communication', icon: MessageSquare },
   { name: 'Team', url: '/admin-team', icon: Users },
   { name: 'Settings', url: '/admin-settings', icon: Settings },
@@ -22,6 +23,7 @@ const ADMIN_NAV_ITEMS = [
 const DOCK_ITEMS = [
   { icon: <Home size={20} />, label: 'Dashboard', href: '/admin-dashboard' },
   { icon: <Calendar size={20} />, label: 'Events', href: '/admin-events' },
+  { icon: <Ticket size={20} />, label: 'Tickets', href: '/admin-tickets' },
   { icon: <MessageSquare size={20} />, label: 'Comms', href: '/admin-communication' },
   { icon: <Users size={20} />, label: 'Team', href: '/admin-team' },
   { icon: <Settings size={20} />, label: 'Settings', href: '/admin-settings' },

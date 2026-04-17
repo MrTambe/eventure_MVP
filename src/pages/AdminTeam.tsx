@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Users, Home, Calendar, Settings } from "lucide-react";
+import { Users, Home, Calendar, Settings, Ticket } from "lucide-react";
 import { MenuBar } from "@/components/ui/glow-menu";
 import { useNavigate } from "react-router";
 
@@ -74,6 +74,7 @@ export default function AdminTeam() {
   const menuItems = [
     { name: 'Dashboard', label: 'Dashboard', href: '/admin-dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500', iconColor: 'text-blue-500' },
     { name: 'Events', label: 'Events', href: '/admin-events', icon: Calendar, gradient: 'from-green-500 to-emerald-500', iconColor: 'text-green-500' },
+    { name: 'Tickets', label: 'Tickets', href: '/admin-tickets', icon: Ticket, gradient: 'from-amber-500 to-yellow-500', iconColor: 'text-amber-500' },
     { name: 'Team', label: 'Team', href: '/admin-team', icon: Users, gradient: 'from-purple-500 to-violet-500', iconColor: 'text-purple-500' },
     { name: 'Settings', label: 'Settings', href: '/admin-settings', icon: Settings, gradient: 'from-red-500 to-orange-500', iconColor: 'text-red-500' }
   ];
@@ -89,6 +90,9 @@ export default function AdminTeam() {
         break;
       case 'Team':
         navigate('/admin-team');
+        break;
+      case 'Tickets':
+        navigate('/admin-tickets');
         break;
       case 'Settings':
         navigate('/admin-settings');
