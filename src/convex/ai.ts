@@ -115,18 +115,22 @@ export const generateEventImageUrl = action({
 });
 
 export const generateImagesForAllEvents = action({
-  args: {},
-  handler: async (ctx) => {
-    const eventsWithoutImage = await ctx.runQuery(internal.events.getEventsWithoutImage);
+  args: {
+    overwrite: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const events = args.overwrite
+      ? await ctx.runQuery(internal.events.getAllEventsForImageRegeneration)
+      : await ctx.runQuery(internal.events.getEventsWithoutImage);
 
-    if (eventsWithoutImage.length === 0) {
+    if (events.length === 0) {
       return { success: true, message: "All events already have images", count: 0 };
     }
 
     const model = getGeminiModel();
     let updated = 0;
 
-    for (const event of eventsWithoutImage) {
+    for (const event of events) {
       const keyword = model
         ? await getKeywordFromAI(model, event.name)
         : deriveKeyword(event.name);
@@ -142,7 +146,7 @@ export const generateImagesForAllEvents = action({
 
     return {
       success: true,
-      message: `Generated images for ${updated} event${updated !== 1 ? "s" : ""}`,
+      message: `${args.overwrite ? "Regenerated" : "Generated"} images for ${updated} event${updated !== 1 ? "s" : ""}`,
       count: updated,
     };
   },

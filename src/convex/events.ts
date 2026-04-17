@@ -937,3 +937,12 @@ export const setEventImageUrl = internalMutation({
     await ctx.db.patch(args.eventId, { imageUrl: args.imageUrl });
   },
 });
+
+// Internal query to get ALL events for image regeneration
+export const getAllEventsForImageRegeneration = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const events = await ctx.db.query("events").take(100);
+    return events.map((e) => ({ _id: e._id, name: e.name }));
+  },
+});

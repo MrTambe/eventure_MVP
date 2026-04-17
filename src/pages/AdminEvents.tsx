@@ -88,7 +88,7 @@ function AdminEventsContent() {
   const handleGenerateAllImages = async () => {
     setIsGeneratingAllImages(true);
     try {
-      const result = await generateAllImages({});
+      const result = await generateAllImages({ overwrite: true });
       if (result.success) {
         toast.success(result.message);
       } else {
@@ -371,7 +371,7 @@ function AdminEventsContent() {
                       ) : (
                         <span className="mr-2">🖼️</span>
                       )}
-                      {isGeneratingAllImages ? "Generating..." : "Generate All Images"}
+                      {isGeneratingAllImages ? "Regenerating..." : "Regenerate All Images"}
                     </Button>
                     <Button
                       className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-lg px-8 py-4 border-2 border-black dark:border-white"
