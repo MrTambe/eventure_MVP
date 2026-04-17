@@ -158,13 +158,33 @@ const schema = defineSchema({
     .index("by_author", ["authorId"]),
 
   notifications: defineTable({
-    recipientId: v.string(), // Can be users id, admins id, or teamMembers id
-    type: v.string(), // e.g. "broadcast", "event", "registration", "certificate", etc.
+    recipientId: v.string(),
+    type: v.string(),
     content: v.string(),
     isRead: v.boolean(),
-    linkId: v.optional(v.string()), // Optional reference to related entity (event id, message id, etc.)
+    linkId: v.optional(v.string()),
   }).index("by_recipient", ["recipientId"])
     .index("by_recipient_and_read", ["recipientId", "isRead"]),
+
+  tickets: defineTable({
+    creatorId: v.string(),
+    subject: v.string(),
+    description: v.string(),
+    category: v.string(),
+    eventId: v.optional(v.string()),
+    status: v.string(),
+    priority: v.string(),
+    createdAt: v.number(),
+  }).index("by_status", ["status"])
+    .index("by_creator", ["creatorId"]),
+
+  ticket_replies: defineTable({
+    ticketId: v.string(),
+    authorId: v.string(),
+    authorName: v.string(),
+    content: v.string(),
+    createdAt: v.number(),
+  }).index("by_ticket", ["ticketId"]),
 
 },
 {
