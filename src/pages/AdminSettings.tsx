@@ -45,7 +45,7 @@ function AdminSettingsContent() {
   );
 
   // Update profile mutation
-  const updateProfile = useMutation(api.users.updateRole);
+  const updateSettingsProfile = useMutation(api.team.updateAdminSettingsByEmail);
 
   // Load admin user from session storage
   useEffect(() => {
@@ -55,23 +55,20 @@ function AdminSettingsContent() {
     }
   }, []);
 
-  // Pre-fill form with existing data
+  // Pre-fill form with existing data from session (admin session, not Convex auth)
   useEffect(() => {
-    if (adminProfile) {
+    if (adminUser) {
       const data = {
-        name: adminProfile.name || "",
-        // @ts-ignore
-        rollNo: adminProfile.rollNo || "",
-        // @ts-ignore
-        branch: adminProfile.branch || "",
-        // @ts-ignore
-        phone: adminProfile.phone || "",
-        email: adminProfile.email || "",
+        name: (adminUser as any).name || "",
+        rollNo: (adminUser as any).rollNo || "",
+        branch: (adminUser as any).branch || "",
+        phone: (adminUser as any).mobileNumber || "",
+        email: adminUser.email || "",
       };
       setFormData(data);
       setOriginalData(data);
     }
-  }, [adminProfile]);
+  }, [adminUser]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -126,9 +123,30 @@ function AdminSettingsContent() {
 
     setIsLoading(true);
     try {
-        // This is not ideal, but we'll have to update the whole user document.
-        // A better approach would be to have a specific mutation for updating the profile.
-      toast.info("Profile update functionality is not fully implemented yet.");
+      const result = await updateSettingsProfile({
+        email: formData.email,
+        name: formData.name.trim(),
+        rollNo: formData.rollNo.trim(),
+        branch: formData.branch.trim(),
+        mobileNumber: formData.phone.trim(),
+      });
+
+      if (result.success) {
+        toast.success(result.message);
+        // Update session storage with new data
+        const updatedAdmin = {
+          ...adminUser,
+          name: formData.name.trim(),
+          rollNo: formData.rollNo.trim(),
+          branch: formData.branch.trim(),
+          mobileNumber: formData.phone.trim(),
+        };
+        sessionStorage.setItem("adminUser", JSON.stringify(updatedAdmin));
+        setAdminUser(updatedAdmin as any);
+        setOriginalData({ ...formData });
+      } else {
+        toast.error(result.message);
+      }
     } catch (error) {
       toast.error("Failed to save changes. Please try again.");
       console.error("Save error:", error);

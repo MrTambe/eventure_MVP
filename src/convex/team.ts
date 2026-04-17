@@ -144,3 +144,51 @@ export const deleteUser = mutation({
     return { success: true };
   },
 });
+
+// Mutation for admin settings page - updates admin or team member profile by email
+export const updateAdminSettingsByEmail = mutation({
+  args: {
+    email: v.string(),
+    name: v.string(),
+    rollNo: v.string(),
+    branch: v.string(),
+    mobileNumber: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const normalizedEmail = args.email.toLowerCase();
+
+    // Try to find in admins table first
+    const admin = await ctx.db
+      .query("admins")
+      .withIndex("by_email", (q) => q.eq("email", normalizedEmail))
+      .first();
+
+    if (admin) {
+      await ctx.db.patch(admin._id, {
+        name: args.name,
+        rollNo: args.rollNo,
+        branch: args.branch,
+        mobileNumber: args.mobileNumber,
+      });
+      return { success: true, message: "Profile updated successfully" };
+    }
+
+    // Try team members table
+    const teamMember = await ctx.db
+      .query("teamMembers")
+      .withIndex("by_email", (q) => q.eq("email", normalizedEmail))
+      .first();
+
+    if (teamMember) {
+      await ctx.db.patch(teamMember._id, {
+        name: args.name,
+        rollNo: args.rollNo,
+        branch: args.branch,
+        mobileNumber: args.mobileNumber,
+      });
+      return { success: true, message: "Profile updated successfully" };
+    }
+
+    return { success: false, message: "Admin/team member not found" };
+  },
+});
