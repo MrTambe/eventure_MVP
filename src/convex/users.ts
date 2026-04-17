@@ -25,7 +25,7 @@ export const listMembers = query({
     if (!user || user.role !== "admin") {
       return [];
     }
-    return await ctx.db.query("users").collect();
+    return await ctx.db.query("users").take(500);
   },
 });
 
@@ -79,7 +79,7 @@ export const listAll = query({
     if (!user || user.role !== "admin") {
       return [];
     }
-    return await ctx.db.query("users").collect();
+    return await ctx.db.query("users").take(500);
   },
 });
 

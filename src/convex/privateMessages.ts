@@ -17,14 +17,14 @@ export const getDirectMessages = query({
       .withIndex("by_conversation", (q) => 
         q.eq("senderId", user._id).eq("recipientId", args.recipientId)
       )
-      .collect();
+      .take(200);
 
     const reverseMessages = await ctx.db
       .query("private_messages")
       .withIndex("by_conversation", (q) => 
         q.eq("senderId", args.recipientId).eq("recipientId", user._id)
       )
-      .collect();
+      .take(200);
 
     return [...messages, ...reverseMessages].sort((a, b) => a._creationTime - b._creationTime);
   },

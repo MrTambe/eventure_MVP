@@ -57,7 +57,7 @@ export const getUpcomingEvents = query({
       .query("eventRegistrations")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .filter((q) => q.eq(q.field("status"), "registered"))
-      .collect();
+      .take(200);
 
     const upcomingEvents = [];
     
@@ -213,7 +213,7 @@ export const registerForEvent = mutation({
       .query("eventRegistrations")
       .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
       .filter((q) => q.eq(q.field("status"), "registered"))
-      .collect();
+      .take(1000);
 
     if (event.maxParticipants && currentRegistrations.length >= event.maxParticipants) {
       return { success: false, message: "Event is full" };
@@ -245,7 +245,7 @@ export const getAllUserRegisteredEvents = query({
     const individualRegs = await ctx.db
       .query("eventRegistrations")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(200);
 
     for (const reg of individualRegs) {
       const event = await ctx.db.get(reg.eventId);
@@ -266,7 +266,7 @@ export const getAllUserRegisteredEvents = query({
     const teamRegsAsLeader = await ctx.db
       .query("teamRegistrations")
       .withIndex("by_user", (q) => q.eq("registeredByUserId", user._id))
-      .collect();
+      .take(100);
 
     for (const reg of teamRegsAsLeader) {
       const event = await ctx.db.get(reg.eventId);
@@ -285,7 +285,7 @@ export const getAllUserRegisteredEvents = query({
 
     // 3. Team registrations where user's email matches a member
     if (user.email) {
-      const allTeamRegs = await ctx.db.query("teamRegistrations").collect();
+      const allTeamRegs = await ctx.db.query("teamRegistrations").take(500);
       for (const reg of allTeamRegs) {
         if (eventIdSet.has(reg.eventId)) continue;
         const isMember = reg.members.some((m: any) => m.email === user.email);

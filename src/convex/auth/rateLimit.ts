@@ -39,7 +39,7 @@ export const checkRateLimit = internalQuery({
         q.eq("identifier", args.identifier).eq("type", args.type)
       )
       .filter((q) => q.gte(q.field("timestamp"), windowStart))
-      .collect();
+      .take(100);
 
     const isAllowed = recentAttempts.length < config.maxAttempts;
     const remainingAttempts = Math.max(0, config.maxAttempts - recentAttempts.length);
@@ -70,15 +70,13 @@ export const recordAttempt = internalMutation({
       success: args.success ?? false,
     });
 
-    // Clean up old records (older than 24 hours)
+    // Clean up old records (older than 24 hours) - batch limited
     const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
     const oldRecords = await ctx.db
       .query("authRateLimits")
       .filter((q) => q.lt(q.field("timestamp"), oneDayAgo))
-      .collect();
+      .take(50);
 
-    for (const record of oldRecords) {
-      await ctx.db.delete(record._id);
-    }
+    await Promise.all(oldRecords.map((record) => ctx.db.delete(record._id)));
   },
 });

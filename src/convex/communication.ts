@@ -206,7 +206,7 @@ export const markAsRead = mutation({
 export const getTeamMemberCount = query({
   args: {},
   handler: async (ctx) => {
-    const teamMembers = await ctx.db.query("teamMembers").collect();
+    const teamMembers = await ctx.db.query("teamMembers").take(1000);
     return teamMembers.length;
   },
 });

@@ -263,11 +263,9 @@ export const deleteEventAsAdmin = mutation({
       const registrations = await ctx.db
         .query("eventRegistrations")
         .withIndex("by_event", (q) => q.eq("eventId", args.id))
-        .collect();
+        .take(500);
       
-      for (const registration of registrations) {
-        await ctx.db.delete(registration._id);
-      }
+      await Promise.all(registrations.map((r) => ctx.db.delete(r._id)));
 
       // Delete the event
       await ctx.db.delete(args.id);
@@ -380,7 +378,7 @@ export const getEventParticipants = query({
     const registrations = await ctx.db
       .query("eventRegistrations")
       .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
-      .collect();
+      .take(500);
     
     const participants = await Promise.all(
       registrations.map(async (registration) => {
@@ -428,7 +426,7 @@ export const registerForEvent = mutation({
       const registrations = await ctx.db
         .query("eventRegistrations")
         .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
-        .collect();
+        .take(1000);
       if (registrations.length >= event.maxParticipants) {
         return { success: false, message: "Event is full" };
       }
@@ -531,6 +529,6 @@ export const getEventTeamRegistrations = query({
     return await ctx.db
       .query("teamRegistrations")
       .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
-      .collect();
+      .take(200);
   },
 });
