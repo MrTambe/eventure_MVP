@@ -30,6 +30,7 @@ import type * as migrations from "../migrations.js";
 import type * as privateMessages from "../privateMessages.js";
 import type * as registration_emails from "../registration_emails.js";
 import type * as team from "../team.js";
+import type * as tickets from "../tickets.js";
 import type * as user_creation from "../user_creation.js";
 import type * as user_creation_internal from "../user_creation_internal.js";
 import type * as user_management from "../user_management.js";
@@ -65,6 +66,7 @@ declare const fullApi: ApiFromModules<{
   privateMessages: typeof privateMessages;
   registration_emails: typeof registration_emails;
   team: typeof team;
+  tickets: typeof tickets;
   user_creation: typeof user_creation;
   user_creation_internal: typeof user_creation_internal;
   user_management: typeof user_management;
