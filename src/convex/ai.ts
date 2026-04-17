@@ -14,6 +14,52 @@ function getGeminiModel() {
   return genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 }
 
+async function getKeywordFromAI(model: any, eventName: string): Promise<string> {
+  try {
+    const prompt = `Generate a single short search keyword (1-2 words) for finding a relevant stock photo for an event called "${eventName}". Only respond with the keyword, nothing else. Examples: "hackathon" → "coding", "sports meet" → "athletics", "cultural fest" → "festival", "workshop" → "classroom", "seminar" → "conference".`;
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const content = response.text()?.trim();
+    if (content) {
+      return content.replace(/[^a-zA-Z0-9 ]/g, "").trim() || "event";
+    }
+  } catch {
+    // fall through
+  }
+  return eventName.split(/\s+/).slice(0, 2).join(" ").toLowerCase() || "event";
+}
+
+function deriveKeyword(eventName: string): string {
+  return eventName.split(/\s+/).slice(0, 2).join(" ").toLowerCase() || "event";
+}
+
+async function fetchUnsplashImageUrl(keyword: string): Promise<string> {
+  try {
+    const resp = await fetch(
+      `https://unsplash.com/napi/search/photos?query=${encodeURIComponent(keyword)}&per_page=3`,
+      { headers: { Accept: "application/json" } }
+    );
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.results && data.results.length > 0) {
+        // Pick a random one from top 3 for variety
+        const idx = Math.floor(Math.random() * Math.min(3, data.results.length));
+        const photo = data.results[idx];
+        // Use the regular size URL (1080px wide) with crop params for 800x400
+        const rawUrl = photo.urls?.raw;
+        if (rawUrl) {
+          return `${rawUrl}&w=800&h=400&fit=crop&q=80`;
+        }
+        return photo.urls?.regular || photo.urls?.small || "";
+      }
+    }
+  } catch (err) {
+    console.error("[Unsplash] Fetch error:", err);
+  }
+  // Fallback: return a known Unsplash photo URL for the keyword
+  return `https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=400&fit=crop&q=80`;
+}
+
 export const enhanceEventDescription = action({
   args: {
     description: v.string(),
@@ -53,30 +99,14 @@ export const generateEventImageUrl = action({
   },
   handler: async (_ctx, args) => {
     try {
-      let keyword = "event";
       const model = getGeminiModel();
+      const keyword = model
+        ? await getKeywordFromAI(model, args.eventName)
+        : deriveKeyword(args.eventName);
 
-      if (model) {
-        try {
-          const prompt = `Generate a single short search keyword (1-2 words) for finding a relevant stock photo for an event called "${args.eventName}". Only respond with the keyword, nothing else. Examples: "hackathon" → "coding", "sports meet" → "athletics", "cultural fest" → "festival", "workshop" → "classroom", "seminar" → "conference".`;
+      const imageUrl = await fetchUnsplashImageUrl(keyword);
 
-          const result = await model.generateContent(prompt);
-          const response = result.response;
-          const content = response.text()?.trim();
-          if (content) {
-            keyword = content.replace(/[^a-zA-Z0-9 ]/g, "").trim() || "event";
-          }
-        } catch {
-          keyword = args.eventName.split(/\s+/).slice(0, 2).join(" ").toLowerCase() || "event";
-        }
-      } else {
-        keyword = args.eventName.split(/\s+/).slice(0, 2).join(" ").toLowerCase() || "event";
-      }
-
-      const hash = Array.from(keyword).reduce((acc, c) => acc + c.charCodeAt(0), 0);
-      const picsumUrl = `https://picsum.photos/seed/${encodeURIComponent(keyword + hash)}/800/400`;
-
-      return { success: true, imageUrl: picsumUrl, keyword };
+      return { success: true, imageUrl, keyword };
     } catch (err: any) {
       console.error("[AI Image] Error:", err);
       return { success: false, imageUrl: null, error: err?.message || "Failed to generate image" };
@@ -87,7 +117,6 @@ export const generateEventImageUrl = action({
 export const generateImagesForAllEvents = action({
   args: {},
   handler: async (ctx) => {
-    // Get all events without images
     const eventsWithoutImage = await ctx.runQuery(internal.events.getEventsWithoutImage);
 
     if (eventsWithoutImage.length === 0) {
@@ -98,31 +127,15 @@ export const generateImagesForAllEvents = action({
     let updated = 0;
 
     for (const event of eventsWithoutImage) {
-      let keyword = "event";
+      const keyword = model
+        ? await getKeywordFromAI(model, event.name)
+        : deriveKeyword(event.name);
 
-      if (model) {
-        try {
-          const prompt = `Generate a single short search keyword (1-2 words) for finding a relevant stock photo for an event called "${event.name}". Only respond with the keyword, nothing else. Examples: "hackathon" → "coding", "sports meet" → "athletics", "cultural fest" → "festival", "workshop" → "classroom", "seminar" → "conference".`;
-
-          const result = await model.generateContent(prompt);
-          const response = result.response;
-          const content = response.text()?.trim();
-          if (content) {
-            keyword = content.replace(/[^a-zA-Z0-9 ]/g, "").trim() || "event";
-          }
-        } catch {
-          keyword = event.name.split(/\s+/).slice(0, 2).join(" ").toLowerCase() || "event";
-        }
-      } else {
-        keyword = event.name.split(/\s+/).slice(0, 2).join(" ").toLowerCase() || "event";
-      }
-
-      const hash = Array.from(keyword).reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0);
-      const picsumUrl = `https://picsum.photos/seed/${encodeURIComponent(keyword + hash)}/800/400`;
+      const imageUrl = await fetchUnsplashImageUrl(keyword);
 
       await ctx.runMutation(internal.events.setEventImageUrl, {
         eventId: event._id,
-        imageUrl: picsumUrl,
+        imageUrl,
       });
       updated++;
     }
