@@ -29,6 +29,33 @@ function getPlaceholderImage(id: string) {
   return PLACEHOLDER_IMAGES[idx];
 }
 
+// Generate a deterministic color from event name for fallback
+const FALLBACK_COLORS = [
+  "from-blue-600 to-cyan-500",
+  "from-emerald-600 to-teal-500",
+  "from-amber-600 to-yellow-500",
+  "from-rose-600 to-pink-500",
+  "from-violet-600 to-purple-500",
+  "from-indigo-600 to-blue-500",
+  "from-orange-600 to-red-500",
+];
+
+function getNameColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return FALLBACK_COLORS[Math.abs(hash) % FALLBACK_COLORS.length];
+}
+
+function getNameInitials(name: string) {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(w => w[0]?.toUpperCase() || "")
+    .join("");
+}
+
 function toTimestamp(val: number | Date | unknown): number {
   if (val instanceof Date) return val.getTime();
   if (typeof val === "number") return val;
@@ -74,12 +101,27 @@ function EventCard({ event, index }: { event: any; index: number }) {
       className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 shadow-[6px_6px_0px_#000] dark:shadow-[6px_6px_0px_#fff] overflow-hidden flex flex-col cursor-pointer hover:shadow-[3px_3px_0px_#000] dark:hover:shadow-[3px_3px_0px_#fff] hover:translate-x-[3px] hover:translate-y-[3px] transition-all duration-150"
     >
       {/* Image */}
-      <div className="relative h-44 overflow-hidden">
-        <img
-          src={getPlaceholderImage(event._id)}
-          alt={event.name}
-          className="w-full h-full object-cover"
-        />
+      <div className="relative aspect-video overflow-hidden">
+        {event.imageUrl ? (
+          <img
+            src={event.imageUrl}
+            alt={event.name}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+              const fallback = (e.target as HTMLImageElement).nextElementSibling;
+              if (fallback) (fallback as HTMLElement).style.display = 'flex';
+            }}
+          />
+        ) : null}
+        <div
+          className={`w-full h-full bg-gradient-to-br ${getNameColor(event.name)} flex items-center justify-center ${event.imageUrl ? 'hidden' : 'flex'}`}
+          style={event.imageUrl ? { display: 'none' } : undefined}
+        >
+          <span className="text-4xl font-black text-white/80 tracking-wider select-none">
+            {getNameInitials(event.name)}
+          </span>
+        </div>
         <div className="absolute top-3 left-3">
           <span
             className={`text-[10px] font-black uppercase px-2 py-1 border-2 ${status.color}`}
