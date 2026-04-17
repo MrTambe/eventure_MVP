@@ -2,6 +2,7 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUser } from "./users";
 import { internal } from "./_generated/api";
+import { internalMutation, internalQuery } from "./_generated/server";
 
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I, O, 0, 1 to avoid confusion
@@ -912,5 +913,27 @@ export const sendCheckInEmailsForEvent = mutation({
       success: true,
       message: `Sending check-in emails to ${updatedRegistrations.length} participants`,
     };
+  },
+});
+
+// Internal query to get events without imageUrl
+export const getEventsWithoutImage = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const events = await ctx.db.query("events").take(100);
+    return events
+      .filter((e) => !e.imageUrl)
+      .map((e) => ({ _id: e._id, name: e.name }));
+  },
+});
+
+// Internal mutation to set imageUrl on a single event
+export const setEventImageUrl = internalMutation({
+  args: {
+    eventId: v.id("events"),
+    imageUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.eventId, { imageUrl: args.imageUrl });
   },
 });

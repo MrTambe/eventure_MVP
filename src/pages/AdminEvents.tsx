@@ -82,6 +82,24 @@ function AdminEventsContent() {
   const updateEventAsAdmin = useMutation(api.events.updateEventAsAdmin);
   const deleteEventAsAdmin = useMutation(api.events.deleteEventAsAdmin);
   const enhanceDescription = useAction(api.ai.enhanceEventDescription);
+  const generateAllImages = useAction(api.ai.generateImagesForAllEvents);
+  const [isGeneratingAllImages, setIsGeneratingAllImages] = useState(false);
+
+  const handleGenerateAllImages = async () => {
+    setIsGeneratingAllImages(true);
+    try {
+      const result = await generateAllImages({});
+      if (result.success) {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message || "Failed to generate images");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to generate images");
+    } finally {
+      setIsGeneratingAllImages(false);
+    }
+  };
 
   // Get individual participants for the selected event
   const participants = useQuery(
@@ -341,14 +359,29 @@ function AdminEventsContent() {
               try {
                 const s = sessionStorage.getItem("adminUser");
                 if (s) { const p = JSON.parse(s); if (p?.role === "admin") return (
-                  <Button
-                    className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-lg px-8 py-4 border-2 border-black dark:border-white"
-                    size="lg"
-                    onClick={() => setCreateModalOpen(true)}
-                  >
-                    <Plus className="mr-2 h-5 w-5" />
-                    CREATE EVENT
-                  </Button>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="outline"
+                      className="font-mono border-2 border-black dark:border-white"
+                      onClick={handleGenerateAllImages}
+                      disabled={isGeneratingAllImages}
+                    >
+                      {isGeneratingAllImages ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <span className="mr-2">🖼️</span>
+                      )}
+                      {isGeneratingAllImages ? "Generating..." : "Generate All Images"}
+                    </Button>
+                    <Button
+                      className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-lg px-8 py-4 border-2 border-black dark:border-white"
+                      size="lg"
+                      onClick={() => setCreateModalOpen(true)}
+                    >
+                      <Plus className="mr-2 h-5 w-5" />
+                      CREATE EVENT
+                    </Button>
+                  </div>
                 ); }
               } catch {}
               return (

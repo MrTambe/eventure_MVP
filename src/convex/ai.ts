@@ -3,6 +3,7 @@
 import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { internal } from "./_generated/api";
 
 function getGeminiModel() {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
@@ -80,5 +81,56 @@ export const generateEventImageUrl = action({
       console.error("[AI Image] Error:", err);
       return { success: false, imageUrl: null, error: err?.message || "Failed to generate image" };
     }
+  },
+});
+
+export const generateImagesForAllEvents = action({
+  args: {},
+  handler: async (ctx) => {
+    // Get all events without images
+    const eventsWithoutImage = await ctx.runQuery(internal.events.getEventsWithoutImage);
+
+    if (eventsWithoutImage.length === 0) {
+      return { success: true, message: "All events already have images", count: 0 };
+    }
+
+    const model = getGeminiModel();
+    let updated = 0;
+
+    for (const event of eventsWithoutImage) {
+      let keyword = "event";
+
+      if (model) {
+        try {
+          const prompt = `Generate a single short search keyword (1-2 words) for finding a relevant stock photo for an event called "${event.name}". Only respond with the keyword, nothing else. Examples: "hackathon" → "coding", "sports meet" → "athletics", "cultural fest" → "festival", "workshop" → "classroom", "seminar" → "conference".`;
+
+          const result = await model.generateContent(prompt);
+          const response = result.response;
+          const content = response.text()?.trim();
+          if (content) {
+            keyword = content.replace(/[^a-zA-Z0-9 ]/g, "").trim() || "event";
+          }
+        } catch {
+          keyword = event.name.split(/\s+/).slice(0, 2).join(" ").toLowerCase() || "event";
+        }
+      } else {
+        keyword = event.name.split(/\s+/).slice(0, 2).join(" ").toLowerCase() || "event";
+      }
+
+      const hash = Array.from(keyword).reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0);
+      const picsumUrl = `https://picsum.photos/seed/${encodeURIComponent(keyword + hash)}/800/400`;
+
+      await ctx.runMutation(internal.events.setEventImageUrl, {
+        eventId: event._id,
+        imageUrl: picsumUrl,
+      });
+      updated++;
+    }
+
+    return {
+      success: true,
+      message: `Generated images for ${updated} event${updated !== 1 ? "s" : ""}`,
+      count: updated,
+    };
   },
 });
