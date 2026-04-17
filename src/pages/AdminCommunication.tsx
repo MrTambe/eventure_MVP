@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AdminNavBar } from '@/components/admin/admin-navbar';
 import { Dock } from '@/components/ui/dock';
+import { NotificationBell } from '@/components/ui/NotificationBell';
 import { Home, Calendar, Users, Settings, MessageSquare, Radio, Hash, Megaphone, Send } from 'lucide-react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -605,17 +606,34 @@ export default function AdminCommunication() {
   const [selectedEventId, setSelectedEventId] = useState<Id<"events"> | null>(null);
   const [selectedChannel, setSelectedChannel] = useState<BroadcastChannel>('general');
 
+  // Get recipient ID for notifications (from Convex auth or admin session)
+  const { user } = useAuth();
+  const recipientId = (() => {
+    if (user?._id) return user._id;
+    try {
+      const adminSession = sessionStorage.getItem('adminUser');
+      if (adminSession) {
+        const parsed = JSON.parse(adminSession);
+        return parsed?._id;
+      }
+    } catch {}
+    return undefined;
+  })();
+
   return (
     <div className="min-h-screen bg-[#FDF8F3] dark:bg-neutral-950 flex flex-col">
       <AdminNavBar items={ADMIN_NAV_ITEMS} />
       <div className="flex-1 pt-20 pb-28 px-4 md:px-8 max-w-7xl mx-auto w-full">
-        <motion.h1
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-4xl md:text-5xl font-black uppercase tracking-tight text-black dark:text-white mb-6"
-        >
-          Communication
-        </motion.h1>
+        <div className="flex items-center justify-between mb-6">
+          <motion.h1
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl md:text-5xl font-black uppercase tracking-tight text-black dark:text-white"
+          >
+            Communication
+          </motion.h1>
+          <NotificationBell recipientId={recipientId} />
+        </div>
         <div className="flex gap-2 mb-6">
           <TabButton label="Broadcasts" active={activeTab === 'broadcasts'} onClick={() => setActiveTab('broadcasts')} />
           <TabButton label="Event Channels" active={activeTab === 'channels'} onClick={() => setActiveTab('channels')} />
