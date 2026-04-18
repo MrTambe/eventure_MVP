@@ -661,3 +661,74 @@ export const getLatestBroadcasts = query({
     return result;
   },
 });
+
+// Query for user communication page - get event channel messages for events the user is registered for
+export const getUserEventCommunications = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) return [];
+
+    // Get user's registered event IDs
+    const registrations = await ctx.db
+      .query("eventRegistrations")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .take(200);
+
+    const teamRegistrations = await ctx.db
+      .query("teamRegistrations")
+      .withIndex("by_user", (q) => q.eq("registeredByUserId", user._id))
+      .take(100);
+
+    const registeredEventIds = new Set<string>([
+      ...registrations.map((r) => r.eventId as string),
+      ...teamRegistrations.map((r) => r.eventId as string),
+    ]);
+
+    if (registeredEventIds.size === 0) return [];
+
+    // Fetch event details for registered events
+    const eventMap = new Map<string, { name: string; startDate: number }>();
+    for (const eventId of registeredEventIds) {
+      const event = await ctx.db.get(eventId as any);
+      if (event) {
+        eventMap.set(eventId, { name: (event as any).name, startDate: (event as any).startDate });
+      }
+    }
+
+    // Fetch event channel messages for each registered event
+    const allMessages: Array<{
+      _id: string;
+      eventId: string;
+      eventName: string;
+      authorName: string;
+      content: string;
+      _creationTime: number;
+    }> = [];
+
+    for (const eventId of registeredEventIds) {
+      const messages = await ctx.db
+        .query("event_channel_messages")
+        .withIndex("by_event", (q) => q.eq("eventId", eventId as any))
+        .order("desc")
+        .take(50);
+
+      const eventInfo = eventMap.get(eventId);
+      for (const msg of messages) {
+        allMessages.push({
+          _id: msg._id,
+          eventId,
+          eventName: eventInfo?.name ?? "Unknown Event",
+          authorName: msg.authorName,
+          content: msg.content,
+          _creationTime: msg._creationTime,
+        });
+      }
+    }
+
+    // Sort by creation time desc
+    allMessages.sort((a, b) => b._creationTime - a._creationTime);
+
+    return allMessages.slice(0, 100);
+  },
+});

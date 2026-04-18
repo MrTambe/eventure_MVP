@@ -21,6 +21,7 @@ export default function Dashboard() {
   const dockItems = [
     { icon: <Home size={20} />, label: 'Home', href: '/dashboard' },
     { icon: <Calendar size={20} />, label: 'Events', href: '/events' },
+    { icon: <MessageSquare size={20} />, label: 'Communication', href: '/communication' },
     { icon: <Trophy size={20} />, label: 'Trophy', href: '/certificates' },
     { icon: <User size={20} />, label: 'Profile', href: '/profile' },
     { icon: <Settings size={20} />, label: 'Settings', href: '/settings' }
