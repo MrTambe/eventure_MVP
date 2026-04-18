@@ -12,7 +12,7 @@ export const getUserStats = query({
   handler: async (ctx) => {
     const user = await getCurrentUser(ctx);
     if (!user) {
-      throw new Error("User not authenticated");
+      return { name: "User", totalEventsJoined: 0, totalCertificates: 0 };
     }
 
     // Count total events joined
@@ -46,9 +46,7 @@ export const getUpcomingEvents = query({
   })),
   handler: async (ctx) => {
     const user = await getCurrentUser(ctx);
-    if (!user) {
-      throw new Error("User not authenticated");
-    }
+    if (!user) return [];
 
     const now = Date.now();
 
@@ -91,9 +89,7 @@ export const getCompletedEvents = query({
   })),
   handler: async (ctx) => {
     const user = await getCurrentUser(ctx);
-    if (!user) {
-      throw new Error("User not authenticated");
-    }
+    if (!user) return [];
 
     const now = Date.now();
 

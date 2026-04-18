@@ -8,33 +8,43 @@ type CompletedEvent = { _id: string; name: string; startDate: number; endDate: n
 export function CertificatesWidget() {
   const completedEvents = useQuery(api.dashboard.getCompletedEvents);
 
-  const certificatesWithBadge = (completedEvents as CompletedEvent[] | undefined)?.filter((e: CompletedEvent) => e.hasCertificate) || [];
+  // Show loading state while query is in flight
+  if (completedEvents === undefined) {
+    return (
+      <div className="flex items-center justify-center py-6">
+        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black dark:border-white" />
+      </div>
+    );
+  }
+
+  // Show all completed events (hasCertificate means a certificate record exists)
+  const events = (completedEvents as CompletedEvent[]);
 
   return (
     <div className="space-y-3">
-      {certificatesWithBadge.length === 0 ? (
+      {events.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-4 gap-2">
           <Trophy className="h-8 w-8 text-muted-foreground/40" />
           <p className="text-[11px] font-bold uppercase text-muted-foreground tracking-widest">
-            NO CERTIFICATES YET
+            NO COMPLETED EVENTS YET
           </p>
         </div>
       ) : (
-        certificatesWithBadge.slice(0, 2).map((event: CompletedEvent) => (
+        events.slice(0, 3).map((event: CompletedEvent) => (
           <div
             key={event._id}
             className="border-2 border-black dark:border-white p-3 flex items-center gap-3 bg-white dark:bg-neutral-800"
           >
-            <div className="h-10 w-10 border-2 border-black dark:border-white flex items-center justify-center bg-amber-100 dark:bg-amber-900/30 flex-shrink-0">
-              <Trophy className="h-5 w-5 text-amber-600" />
+            <div className={`h-10 w-10 border-2 border-black dark:border-white flex items-center justify-center flex-shrink-0 ${event.hasCertificate ? "bg-amber-100 dark:bg-amber-900/30" : "bg-neutral-100 dark:bg-neutral-700"}`}>
+              <Trophy className={`h-5 w-5 ${event.hasCertificate ? "text-amber-600" : "text-muted-foreground"}`} />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-black text-sm uppercase truncate">{event.name}</p>
               <p className="text-[10px] text-muted-foreground">
-                Unlocked on {new Date(event.endDate).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}
+                {event.hasCertificate ? "Certificate earned" : "Completed"} · {new Date(event.endDate).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}
               </p>
             </div>
-            {event.certificateUrl && (
+            {event.hasCertificate && event.certificateUrl && (
               <Button
                 size="sm"
                 variant="ghost"
