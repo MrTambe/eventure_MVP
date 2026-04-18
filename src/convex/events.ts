@@ -846,17 +846,24 @@ export const sendCheckInEmailsForEvent = mutation({
       return { success: false, message: "Event not found" };
     }
 
-    // Get all registrations for this event
+    // Get all individual registrations for this event
     const registrations = await ctx.db
       .query("eventRegistrations")
       .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
       .take(500);
 
-    if (registrations.length === 0) {
+    // Get all team registrations for this event
+    const teamRegistrations = await ctx.db
+      .query("teamRegistrations")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .take(200);
+
+    const totalCount = registrations.length + teamRegistrations.length;
+    if (totalCount === 0) {
       return { success: false, message: "No registrations found for this event" };
     }
 
-    // Generate codes for registrations that don't have one
+    // Generate codes for individual registrations that don't have one
     const existingCodes = new Set(
       registrations.filter((r) => r.checkInCode).map((r) => r.checkInCode!)
     );
@@ -867,10 +874,10 @@ export const sendCheckInEmailsForEvent = mutation({
       checkInCode: string;
     }> = [];
 
+    // Process individual registrations
     for (const reg of registrations) {
       let code = reg.checkInCode;
       if (!code) {
-        // Generate unique code
         do {
           code = generateCode();
         } while (existingCodes.has(code));
@@ -878,7 +885,6 @@ export const sendCheckInEmailsForEvent = mutation({
         await ctx.db.patch(reg._id, { checkInCode: code });
       }
 
-      // Get user details
       const user = await ctx.db.get(reg.userId);
       if (user?.email) {
         updatedRegistrations.push({
@@ -889,8 +895,68 @@ export const sendCheckInEmailsForEvent = mutation({
       }
     }
 
+    // Process team registrations — send to the team leader and all members
+    for (const teamReg of teamRegistrations) {
+      // Team leader (registered user)
+      const leader = await ctx.db.get(teamReg.registeredByUserId);
+      if (leader?.email) {
+        // Generate a code for the team leader's individual registration if they have one
+        const leaderReg = await ctx.db
+          .query("eventRegistrations")
+          .withIndex("by_user_and_event", (q) =>
+            q.eq("userId", teamReg.registeredByUserId).eq("eventId", args.eventId)
+          )
+          .first();
+
+        let code = leaderReg?.checkInCode;
+        if (!code) {
+          do {
+            code = generateCode();
+          } while (existingCodes.has(code));
+          existingCodes.add(code);
+          if (leaderReg) {
+            await ctx.db.patch(leaderReg._id, { checkInCode: code });
+          }
+        }
+
+        if (code) {
+          updatedRegistrations.push({
+            userEmail: leader.email,
+            userName: leader.name || teamReg.teamName,
+            checkInCode: code,
+          });
+        } else {
+          // No individual registration for leader, still notify them
+          const teamCode = `TEAM-${teamReg.teamName.slice(0, 4).toUpperCase()}`;
+          updatedRegistrations.push({
+            userEmail: leader.email,
+            userName: leader.name || teamReg.teamName,
+            checkInCode: teamCode,
+          });
+        }
+      }
+
+      // Team members
+      for (const member of teamReg.members) {
+        if (member.email) {
+          // Generate a unique code for each member
+          let memberCode: string;
+          do {
+            memberCode = generateCode();
+          } while (existingCodes.has(memberCode));
+          existingCodes.add(memberCode);
+
+          updatedRegistrations.push({
+            userEmail: member.email,
+            userName: member.name || "Team Member",
+            checkInCode: memberCode,
+          });
+        }
+      }
+    }
+
     if (updatedRegistrations.length === 0) {
-      return { success: false, message: "No users with email addresses found" };
+      return { success: false, message: "No users with email addresses found in registrations" };
     }
 
     // Format event date and time
