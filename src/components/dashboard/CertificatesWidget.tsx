@@ -3,10 +3,12 @@ import { api } from "@/convex/_generated/api";
 import { Trophy, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+type CompletedEvent = { _id: string; name: string; startDate: number; endDate: number; hasCertificate: boolean; certificateUrl?: string };
+
 export function CertificatesWidget() {
   const completedEvents = useQuery(api.dashboard.getCompletedEvents);
 
-  const certificatesWithBadge = completedEvents?.filter((e) => e.hasCertificate) || [];
+  const certificatesWithBadge = (completedEvents as CompletedEvent[] | undefined)?.filter((e: CompletedEvent) => e.hasCertificate) || [];
 
   return (
     <div className="space-y-3">
@@ -18,7 +20,7 @@ export function CertificatesWidget() {
           </p>
         </div>
       ) : (
-        certificatesWithBadge.slice(0, 2).map((event) => (
+        certificatesWithBadge.slice(0, 2).map((event: CompletedEvent) => (
           <div
             key={event._id}
             className="border-2 border-black dark:border-white p-3 flex items-center gap-3 bg-white dark:bg-neutral-800"

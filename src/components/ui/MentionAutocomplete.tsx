@@ -178,7 +178,7 @@ export function MentionAutocomplete({
                 </span>
               </div>
             ) : (
-              searchResults.map((result, i) => (
+              (searchResults as Array<{ name: string; email: string }>).map((result, i) => (
                 <button
                   key={`${result.name}-${result.email}`}
                   onClick={() => insertMention(result.name)}

@@ -122,7 +122,7 @@ export default function EventInfo() {
 
   const volunteerIds = (event as any).volunteerIds as Id<"teamMembers">[] | undefined;
   const volunteers = volunteerIds && volunteerIds.length > 0
-    ? allTeamMembers.filter((m) => volunteerIds.includes(m._id as Id<"teamMembers">))
+    ? allTeamMembers.filter((m: { _id: string }) => volunteerIds.includes(m._id as Id<"teamMembers">))
     : [];
 
   const isEventClosed = eventStatus === "Completed" || event.status === "cancelled";
@@ -131,7 +131,7 @@ export default function EventInfo() {
   // Unified participant counts
   const totalIndividuals = participants.length;
   const totalTeams = allTeamRegistrations.length;
-  const totalTeamMembers = allTeamRegistrations.reduce((sum, tr) => sum + tr.members.length, 0);
+  const totalTeamMembers = allTeamRegistrations.reduce((sum: number, tr: { members: unknown[] }) => sum + tr.members.length, 0);
   const totalParticipants = totalIndividuals + totalTeamMembers;
 
   // Individual registration
@@ -298,7 +298,7 @@ export default function EventInfo() {
             </h2>
             {volunteers.length > 0 ? (
               <div className="space-y-3">
-                {volunteers.map((volunteer, index) => (
+                {(volunteers as Array<{ _id: string; name: string; email: string; role: string; branch?: string }>).map((volunteer, index) => (
                   <motion.div
                     key={volunteer._id}
                     initial={{ opacity: 0, x: -20 }}

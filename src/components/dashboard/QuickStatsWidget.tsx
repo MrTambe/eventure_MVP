@@ -4,26 +4,25 @@ import { Calendar, Award, Activity, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function QuickStatsWidget() {
-  const allEvents = useQuery(api.events.list);
+  const userStats = useQuery(api.dashboard.getUserStats);
   const completedEvents = useQuery(api.dashboard.getCompletedEvents);
+  const registeredEvents = useQuery(api.dashboard.getAllUserRegisteredEvents);
 
-  const now = Date.now();
-
-  const totalEvents = allEvents?.length ?? 0;
+  const totalRegistered = (registeredEvents?.length ?? 0) + (completedEvents?.length ?? 0);
   const eventsDone = completedEvents?.length ?? 0;
-  const totalCertificates = completedEvents?.filter(e => e.hasCertificate).length ?? 0;
-  const activeEvents = allEvents?.filter(e => e.startDate <= now && e.endDate >= now).length ?? 0;
+  const totalCertificates = userStats?.totalCertificates ?? 0;
+  const upcomingCount = registeredEvents?.length ?? 0;
 
   const statItems = [
     {
-      icon: CheckCircle,
-      label: "EVENTS DONE",
-      value: eventsDone,
+      icon: Calendar,
+      label: "REGISTERED",
+      value: totalRegistered,
     },
     {
-      icon: Calendar,
-      label: "EVENTS",
-      value: totalEvents,
+      icon: CheckCircle,
+      label: "COMPLETED",
+      value: eventsDone,
     },
     {
       icon: Award,
@@ -32,8 +31,8 @@ export function QuickStatsWidget() {
     },
     {
       icon: Activity,
-      label: "ACTIVE EVENTS",
-      value: activeEvents,
+      label: "UPCOMING",
+      value: upcomingCount,
     },
   ];
 

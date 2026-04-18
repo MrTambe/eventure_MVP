@@ -12,6 +12,8 @@ function formatTime(ts: number) {
   return `${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}, ${time}`;
 }
 
+type BroadcastMsg = { _id: string; content: string; channel: string; authorName: string; _creationTime: number };
+
 const channelConfig: Record<string, { icon: typeof Megaphone; color: string; label: string }> = {
   announcements: { icon: Megaphone, color: "bg-blue-400 text-black", label: "ANNOUNCEMENT" },
   urgent: { icon: AlertTriangle, color: "bg-red-400 text-black", label: "URGENT" },
@@ -40,7 +42,7 @@ export function BroadcastWidget() {
 
   return (
     <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-      {broadcasts.map((msg, i) => {
+      {(broadcasts as BroadcastMsg[]).map((msg: BroadcastMsg, i: number) => {
         const config = channelConfig[msg.channel] || channelConfig.general;
         const Icon = config.icon;
         return (

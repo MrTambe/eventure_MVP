@@ -34,18 +34,20 @@ export default function Communication() {
     { icon: <Settings size={20} />, label: "Settings", href: "/settings" },
   ];
 
+  type EventMsg = { _id: string; eventId: string; eventName: string; authorName: string; content: string; _creationTime: number };
+
   // Group event messages by event
-  const groupedByEvent = (eventMessages ?? []).reduce<Record<string, typeof eventMessages>>((acc, msg) => {
+  const groupedByEvent = ((eventMessages ?? []) as EventMsg[]).reduce<Record<string, EventMsg[]>>((acc: Record<string, EventMsg[]>, msg: EventMsg) => {
     if (!msg) return acc;
     if (!acc[msg.eventId]) acc[msg.eventId] = [];
-    acc[msg.eventId]!.push(msg);
+    acc[msg.eventId].push(msg);
     return acc;
   }, {});
 
   const eventGroups = Object.entries(groupedByEvent).map(([eventId, msgs]) => ({
     eventId,
-    eventName: msgs![0]?.eventName ?? "Unknown Event",
-    messages: msgs!,
+    eventName: msgs[0]?.eventName ?? "Unknown Event",
+    messages: msgs,
   }));
 
   return (
@@ -120,7 +122,7 @@ export default function Communication() {
               </div>
             ) : (
               <div className="space-y-3">
-                {broadcasts.map((msg, i) => {
+                {(broadcasts as Array<{ _id: string; content: string; channel: string; authorName: string; _creationTime: number }>).map((msg, i) => {
                   const channelColors: Record<string, string> = {
                     announcements: "bg-blue-400 text-black",
                     urgent: "bg-red-400 text-black",
@@ -208,7 +210,7 @@ export default function Communication() {
 
                     {/* Messages */}
                     <div className="space-y-3 pl-4 border-l-4 border-black dark:border-white">
-                      {group.messages.map((msg, mi) => (
+                      {(group.messages as Array<{ _id: string; authorName: string; content: string; _creationTime: number }>).map((msg, mi) => (
                         <motion.div
                           key={msg._id}
                           initial={{ opacity: 0, x: 10 }}

@@ -199,7 +199,7 @@ export default function Certificates() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {completedEvents.map((event) => (
+              {(completedEvents as Array<{ _id: string; name: string; endDate: number; hasCertificate: boolean; certificateUrl?: string }>).map((event) => (
                 <CertificateCard key={event._id} event={event} userName={userName} />
               ))}
             </div>

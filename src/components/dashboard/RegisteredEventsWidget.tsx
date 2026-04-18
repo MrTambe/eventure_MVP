@@ -3,6 +3,8 @@ import { api } from "@/convex/_generated/api";
 import { Calendar, Clock, Users } from "lucide-react";
 import { useNavigate } from "react-router";
 
+type RegisteredEvent = { _id: string; name: string; venue: string; startDate: number; endDate: number; registrationType: string };
+
 export function RegisteredEventsWidget() {
   const registeredEvents = useQuery(api.dashboard.getAllUserRegisteredEvents);
   const navigate = useNavigate();
@@ -19,7 +21,7 @@ export function RegisteredEventsWidget() {
           </p>
         </div>
       ) : (
-        registeredEvents.slice(0, 4).map((event) => (
+        (registeredEvents as RegisteredEvent[]).slice(0, 4).map((event: RegisteredEvent) => (
           <div
             key={event._id}
             className="border-2 border-black dark:border-white p-2 hover:bg-accent transition-colors cursor-pointer"
