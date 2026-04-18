@@ -7,6 +7,9 @@ import { api } from "@/convex/_generated/api";
 import { motion } from "framer-motion";
 import { useState } from "react";
 
+type EventMsg = { _id: string; eventId: string; eventName: string; authorName: string; content: string; _creationTime: number };
+type BroadcastMsg = { _id: string; content: string; channel: string; authorName: string; _creationTime: number };
+
 function formatTime(ts: number) {
   const d = new Date(ts);
   const now = new Date();
@@ -33,8 +36,6 @@ export default function Communication() {
     { icon: <User size={20} />, label: "Profile", href: "/profile" },
     { icon: <Settings size={20} />, label: "Settings", href: "/settings" },
   ];
-
-  type EventMsg = { _id: string; eventId: string; eventName: string; authorName: string; content: string; _creationTime: number };
 
   // Group event messages by event
   const groupedByEvent = ((eventMessages ?? []) as EventMsg[]).reduce<Record<string, EventMsg[]>>((acc: Record<string, EventMsg[]>, msg: EventMsg) => {
@@ -122,7 +123,7 @@ export default function Communication() {
               </div>
             ) : (
               <div className="space-y-3">
-                {(broadcasts as Array<{ _id: string; content: string; channel: string; authorName: string; _creationTime: number }>).map((msg, i) => {
+                {(broadcasts as BroadcastMsg[]).map((msg: BroadcastMsg, i: number) => {
                   const channelColors: Record<string, string> = {
                     announcements: "bg-blue-400 text-black",
                     urgent: "bg-red-400 text-black",
@@ -194,7 +195,7 @@ export default function Communication() {
               </div>
             ) : (
               <div className="space-y-8">
-                {eventGroups.map((group, gi) => (
+                {eventGroups.map((group, gi: number) => (
                   <motion.div
                     key={group.eventId}
                     initial={{ opacity: 0, y: 16 }}
@@ -210,7 +211,7 @@ export default function Communication() {
 
                     {/* Messages */}
                     <div className="space-y-3 pl-4 border-l-4 border-black dark:border-white">
-                      {(group.messages as Array<{ _id: string; authorName: string; content: string; _creationTime: number }>).map((msg, mi) => (
+                      {group.messages.map((msg: EventMsg, mi: number) => (
                         <motion.div
                           key={msg._id}
                           initial={{ opacity: 0, x: 10 }}
