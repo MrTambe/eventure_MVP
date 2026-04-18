@@ -1,1 +1,1 @@
-{"buildCommand": "pnpm install --frozen-lockfile", "installCommand": "corepack enable && corepack prepare pnpm@9 --activate"}
+{"buildCommand": "pnpm install --frozen-lockfile", "installCommand": "corepack enable && corepack prepare pnpm@9.22.0 --activate", "outputDirectory": "dist"}
