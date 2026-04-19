@@ -1,6 +1,6 @@
 {
   "buildCommand": "pnpm run build",
-  "installCommand": "corepack enable && corepack prepare pnpm@9 --activate",
+  "installCommand": "pnpm install",
   "outputDirectory": "dist",
   "framework": "vite"
 }
