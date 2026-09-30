@@ -35,3 +35,5 @@ dist-ssr
 TEST_ACCOUNTS.md
 DEPLOY_PROD.md
 dev-server.log
+.vercel
+.env*
