@@ -45,9 +45,10 @@ export function Dock({
     <motion.div
       className={cn(
         'fixed top-4 left-1/2 -translate-x-1/2 z-[100]',
-        'flex items-center justify-center gap-1',
+        'flex items-center justify-center gap-0.5 sm:gap-1',
         'bg-white dark:bg-neutral-900 border-2 border-black dark:border-white',
-        'px-4 py-2 shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff]',
+        'px-2 sm:px-4 py-2 shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff]',
+        'max-w-[calc(100vw-1rem)] overflow-x-auto',
         className
       )}
       style={{ height: panelHeight }}
@@ -61,7 +62,7 @@ export function Dock({
             onMouseEnter={() => setHoveredIndex(index)}
             onMouseLeave={() => setHoveredIndex(null)}
             className={cn(
-              'flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded transition-colors min-w-[56px]',
+              'flex flex-col items-center justify-center gap-0.5 px-2 sm:px-3 py-1.5 rounded transition-colors min-w-[44px] sm:min-w-[56px]',
               active
                 ? 'bg-black dark:bg-white text-white dark:text-black border-2 border-black dark:border-white'
                 : 'text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10'
@@ -71,7 +72,7 @@ export function Dock({
             title={item.label}
           >
             <span className="flex items-center justify-center">{item.icon}</span>
-            <span className="text-[9px] font-bold uppercase tracking-wide leading-none">{item.label}</span>
+            <span className="hidden sm:block text-[9px] font-bold uppercase tracking-wide leading-none">{item.label}</span>
           </motion.button>
         );
       })}

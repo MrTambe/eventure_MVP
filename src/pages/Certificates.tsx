@@ -167,11 +167,11 @@ export default function Certificates() {
         <ThemeSwitcher />
       </div>
 
-      <div className="min-h-screen bg-[#f5f0e8] dark:bg-neutral-950 px-6 pt-24 pb-16">
+      <div className="min-h-screen bg-[#f5f0e8] dark:bg-neutral-950 px-4 sm:px-6 pt-24 pb-16">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-start justify-between mb-10">
             <div>
-              <h1 className="text-5xl sm:text-6xl font-black uppercase tracking-tight text-black dark:text-white leading-none mb-2">
+              <h1 className="text-3xl sm:text-5xl md:text-6xl font-black uppercase tracking-tight text-black dark:text-white leading-none mb-2">
                 CERTIFICATES
               </h1>
               <p className="text-sm text-muted-foreground">

@@ -130,6 +130,74 @@ export const seedAllDummyData = action({
 });
 
 /**
+ * Secret-gated wipe: removes ALL sample/dummy data (seeded admins except a
+ * protected list, team members, sample users, sample events, registrations,
+ * chats, messages). Keeps real auth users (users table rows with auth accounts)
+ * untouched. Used to reset an environment to a clean professional state.
+ */
+export const wipeAllData = action({
+  args: { seedSecret: v.string() },
+  handler: async (ctx, args) => {
+    const expectedSecret = process.env.SEED_ADMIN_SECRET;
+    if (!expectedSecret || args.seedSecret !== expectedSecret) {
+      return { success: false, message: "Invalid seed secret" };
+    }
+    return await ctx.runMutation(internal.seed.wipeDataMutation, { keepAdminEmails: ["sanshit.tambe@eventure.app"] });
+  },
+});
+
+export const wipeDataMutation = internalMutation({
+  args: { keepAdminEmails: v.array(v.string()) },
+  handler: async (ctx, args) => {
+    const keep = new Set(args.keepAdminEmails.map((e) => e.toLowerCase()));
+    const counts: Record<string, number> = {};
+
+    const wipe = async (table: string, filter?: (doc: any) => boolean) => {
+      const docs = await ctx.db.query(table as any).take(5000);
+      let n = 0;
+      for (const d of docs) {
+        if (filter && !filter(d)) continue;
+        await ctx.db.delete(d._id);
+        n++;
+      }
+      counts[table] = n;
+    };
+
+    await wipe("events");
+    await wipe("eventRegistrations");
+    await wipe("teamRegistrations");
+    await wipe("event_chats");
+    await wipe("event_channel_messages");
+    await wipe("admin_communication_messages");
+    await wipe("event_winners");
+    await wipe("certificates");
+    await wipe("notifications");
+    await wipe("tickets");
+    await wipe("ticket_replies");
+    await wipe("sheet_backups");
+    await wipe("teamMembers");
+
+    // Sample users were inserted directly (no auth account). Keep any user
+    // that has an authAccounts entry (real sign-ups via OTP/password).
+    const authAccounts = await ctx.db.query("authAccounts").take(10000);
+    const authedUserIds = new Set(authAccounts.map((a: any) => a.userId));
+    const sampleUsers = await ctx.db.query("users").take(5000);
+    let removedUsers = 0;
+    for (const u of sampleUsers) {
+      if (!authedUserIds.has(u._id)) {
+        await ctx.db.delete(u._id);
+        removedUsers++;
+      }
+    }
+    counts["sampleUsers"] = removedUsers;
+
+    await wipe("admins", (a) => !keep.has((a.email || "").toLowerCase()));
+
+    return { success: true, message: "Wiped: " + Object.entries(counts).filter(([, n]) => n > 0).map(([t, n]) => `${n} ${t}`).join(", ") || "nothing", counts };
+  },
+});
+
+/**
  * Test helper (secret-gated): creates an already-ended event with one
  * registration + check-in code, for verifying the ended-event check-in block.
  */

@@ -46,13 +46,13 @@ export default function Dashboard() {
         <ThemeSwitcher />
       </div>
 
-      <div className="min-h-screen bg-[#f5f0e8] dark:bg-neutral-950 px-6 pt-24 pb-16">
+      <div className="min-h-screen bg-[#f5f0e8] dark:bg-neutral-950 px-4 sm:px-6 pt-24 pb-16">
         {/* DASHBOARD Heading + Support Buttons */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-5xl sm:text-6xl font-black uppercase tracking-tight text-black dark:text-white">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black uppercase tracking-tight text-black dark:text-white">
             DASHBOARD
           </h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setTicketsListOpen(true)}
               className="flex items-center gap-2 border-2 border-black dark:border-white bg-white dark:bg-neutral-900 text-black dark:text-white px-4 py-2.5 text-xs font-black uppercase tracking-wider shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] dark:hover:shadow-[2px_2px_0px_#fff] transition-all"

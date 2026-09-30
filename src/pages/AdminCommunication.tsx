@@ -719,11 +719,11 @@ export default function AdminCommunication() {
       <div className="relative z-10 flex flex-col min-h-screen">
       <AdminNavBar items={ADMIN_NAV_ITEMS} />
       <div className="flex-1 pt-20 pb-12 px-4 md:px-8 max-w-7xl mx-auto w-full">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <motion.h1
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-black uppercase tracking-tight text-black dark:text-white"
+            className="text-3xl md:text-5xl font-black uppercase tracking-tight text-black dark:text-white"
           >
             Communication
           </motion.h1>
