@@ -30,3 +30,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local-only docs with credentials / secrets
+TEST_ACCOUNTS.md
+DEPLOY_PROD.md
+dev-server.log

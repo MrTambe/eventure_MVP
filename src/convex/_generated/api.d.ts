@@ -27,10 +27,13 @@ import type * as generators_createAdminUser from "../generators/createAdminUser.
 import type * as generators_createPasswordUser from "../generators/createPasswordUser.js";
 import type * as generators_createSampleData from "../generators/createSampleData.js";
 import type * as generators_createSampleEvents from "../generators/createSampleEvents.js";
+import type * as googleSheets from "../googleSheets.js";
 import type * as http from "../http.js";
 import type * as migrations from "../migrations.js";
 import type * as privateMessages from "../privateMessages.js";
 import type * as registration_emails from "../registration_emails.js";
+import type * as seed from "../seed.js";
+import type * as sheetsData from "../sheetsData.js";
 import type * as team from "../team.js";
 import type * as tickets from "../tickets.js";
 import type * as user_creation from "../user_creation.js";
@@ -65,10 +68,13 @@ declare const fullApi: ApiFromModules<{
   "generators/createPasswordUser": typeof generators_createPasswordUser;
   "generators/createSampleData": typeof generators_createSampleData;
   "generators/createSampleEvents": typeof generators_createSampleEvents;
+  googleSheets: typeof googleSheets;
   http: typeof http;
   migrations: typeof migrations;
   privateMessages: typeof privateMessages;
   registration_emails: typeof registration_emails;
+  seed: typeof seed;
+  sheetsData: typeof sheetsData;
   team: typeof team;
   tickets: typeof tickets;
   user_creation: typeof user_creation;

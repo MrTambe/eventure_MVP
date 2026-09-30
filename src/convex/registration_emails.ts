@@ -15,7 +15,10 @@ export const sendRegistrationConfirmation = internalAction({
     teamName: v.optional(v.string()),
   },
   handler: async (_ctx, args) => {
-    const provider = process.env.EMAIL_PROVIDER || "vly";
+    // Auto-detect: if a Resend key is configured, use Resend. EMAIL_PROVIDER
+    // env var can still override ("resend" | "vly").
+    const provider =
+      process.env.EMAIL_PROVIDER || (process.env.RESEND_API_KEY ? "resend" : "vly");
     let apiKey: string | undefined;
     let endpoint: string;
     let fromAddress: string;

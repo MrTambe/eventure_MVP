@@ -121,6 +121,27 @@ const schema = defineSchema({
     .index("by_recipient", ["recipientId"])
     .index("by_conversation", ["senderId", "recipientId"]),
 
+  // Per-event group chats. Auto-created when an event is created; deletable
+  // by admins/volunteers (teamMembers). Deleting removes the chat + messages.
+  event_chats: defineTable({
+    eventId: v.id("events"),
+    title: v.string(),
+    createdBy: v.optional(v.string()), // email of the creator (admin/member session)
+    createdAt: v.number(),
+    isDeleted: v.optional(v.boolean()),
+  }).index("by_event", ["eventId"])
+    .index("by_not_deleted", ["isDeleted"]),
+
+  // Google Sheets backup links per event (populated by the Sheets sync).
+  sheet_backups: defineTable({
+    eventId: v.id("events"),
+    folderUrl: v.string(),
+    participantsUrl: v.string(),
+    staffUrl: v.string(),
+    overviewUrl: v.string(),
+    syncedAt: v.number(),
+  }).index("by_event", ["eventId"]),
+
   admins: defineTable({
     name: v.optional(v.string()),
     email: v.string(),
@@ -154,6 +175,7 @@ const schema = defineSchema({
     authorId: v.string(), // Can be users id, admins id, or teamMembers id
     authorName: v.string(),
     content: v.string(),
+    chatId: v.optional(v.string()), // which event chat this message belongs to
     reactions: v.optional(v.array(v.object({
       userId: v.string(),
       emoji: v.string(),

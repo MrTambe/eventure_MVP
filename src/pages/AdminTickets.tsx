@@ -24,6 +24,7 @@ import { BackgroundPaths } from '@/components/ui/background-paths';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { toast } from 'sonner';
+import { friendlyErrorMessage } from '@/lib/friendly-error';
 import { useNavigate } from 'react-router';
 import { getAdminSession, isAdminRole } from '@/hooks/use-admin-session';
 import { Id } from '@/convex/_generated/dataModel';
@@ -87,7 +88,7 @@ function TicketDetailModal({
       setReplyContent('');
       toast.success('Reply sent');
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to send reply');
+      toast.error(friendlyErrorMessage(err, "Couldn't send the reply. Please try again."));
     } finally {
       setSending(false);
     }
@@ -104,7 +105,7 @@ function TicketDetailModal({
         toast.error(result.message);
       }
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to close ticket');
+      toast.error(friendlyErrorMessage(err, "Couldn't close the ticket. Please try again."));
     } finally {
       setClosing(false);
     }
@@ -115,7 +116,7 @@ function TicketDetailModal({
       await updatePriority({ ticketId: ticket._id as Id<"tickets">, priority: newPriority });
       toast.success(`Priority updated to ${newPriority}`);
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to update priority');
+      toast.error(friendlyErrorMessage(err, "Couldn't update the priority. Please try again."));
     }
   };
 

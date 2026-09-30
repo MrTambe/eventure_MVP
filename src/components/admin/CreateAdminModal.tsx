@@ -15,6 +15,7 @@ import {
 import { useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
+import { friendlyErrorMessage } from "@/lib/friendly-error";
 import {
   Select,
   SelectContent,
@@ -63,7 +64,7 @@ export function CreateAdminModal() {
       }
     } catch (error) {
       console.error("Create admin error:", error);
-      toast.error(error instanceof Error ? error.message : "An error occurred while creating the user");
+      toast.error(friendlyErrorMessage(error, "Couldn't create the user. Please try again."));
     } finally {
       setIsSubmitting(false);
     }

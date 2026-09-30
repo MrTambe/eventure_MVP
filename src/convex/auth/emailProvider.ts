@@ -79,6 +79,23 @@ export class ResendProvider implements EmailProvider {
   }
 }
 
+export class DevConsoleProvider implements EmailProvider {
+  // Development fallback: logs the OTP to the server console instead of
+  // sending email. Only used when DEV_CONSOLE_OTP=true and no real email
+  // provider is configured. Never enable this in production.
+  async sendOtp(email: string, otp: string, appName: string): Promise<void> {
+    console.log("==================================================");
+    console.log(`[DEV OTP] ${appName} verification code for ${email}: ${otp}`);
+    console.log("==================================================");
+  }
+
+  async sendMagicLink(email: string, magicLink: string, appName: string): Promise<void> {
+    console.log("==================================================");
+    console.log(`[DEV MAGIC LINK] ${appName} sign-in link for ${email}: ${magicLink}`);
+    console.log("==================================================");
+  }
+}
+
 export class VlyEmailProvider implements EmailProvider {
   constructor(private apiKey: string) {}
 
@@ -187,5 +204,11 @@ export function createEmailProvider(): EmailProvider {
     return new ResendProvider(resendApiKey);
   }
 
-  throw new Error("No email provider configured. Set VLY_INTEGRATION_KEY or RESEND_API_KEY with RESEND_FROM_EMAIL.");
+  // Development fallback: log OTPs to the server console when explicitly enabled
+  if (process.env.DEV_CONSOLE_OTP === "true") {
+    console.log("[EmailProvider] DEV_CONSOLE_OTP enabled - verification codes will be logged to the server console");
+    return new DevConsoleProvider();
+  }
+
+  throw new Error("No email provider configured. Set RESEND_API_KEY (or DEV_CONSOLE_OTP=true for dev mode).");
 }

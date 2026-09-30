@@ -13,6 +13,26 @@ function generateCode(): string {
   return code;
 }
 
+/**
+ * Generate a unique 8-char check-in code for a registration. Scans existing
+ * codes to avoid collisions. Returns null if the registration already has one.
+ */
+async function ensureCheckInCode(
+  ctx: any,
+  registration: { _id: any; eventId: any; checkInCode?: string }
+): Promise<string | null> {
+  if (registration.checkInCode) return null;
+  const existing = await ctx.db
+    .query("eventRegistrations")
+    .withIndex("by_event", (q: any) => q.eq("eventId", registration.eventId))
+    .take(1000);
+  const takenCodes = new Set(existing.map((r: any) => r.checkInCode).filter(Boolean));
+  let code = generateCode();
+  while (takenCodes.has(code)) code = generateCode();
+  await ctx.db.patch(registration._id, { checkInCode: code });
+  return code;
+}
+
 export const list = query({
   args: {},
   handler: async (ctx) => {
@@ -50,6 +70,12 @@ export const create = mutation({
         maxParticipants: args.maxParticipants,
         createdBy: user._id,
         status: "active",
+      });
+
+      // Every event automatically gets its own group chat in Communications.
+      await ctx.runMutation(internal.communication.ensureEventChat, {
+        eventId,
+        title: `${args.name} Chat`,
       });
 
       return { 
@@ -130,6 +156,12 @@ export const createEvent = mutation({
       status: "active",
       volunteerIds: args.volunteerIds ?? [],
       eventType: args.eventType ?? "individual",
+    });
+
+    // Every event automatically gets its own group chat in Communications.
+    await ctx.runMutation(internal.communication.ensureEventChat, {
+      eventId,
+      title: `${args.name} Chat`,
     });
 
     return {
@@ -229,6 +261,12 @@ export const createEventAsAdmin = mutation({
         eventName: args.name,
       });
     }
+
+    // Every event automatically gets its own group chat in Communications.
+    await ctx.runMutation(internal.communication.ensureEventChat, {
+      eventId,
+      title: `${args.name} Chat`,
+    });
 
     return {
       success: true,
@@ -453,11 +491,18 @@ export const registerForEvent = mutation({
       }
     }
 
-    await ctx.db.insert("eventRegistrations", {
+    const registrationId = await ctx.db.insert("eventRegistrations", {
       eventId: args.eventId,
       userId: user._id,
       registrationDate: Date.now(),
       status: "registered",
+    });
+
+    // Generate the attendee's unique 8-char check-in code right away so QR /
+    // manual check-in works immediately after registering.
+    const checkInCode = await ensureCheckInCode(ctx, {
+      _id: registrationId,
+      eventId: args.eventId,
     });
 
     // Schedule confirmation email
@@ -482,6 +527,21 @@ export const registerForEvent = mutation({
         eventTime,
         eventVenue: event.venue,
         isTeam: false,
+      });
+      // Also email the attendee their personal QR + 8-char check-in code.
+      await ctx.scheduler.runAfter(0, internal.email.sendCheckInEmails, {
+        eventId: args.eventId,
+        eventName: event.name,
+        eventDate,
+        eventTime,
+        eventVenue: event.venue,
+        registrations: [
+          {
+            userEmail: user.email,
+            userName: user.name || "Participant",
+            checkInCode: checkInCode ?? "",
+          },
+        ],
       });
     }
 
@@ -691,6 +751,18 @@ export const markAttendance = mutation({
 
     if (registration.attendedAt) {
       return { success: false, message: "Already checked in" };
+    }
+
+    // Block check-in for events that already ended (or were cancelled)
+    const event: any = await ctx.db.get(registration.eventId);
+    if (!event) {
+      return { success: false, message: "Event not found" };
+    }
+    if (event.status === "cancelled") {
+      return { success: false, message: "This event was cancelled" };
+    }
+    if (event.endDate && Date.now() > event.endDate) {
+      return { success: false, message: "This event has already ended" };
     }
 
     // Mark attendance

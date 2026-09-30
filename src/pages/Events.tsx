@@ -10,6 +10,7 @@ import {
   Settings,
   Clock,
   MapPin,
+  MessageSquare,
 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -130,6 +131,7 @@ export default function Events() {
   const dockItems = [
     { icon: <Home size={20} />, label: "Dashboard", href: "/dashboard" },
     { icon: <Calendar size={20} />, label: "Events", href: "/events" },
+    { icon: <MessageSquare size={20} />, label: "Communication", href: "/communication" },
     { icon: <Trophy size={20} />, label: "Certificates", href: "/certificates" },
     { icon: <User size={20} />, label: "Profile", href: "/profile" },
     { icon: <Settings size={20} />, label: "Settings", href: "/settings" },

@@ -33,7 +33,7 @@ import {
   BarChart3
 } from "lucide-react";
 import { toast } from "sonner";
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation, useQuery, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { BackgroundPaths } from "@/components/ui/background-paths";
@@ -42,7 +42,8 @@ import { CreateAdminModal } from '@/components/admin/CreateAdminModal';
 import { AdminNavBar } from '@/components/admin/admin-navbar';
 import { ADMIN_NAV_ITEMS } from '@/components/admin/admin-nav-items';
 import { getAdminSession } from '@/hooks/use-admin-session';
-import { MessageSquare, Megaphone, AlertTriangle } from 'lucide-react';
+import { MessageSquare, Megaphone, AlertTriangle, Database, ChevronDown, ExternalLink, FileSpreadsheet, Info } from 'lucide-react';
+import { friendlyErrorMessage } from '@/lib/friendly-error';
 
 function AdminDashboardContent() {
   const navigate = useNavigate();
@@ -55,6 +56,38 @@ function AdminDashboardContent() {
   const upcomingEvents = useQuery(api.events.getUpcomingEvents);
   const teamMembers = useQuery(api.team.getAllTeamMembers);
   const createEventAsAdmin = useMutation(api.events.createEventAsAdmin);
+
+  // ===== Data (Google Sheets backups) dropdown =====
+  const fetchBackups = useAction(api.googleSheets.getSheetBackups);
+  const [dataMenuOpen, setDataMenuOpen] = useState(false);
+  const [dataBackups, setDataBackups] = useState<any[] | null>(null);
+  const [dataError, setDataError] = useState<string | null>(null);
+  const [dataLoading, setDataLoading] = useState(false);
+
+  const loadDataBackups = async () => {
+    setDataLoading(true);
+    setDataError(null);
+    try {
+      const adminEmail = (() => { try { return JSON.parse(sessionStorage.getItem('adminUser') || 'null')?.email; } catch { return undefined; } })();
+      const result = await fetchBackups({ adminEmail });
+      if (result?.success) {
+        setDataBackups(result.backups || []);
+      } else {
+        setDataError(result?.message || 'Could not load data exports');
+      }
+    } catch (e: any) {
+      console.error('Load backups failed:', e);
+      setDataError(friendlyErrorMessage(e, 'Could not load data exports'));
+    } finally {
+      setDataLoading(false);
+    }
+  };
+
+  const toggleDataMenu = () => {
+    const next = !dataMenuOpen;
+    setDataMenuOpen(next);
+    if (next && dataBackups === null && !dataLoading) loadDataBackups();
+  };
 
   // Calculate real stats
   const totalEvents = allEvents?.length || 0;
@@ -189,12 +222,93 @@ function AdminDashboardContent() {
         <AdminNavBar items={ADMIN_NAV_ITEMS} />
 
         <div className="container mx-auto px-4 py-8 pt-20">
-          {/* Header with date */}
+          {/* Header with date + Data menu */}
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">EVENT ADMIN DASHBOARD</h1>
-            <div className="text-right hidden md:block">
-              <div className="text-sm font-bold">{getCurrentDate()}</div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">ADMIN PANEL</div>
+            <div className="flex items-center gap-3">
+              {/* Data dropdown (Google Sheets backups) */}
+              <div className="relative">
+                <button
+                  onClick={toggleDataMenu}
+                  className="flex items-center gap-2 border-2 border-black dark:border-white bg-black dark:bg-white text-white dark:text-black px-4 py-2 text-xs font-black uppercase tracking-wider shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] dark:hover:shadow-[2px_2px_0px_#fff] transition-all cursor-pointer"
+                >
+                  <Database className="h-4 w-4" />
+                  Data
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${dataMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {dataMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] border-2 border-black dark:border-white bg-white dark:bg-neutral-900 shadow-[6px_6px_0px_#000] dark:shadow-[6px_6px_0px_#fff] z-50 max-h-[70vh] overflow-y-auto">
+                    <div className="p-3 border-b-2 border-black dark:border-white bg-[#FDF8F3] dark:bg-neutral-800">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 flex items-center gap-1.5">
+                        <FileSpreadsheet className="h-3 w-3" /> Google Sheets data exports
+                      </p>
+                    </div>
+                    {dataLoading && (
+                      <div className="p-4 text-center text-xs font-bold uppercase tracking-wide text-muted-foreground">Loading...</div>
+                    )}
+                    {!dataLoading && dataError && (
+                      <div className="p-4 text-xs font-bold text-red-600 dark:text-red-400">{dataError}</div>
+                    )}
+                    {!dataLoading && !dataError && dataBackups?.length === 0 && (
+                      <div className="p-4">
+                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
+                          <Info className="h-3.5 w-3.5" /> No backups yet
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mb-3">
+                          Create one from Admin Settings → Google Sheets Backup. Each backup adds
+                          Participants, Staff and Overview sheets for an event, shared with all admins.
+                        </p>
+                        <button
+                          onClick={() => { setDataMenuOpen(false); navigate('/admin-settings'); }}
+                          className="w-full py-2 bg-[#6D28D9] text-white text-[11px] font-black uppercase tracking-wide border-2 border-black dark:border-white cursor-pointer hover:bg-[#5b21b6] transition-colors"
+                        >
+                          Go to Admin Settings
+                        </button>
+                      </div>
+                    )}
+                    {!dataLoading && !dataError && (dataBackups || []).map((b: any) => (
+                      <div key={b._id} className="p-3 border-b border-neutral-200 dark:border-neutral-700 last:border-b-0">
+                        <p className="text-xs font-black uppercase tracking-wide mb-1 truncate">{b.eventName}</p>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-2">
+                          {b.eventStatus} · synced {new Date(b.syncedAt).toLocaleDateString('en-IN')}
+                        </p>
+                        <div className="grid grid-cols-1 gap-1">
+                          {[
+                            ['Participants', b.participantsUrl, Users],
+                            ['Staff & Volunteers', b.staffUrl, FileSpreadsheet],
+                            ['Event Overview', b.overviewUrl, Calendar],
+                            ['Drive Folder', b.folderUrl, ExternalLink],
+                          ].map(([label, url, Icon]: any) => (
+                            <a
+                              key={label}
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-2 px-2 py-1.5 text-[11px] font-bold border border-transparent hover:border-black dark:hover:border-white hover:bg-[#6D28D9] hover:text-white transition-colors cursor-pointer"
+                            >
+                              <Icon className="h-3 w-3 flex-shrink-0" />
+                              {label}
+                              <ExternalLink className="h-2.5 w-2.5 ml-auto opacity-60" />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    <div className="p-2 border-t-2 border-black dark:border-white bg-[#FDF8F3] dark:bg-neutral-800">
+                      <button
+                        onClick={() => { setDataBackups(null); loadDataBackups(); }}
+                        className="w-full text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-[#6D28D9] cursor-pointer"
+                      >
+                        ↻ Refresh
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="text-right hidden md:block">
+                <div className="text-sm font-bold">{getCurrentDate()}</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">ADMIN PANEL</div>
+              </div>
             </div>
           </div>
 

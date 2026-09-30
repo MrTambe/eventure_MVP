@@ -27,6 +27,7 @@ import EventCheckIn from "./pages/EventCheckIn.tsx";
 import AdminEventAnalytics from "./pages/AdminEventAnalytics.tsx";
 import { Protected } from "@/lib/protected-page.tsx";
 import { AdminProtected } from "@/lib/admin-protected-page.tsx";
+import { AIChatWidget } from "@/components/AIChatWidget";
 import CompleteProfile from "./pages/CompleteProfile.tsx";
 import Communication from "./pages/Communication.tsx";
 
@@ -35,9 +36,8 @@ const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ConvexProvider client={convex}>
-      <ConvexAuthProvider client={convex}>
-        <BrowserRouter>
-          <Routes>
+      <ConvexAuthProvider client={convex}><BrowserRouter>
+<Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
             <Route path="/events" element={<Protected><Events /></Protected>} />
@@ -60,6 +60,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        <AIChatWidget />
         <Toaster />
       </ConvexAuthProvider>
     </ConvexProvider>

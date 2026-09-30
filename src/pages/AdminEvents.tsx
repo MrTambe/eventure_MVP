@@ -42,6 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { friendlyErrorMessage } from "@/lib/friendly-error";
 import { Id } from '@/convex/_generated/dataModel';
 import {
   DropdownMenu,
@@ -162,7 +163,7 @@ function AdminEventsContent() {
         toast.error(result.error || "Failed to enhance description");
       }
     } catch (err: any) {
-      toast.error(err?.message || "Enhancement failed");
+      toast.error(friendlyErrorMessage(err, "Couldn't enhance the description. Please try again."));
     } finally {
       setIsEnhancingEdit(false);
     }

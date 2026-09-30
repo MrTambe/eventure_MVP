@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { friendlyErrorMessage } from "@/lib/friendly-error";
 
 type AuthMode = "password" | "otp";
 type OtpStep = "email" | "code";
@@ -32,9 +33,7 @@ export function AuthCard() {
       toast.success("Signed in successfully!");
     } catch (error) {
       console.error("Password sign in failed:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Invalid email or password"
-      );
+      toast.error(friendlyErrorMessage(error, "Invalid email or password"));
       setIsLoading(false);
     }
   };
@@ -54,7 +53,7 @@ export function AuthCard() {
     } catch (error) {
       console.error("Failed to send code:", error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to send verification code"
+        friendlyErrorMessage(error, "Couldn't send the verification code. Please try again.")
       );
     } finally {
       setIsLoading(false);
@@ -75,7 +74,7 @@ export function AuthCard() {
     } catch (error) {
       console.error("Failed to verify code:", error);
       toast.error(
-        error instanceof Error ? error.message : "Invalid verification code"
+        friendlyErrorMessage(error, "That code didn't work. Please check it and try again.")
       );
       setIsLoading(false);
     }

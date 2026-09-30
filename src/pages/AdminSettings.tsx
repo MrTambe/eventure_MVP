@@ -1,7 +1,7 @@
 /* eslint-disable */
 // @ts-nocheck
 import React, { useState, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
@@ -13,6 +13,8 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router";
 import { AdminNavBar } from "@/components/admin/admin-navbar";
 import { ADMIN_NAV_ITEMS } from "@/components/admin/admin-nav-items";
+import { friendlyErrorMessage } from "@/lib/friendly-error";
+import { FileSpreadsheet, ExternalLink, Loader2 } from "lucide-react";
 
 interface AdminUser {
   _id: Id<"users">;
@@ -42,6 +44,13 @@ function AdminSettingsContent() {
   const adminProfile = useQuery(
     api.users.currentUser
   );
+
+  // ===== Google Sheets backup =====
+  const events = useQuery(api.events.list);
+  const syncSheets = useAction(api.googleSheets.syncEventSheetsNow);
+  const [syncEventId, setSyncEventId] = useState("");
+  const [syncing, setSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState<{ participants?: string; staff?: string; overview?: string; sharedWith?: string[] } | null>(null);
 
   // Update profile mutation
   const updateSettingsProfile = useMutation(api.team.updateAdminSettingsByEmail);
@@ -123,6 +132,28 @@ function AdminSettingsContent() {
 
   const hasChanges = () => {
     return JSON.stringify(formData) !== JSON.stringify(originalData);
+  };
+
+  const handleSyncSheets = async () => {
+    if (!syncEventId) {
+      toast.error("Choose an event to back up first");
+      return;
+    }
+    setSyncing(true);
+    try {
+      const result = await syncSheets({ eventId: syncEventId as any, adminEmail: adminUser?.email });
+      if (result?.success) {
+        setLastSync(result.sheets || null);
+        toast.success(`Backup created${result.sharedWith?.length ? ` — shared with ${result.sharedWith.length} admin(s)` : ""}!`);
+      } else {
+        toast.error(result?.message || "Sheets sync failed");
+      }
+    } catch (e: any) {
+      console.error("Sheets sync error:", e);
+      toast.error(friendlyErrorMessage(e, "Couldn't create the Sheets backup. Check the Google service-account config."));
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const handleSave = async () => {
@@ -290,6 +321,90 @@ function AdminSettingsContent() {
               )}
             </div>
           </div>
+
+          {/* Google Sheets Backup (admins only) */}
+          {!isTeamMember && (
+            <div className="bg-white border-4 border-black p-8 shadow-[8px_8px_0px_#000] mt-8">
+              <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+                <FileSpreadsheet className="h-5 w-5" />
+                GOOGLE SHEETS BACKUP
+              </h2>
+              <p className="text-xs text-gray-600 font-mono mb-6">
+                Exports every participant, staff member and event stat into a formatted
+                Google Drive folder (one per event) — a readable backup DB shared
+                automatically with all admin emails.
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="sync-event" className="block text-sm font-bold mb-2 text-left">
+                    EVENT
+                  </Label>
+                  <select
+                    id="sync-event"
+                    value={syncEventId}
+                    onChange={(e) => setSyncEventId(e.target.value)}
+                    className="w-full h-12 px-3 border-4 border-black bg-white text-black font-mono text-sm rounded-none focus:outline-none cursor-pointer"
+                  >
+                    <option value="">— Select event —</option>
+                    {(events || []).map((ev: any) => (
+                      <option key={ev._id} value={ev._id}>
+                        {ev.name} ({ev.status})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <Button
+                  onClick={handleSyncSheets}
+                  disabled={syncing || !syncEventId}
+                  className="w-full h-14 bg-[#6D28D9] text-white font-bold text-lg border-4 border-black hover:bg-[#5b21b6] disabled:bg-gray-400 disabled:border-gray-400 disabled:cursor-not-allowed rounded-none shadow-[4px_4px_0px_#666]"
+                >
+                  {syncing ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      SYNCING TO SHEETS...
+                    </>
+                  ) : (
+                    "BACK UP TO GOOGLE SHEETS »"
+                  )}
+                </Button>
+                {lastSync && (
+                  <div className="border-2 border-black p-3 space-y-1.5">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">
+                      Last backup — open sheets:
+                    </p>
+                    {[
+                      ["Participants", lastSync.participants],
+                      ["Staff & Volunteers", lastSync.staff],
+                      ["Event Overview", lastSync.overview],
+                    ].map(([label, url]) =>
+                      url ? (
+                        <a
+                          key={label as string}
+                          href={url as string}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 text-xs font-bold text-[#6D28D9] hover:underline"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          {label}
+                        </a>
+                      ) : null
+                    )}
+                    {lastSync.sharedWith && lastSync.sharedWith.length > 0 && (
+                      <p className="text-[10px] text-gray-500 font-mono pt-1">
+                        Shared with: {lastSync.sharedWith.join(", ")}
+                      </p>
+                    )}
+                  </div>
+                )}
+                <p className="text-[10px] text-gray-500 font-mono">
+                  Requires GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_SERVICE_ACCOUNT_KEY and
+                  (optional) GOOGLE_SHEETS_ROOT_FOLDER_ID on the deployment. Admin emails
+                  from the admins table get automatic edit access.
+                </p>
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
       </div>

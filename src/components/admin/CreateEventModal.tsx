@@ -10,6 +10,7 @@ import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
+import { friendlyErrorMessage } from "@/lib/friendly-error";
 import { EVENT_TEMPLATES, EventTemplate } from "@/data/event-templates";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -125,7 +126,7 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
       }
     } catch (error: any) {
       console.error("Event creation error:", error);
-      toast.error(error?.message || "Failed to create event. Please try again.");
+      toast.error(friendlyErrorMessage(error, "Couldn't create the event. Please try again."));
     } finally {
       setIsSubmitting(false);
     }
@@ -146,7 +147,7 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
         toast.error(result.error || "Failed to enhance description");
       }
     } catch (err: any) {
-      toast.error(err?.message || "Enhancement failed");
+      toast.error(friendlyErrorMessage(err, "Couldn't enhance the description. Please try again."));
     } finally {
       setIsEnhancing(false);
     }

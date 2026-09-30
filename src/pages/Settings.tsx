@@ -1,7 +1,7 @@
 import { Protected } from "@/lib/protected-page";
 import { Dock } from "@/components/ui/dock";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher-1";
-import { Home, Calendar, Trophy, User, Settings as SettingsIcon } from "lucide-react";
+import { Home, Calendar, Trophy, User, Settings as SettingsIcon, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,6 +11,7 @@ export default function Settings() {
   const dockItems = [
     { icon: <Home size={20} />, label: 'Dashboard', href: '/dashboard' },
     { icon: <Calendar size={20} />, label: 'Events', href: '/events' },
+    { icon: <MessageSquare size={20} />, label: 'Communication', href: '/communication' },
     { icon: <Trophy size={20} />, label: 'Certificates', href: '/certificates' },
     { icon: <User size={20} />, label: 'Profile', href: '/profile' },
     { icon: <SettingsIcon size={20} />, label: 'Settings', href: '/settings' }

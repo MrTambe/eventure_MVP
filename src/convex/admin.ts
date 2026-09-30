@@ -86,37 +86,10 @@ export const adminLogin = action({
         return { success: true, message: "Login successful", user: userToReturn };
       }
 
-      // Auto-seed a default admin if none exists and credentials match the default dev pair
-      const hasAnyAdmin = await (ctx as any).runQuery(internal.admin_creation.anyAdminExists, {});
-      if (!hasAnyAdmin && normalizedEmail === "admin@example.com" && args.password === "admin123") {
-        const hashed = await bcrypt.hash(args.password, 12);
-        await (ctx as any).runMutation(
-          (internal as any).admin_creation.createAdminInternal,
-          {
-            email: normalizedEmail,
-            passwordHash: hashed,
-            role: "admin",
-          }
-        );
-        const seeded = await (ctx as any).runQuery(
-          internal.admin_creation.getAdminByEmail, 
-          { email: normalizedEmail }
-        ) as any;
-        if (seeded) {
-          const userToReturn: any = {
-            _id: seeded._id,
-            _creationTime: seeded._creationTime,
-            email: seeded.email,
-            role: "admin",
-          };
-          if (seeded.name !== undefined) userToReturn.name = seeded.name;
-          if (seeded.branch !== undefined) userToReturn.branch = seeded.branch;
-          if (seeded.rollNo !== undefined) userToReturn.rollNo = seeded.rollNo;
-          if (seeded.mobileNumber !== undefined) userToReturn.mobileNumber = seeded.mobileNumber;
-
-          return { success: true, message: "Login successful", user: userToReturn };
-        }
-      }
+      // NOTE: The previous hardcoded default-admin auto-seed
+      // (admin@example.com / admin123) was removed for security.
+      // Admins must be created via the SEED_ADMIN_SECRET-gated seedAdmin
+      // action (see scripts/seed-admin.mjs) or the in-app Create Admin UI.
 
       return { success: false, message: "Invalid credentials" };
     } catch (err) {
@@ -132,9 +105,17 @@ export const seedAdmin = action({
     email: v.string(),
     password: v.string(),
     name: v.optional(v.string()),
+    seedSecret: v.string(),
   },
   handler: async (ctx, args): Promise<{ success: boolean; message: string }> => {
     try {
+      // Gate this public action behind a secret so random visitors cannot
+      // create admin accounts on the deployment.
+      const expectedSecret = process.env.SEED_ADMIN_SECRET;
+      if (!expectedSecret || args.seedSecret !== expectedSecret) {
+        return { success: false, message: "Invalid seed secret" };
+      }
+
       const normalizedEmail = args.email.toLowerCase();
 
       // Check if admin already exists

@@ -1,4 +1,4 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUser } from "./users";
 import { internal } from "./_generated/api";
@@ -42,6 +42,205 @@ async function notifyMentionedUsers(
     }
   }
 }
+
+// ===== User-facing event chat access =====
+
+/** All events the signed-in user is part of (registered or team member), any status. */
+export const getMyChattableEvents = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) return [];
+
+    const eventIdSet = new Set<string>();
+
+    const individualRegs = await ctx.db
+      .query("eventRegistrations")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .take(200);
+    for (const reg of individualRegs) eventIdSet.add(reg.eventId as string);
+
+    const teamRegsAsLeader = await ctx.db
+      .query("teamRegistrations")
+      .withIndex("by_user", (q) => q.eq("registeredByUserId", user._id))
+      .take(100);
+    for (const reg of teamRegsAsLeader) eventIdSet.add(reg.eventId as string);
+
+    if (user.email) {
+      const allTeamRegs = await ctx.db.query("teamRegistrations").take(500);
+      for (const reg of allTeamRegs) {
+        if (reg.members.some((m: any) => m.email === user.email)) {
+          eventIdSet.add(reg.eventId as string);
+        }
+      }
+    }
+
+    const results: Array<{
+      eventId: string;
+      eventName: string;
+      eventStatus: string;
+      startDate: number;
+      endDate: number;
+      chatId: string | null;
+      chatTitle: string | null;
+    }> = [];
+
+    for (const eventId of eventIdSet) {
+      const event: any = await ctx.db.get(eventId as any);
+      if (!event) continue;
+      const chat = await ctx.db
+        .query("event_chats")
+        .withIndex("by_event", (q) => q.eq("eventId", event._id))
+        .first();
+      results.push({
+        eventId: event._id,
+        eventName: event.name,
+        eventStatus: event.status,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        chatId: chat && !chat.isDeleted ? chat._id : null,
+        chatTitle: chat && !chat.isDeleted ? chat.title : null,
+      });
+    }
+
+    return results.sort((a, b) => b.startDate - a.startDate);
+  },
+});
+
+// ===== Per-Event Group Chats =====
+// Every event automatically gets one chat (created alongside the event).
+// Admins and volunteers (teamMembers) can create extra chats and delete any.
+
+export const ensureEventChat = internalMutation({
+  args: { eventId: v.id("events"), title: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("event_chats")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .first();
+    if (existing && !existing.isDeleted) return existing._id;
+    if (existing?.isDeleted) {
+      await ctx.db.patch(existing._id, { isDeleted: false });
+      return existing._id;
+    }
+    return await ctx.db.insert("event_chats", {
+      eventId: args.eventId,
+      title: args.title || "Event Chat",
+      createdAt: Date.now(),
+    });
+  },
+});
+
+export const getEventChats = query({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("event_chats").take(200);
+    const chats = all.filter((c) => !c.isDeleted);
+    // Attach event name + message count for display
+    return await Promise.all(
+      chats.map(async (chat) => {
+        const event = await ctx.db.get(chat.eventId);
+        const messages = await ctx.db
+          .query("event_channel_messages")
+          .withIndex("by_event", (q) => q.eq("eventId", chat.eventId))
+          .take(1000);
+        return {
+          _id: chat._id,
+          eventId: chat.eventId,
+          title: chat.title,
+          eventName: (event as any)?.name || "Unknown Event",
+          eventStatus: (event as any)?.status || "unknown",
+          messageCount: messages.length,
+          createdAt: chat.createdAt,
+        };
+      })
+    );
+  },
+});
+
+export const createEventChat = mutation({
+  args: {
+    eventId: v.id("events"),
+    title: v.string(),
+    adminEmail: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    let isAllowed = !!(user && user.role === "admin");
+    if (!isAllowed && args.adminEmail) {
+      const email = args.adminEmail.toLowerCase();
+      const admin = await ctx.db
+        .query("admins")
+        .withIndex("by_email", (q) => q.eq("email", email))
+        .first();
+      if (admin) isAllowed = true;
+      else {
+        const member = await ctx.db
+          .query("teamMembers")
+          .withIndex("by_email", (q) => q.eq("email", email))
+          .first();
+        if (member) isAllowed = true;
+      }
+    }
+    if (!isAllowed) {
+      return { success: false, message: "Only admins and volunteers can create chats" };
+    }
+
+    const event = await ctx.db.get(args.eventId);
+    if (!event) return { success: false, message: "Event not found" };
+
+    const chatId = await ctx.db.insert("event_chats", {
+      eventId: args.eventId,
+      title: args.title.trim() || "Event Chat",
+      createdBy: args.adminEmail,
+      createdAt: Date.now(),
+    });
+    return { success: true, message: "Chat created", chatId };
+  },
+});
+
+export const deleteEventChat = mutation({
+  args: {
+    chatId: v.id("event_chats"),
+    adminEmail: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    let isAllowed = !!(user && user.role === "admin");
+    if (!isAllowed && args.adminEmail) {
+      const email = args.adminEmail.toLowerCase();
+      const admin = await ctx.db
+        .query("admins")
+        .withIndex("by_email", (q) => q.eq("email", email))
+        .first();
+      if (admin) isAllowed = true;
+      else {
+        const member = await ctx.db
+          .query("teamMembers")
+          .withIndex("by_email", (q) => q.eq("email", email))
+          .first();
+        if (member) isAllowed = true;
+      }
+    }
+    if (!isAllowed) {
+      return { success: false, message: "Only admins and volunteers can delete chats" };
+    }
+
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat) return { success: false, message: "Chat not found" };
+
+    // Delete all messages in this chat, then soft-delete the chat
+    const messages = await ctx.db
+      .query("event_channel_messages")
+      .withIndex("by_event", (q) => q.eq("eventId", chat.eventId))
+      .take(1000);
+    for (const m of messages) {
+      await ctx.db.delete(m._id);
+    }
+    await ctx.db.patch(args.chatId, { isDeleted: true });
+    return { success: true, message: "Chat deleted" };
+  },
+});
 
 export const listMessages = query({
   args: {
@@ -290,14 +489,17 @@ export const getTeamMemberCount = query({
 // ===== Event Channel Messages =====
 
 export const listEventChannelMessages = query({
-  args: { eventId: v.id("events") },
+  args: { eventId: v.id("events"), chatId: v.optional(v.string()) },
   handler: async (ctx, args) => {
     const messages = await ctx.db
       .query("event_channel_messages")
       .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
       .order("desc")
-      .take(100);
-    return messages.reverse();
+      .take(200);
+    const filtered = args.chatId
+      ? messages.filter((m) => (m as any).chatId === args.chatId || !(m as any).chatId)
+      : messages;
+    return filtered.reverse();
   },
 });
 
@@ -306,6 +508,7 @@ export const postEventChannelMessage = mutation({
     eventId: v.id("events"),
     content: v.string(),
     adminEmail: v.optional(v.string()),
+    chatId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Verify event exists
@@ -325,12 +528,13 @@ export const postEventChannelMessage = mutation({
         authorId: user._id,
         authorName,
         content: args.content,
+        chatId: args.chatId,
       });
       await notifyMentionedUsers(ctx, args.content, authorName, args.eventId, event.name);
       return { success: true };
     }
 
-    // 2. Fallback: session-based admin
+    // 2. Fallback: session-based admin or team member (volunteer)
     if (args.adminEmail) {
       const normalizedEmail = args.adminEmail.toLowerCase();
 
@@ -346,6 +550,7 @@ export const postEventChannelMessage = mutation({
           authorId: admin._id as string,
           authorName,
           content: args.content,
+          chatId: args.chatId,
         });
         await notifyMentionedUsers(ctx, args.content, authorName, args.eventId, event.name);
         return { success: true };
@@ -363,6 +568,7 @@ export const postEventChannelMessage = mutation({
           authorId: teamMember._id as string,
           authorName,
           content: args.content,
+          chatId: args.chatId,
         });
         await notifyMentionedUsers(ctx, args.content, authorName, args.eventId, event.name);
         return { success: true };

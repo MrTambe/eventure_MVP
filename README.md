@@ -16,24 +16,29 @@ All relevant files live in the 'src' directory.
 
 ## Setup
 
-This project is set up already and running on a cloud environment.
-
 To set it up yourself:
 
 1. Clone the repository
 2. Run `pnpm install` to install the dependencies
-3. Run `pnpm dev` to start the development server
-4. Run `npx convex dev` to start the Convex development server
+3. Run `npx convex dev` to create/link a Convex deployment and push backend functions (writes `.env.local`)
+4. Set the Convex Auth keys and app env vars on the deployment (see Environment Variables below)
+5. Seed your first admin: `pnpm seed:admin <email> <password> "<name>"`
+6. Optionally add sample events: `pnpm seed:sample`
+7. Run `pnpm dev` to start the development server
 
-Running the convex development server is critical for ensuring the backend convex functions are correctly updating.
+### Environment Variables
 
-## Environment Variables
+The project is set up with project specific CONVEX_DEPLOYMENT and VITE_CONVEX_URL environment variables on the client side (written automatically by `npx convex dev` into `.env.local`).
 
-The project is set up with project specific CONVEX_DEPLOYMENT and VITE_CONVEX_URL environment variables on the client side.
+The convex server has a separate set of environment variables that are accessible by the convex backend (set with `npx convex env set <NAME> <value>`):
 
-The convex server has a separate set of environment variables that are accessible by the convex backend.
+- `JWT_PRIVATE_KEY`, `JWKS` - Convex Auth ES256 signing keypair (required for sign-in to work)
+- `SITE_URL` - frontend URL used by Convex Auth (e.g. `http://localhost:5173` in dev)
+- `RESEND_API_KEY` - Resend API key used to deliver Email OTP codes (free tier: only your own verified email)
+- `SEED_ADMIN_SECRET` - random string gating the `seedAdmin` / `seedSampleEvents` actions (used by `pnpm seed:admin` / `pnpm seed:sample`)
+- `DEV_CONSOLE_OTP` - set to `true` to log OTP codes to the server console when no email provider is configured (dev backup only, never enable in production)
 
-Currently, these variables include auth-specific keys: JWKS, JWT_PRIVATE_KEY, and SITE_URL.
+See `.env.example` for a template.
 
 
 # Using Authentication (Important!)

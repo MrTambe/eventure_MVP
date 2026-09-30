@@ -1,7 +1,7 @@
 import { Protected } from "@/lib/protected-page";
 import { Dock } from "@/components/ui/dock";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher-1";
-import { Home, Calendar, Trophy, User, Settings, Download, Loader2 } from "lucide-react";
+import { Home, Calendar, Trophy, User, Settings, Download, Loader2, MessageSquare } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/hooks/use-auth";
@@ -150,6 +150,7 @@ export default function Certificates() {
   const dockItems = [
     { icon: <Home size={20} />, label: 'Dashboard', href: '/dashboard' },
     { icon: <Calendar size={20} />, label: 'Events', href: '/events' },
+    { icon: <MessageSquare size={20} />, label: 'Communication', href: '/communication' },
     { icon: <Trophy size={20} />, label: 'Certificates', href: '/certificates' },
     { icon: <User size={20} />, label: 'Profile', href: '/profile' },
     { icon: <Settings size={20} />, label: 'Settings', href: '/settings' },

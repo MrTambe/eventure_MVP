@@ -1,29 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AdminNavBar } from '@/components/admin/admin-navbar';
-import { Dock } from '@/components/ui/dock';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { MentionAutocomplete } from '@/components/ui/MentionAutocomplete';
-import { Home, Calendar, Users, Settings, MessageSquare, Radio, Hash, Megaphone, Send, Ticket, ScanLine, BarChart3 } from 'lucide-react';
+import { Home, Calendar, Users, Settings, MessageSquare, Radio, Hash, Megaphone, Send, Ticket, ScanLine, BarChart3, Trash2, Plus } from 'lucide-react';
 import { BackgroundPaths } from '@/components/ui/background-paths';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 import { Id } from '@/convex/_generated/dataModel';
+import { friendlyErrorMessage } from '@/lib/friendly-error';
 
 import { ADMIN_NAV_ITEMS } from '@/components/admin/admin-nav-items';
-
-const DOCK_ITEMS = [
-  { icon: <Home size={20} />, label: 'Dashboard', href: '/admin-dashboard' },
-  { icon: <Calendar size={20} />, label: 'Events', href: '/admin-events' },
-  { icon: <ScanLine size={20} />, label: 'Check-In', href: '/admin-checkin' },
-  { icon: <BarChart3 size={20} />, label: 'Analytics', href: '/admin-event-analytics' },
-  { icon: <Ticket size={20} />, label: 'Tickets', href: '/admin-tickets' },
-  { icon: <MessageSquare size={20} />, label: 'Comms', href: '/admin-communication' },
-  { icon: <Users size={20} />, label: 'Team', href: '/admin-team' },
-  { icon: <Settings size={20} />, label: 'Settings', href: '/admin-settings' },
-];
 
 type Tab = 'broadcasts' | 'channels';
 
@@ -88,37 +77,127 @@ function BroadcastsSidebar({ selectedChannel, onSelectChannel }: { selectedChann
   );
 }
 
-function EventChannelsSidebar({ selectedEventId, onSelectEvent }: { selectedEventId: Id<"events"> | null; onSelectEvent: (id: Id<"events">) => void }) {
+function EventChannelsSidebar({ selectedEventId, onSelectEvent, isAdminOrTeam }: { selectedEventId: Id<"events"> | null; onSelectEvent: (id: Id<"events">, chatId: any) => void; isAdminOrTeam: boolean }) {
   const events = useQuery(api.communication.getActiveEventsForChannels);
+  const chats = useQuery(api.communication.getEventChats);
+  const createChat = useMutation(api.communication.createEventChat);
+  const deleteChat = useMutation(api.communication.deleteEventChat);
+  const [newChatTitle, setNewChatTitle] = useState('');
+  const [creatingFor, setCreatingFor] = useState<Id<"events"> | null>(null);
+
+  const handleCreate = async (eventId: Id<"events">) => {
+    const title = newChatTitle.trim() || 'Event Chat';
+    try {
+      const result = await createChat({ eventId, title, adminEmail: getAdminEmailFromSession() });
+      if (result?.success) {
+        toast.success('Chat created!');
+        setNewChatTitle('');
+        setCreatingFor(null);
+      } else {
+        toast.error(result?.message || 'Could not create chat');
+      }
+    } catch (e: any) {
+      toast.error(friendlyErrorMessage(e, "Couldn't create the chat. Please try again."));
+    }
+  };
+
+  const handleDelete = async (chatId: any) => {
+    if (!confirm('Delete this chat and all its messages? This cannot be undone.')) return;
+    try {
+      const result = await deleteChat({ chatId, adminEmail: getAdminEmailFromSession() });
+      if (result?.success) {
+        toast.success('Chat deleted');
+      } else {
+        toast.error(result?.message || 'Could not delete chat');
+      }
+    } catch (e: any) {
+      toast.error(friendlyErrorMessage(e, "Couldn't delete the chat. Please try again."));
+    }
+  };
+
   return (
     <div className="flex flex-col gap-2">
       <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400 mb-2">
-        Event Channels
+        Event Chats
       </p>
-      {events === undefined ? (
+      {events === undefined || chats === undefined ? (
         <div className="flex items-center justify-center py-4">
           <div className="w-4 h-4 border-2 border-black dark:border-white border-t-transparent animate-spin" />
         </div>
       ) : events.length === 0 ? (
         <p className="text-xs text-neutral-500 dark:text-neutral-400 px-2">No active events</p>
       ) : (
-        events.map((ev: any, i: number) => (
-          <motion.button
-            key={ev._id}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.05 }}
-            onClick={() => onSelectEvent(ev._id)}
-            className={`w-full text-left px-4 py-3 border-2 border-black dark:border-white text-sm font-bold uppercase tracking-wide transition-colors cursor-pointer flex items-center gap-2 ${
-              selectedEventId === ev._id
-                ? 'bg-[#6D28D9] text-white'
-                : 'bg-white dark:bg-neutral-900 text-black dark:text-white hover:bg-[#6D28D9] hover:text-white'
-            }`}
-          >
-            <Hash size={14} />
-            <span className="truncate">{ev.name}</span>
-          </motion.button>
-        ))
+        events.map((ev: any) => {
+          const eventChats = chats.filter((c: any) => c.eventId === ev._id);
+          return (
+            <div key={ev._id} className="flex flex-col gap-1">
+              <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 px-2 pt-1 truncate">
+                {ev.name}
+              </p>
+              {eventChats.length === 0 && (
+                <p className="text-[10px] text-neutral-400 px-3 italic">No chats</p>
+              )}
+              {eventChats.map((chat: any) => (
+                <div key={chat._id} className="flex items-stretch group">
+                  <motion.button
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    onClick={() => onSelectEvent(chat.eventId, chat._id)}
+                    className={`flex-1 min-w-0 text-left px-3 py-2.5 border-2 border-black dark:border-white text-xs font-bold uppercase tracking-wide transition-colors cursor-pointer flex items-center gap-2 ${
+                      selectedEventId === chat.eventId
+                        ? 'bg-[#6D28D9] text-white'
+                        : 'bg-white dark:bg-neutral-900 text-black dark:text-white hover:bg-[#6D28D9] hover:text-white'
+                    }`}
+                  >
+                    <Hash size={12} className="flex-shrink-0" />
+                    <span className="truncate">{chat.title}</span>
+                    <span className="ml-auto text-[9px] opacity-60">{chat.messageCount}</span>
+                  </motion.button>
+                  {isAdminOrTeam && (
+                    <button
+                      onClick={() => handleDelete(chat._id)}
+                      className="px-2 border-2 border-l-0 border-black dark:border-white bg-white dark:bg-neutral-900 text-neutral-400 hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors cursor-pointer"
+                      title={`Delete "${chat.title}"`}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              {isAdminOrTeam && (
+                creatingFor === ev._id ? (
+                  <div className="flex gap-1 px-1 py-1">
+                    <input
+                      value={newChatTitle}
+                      onChange={(e) => setNewChatTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleCreate(ev._id);
+                        if (e.key === 'Escape') setCreatingFor(null);
+                      }}
+                      autoFocus
+                      placeholder="Chat name..."
+                      className="flex-1 min-w-0 border-2 border-black dark:border-white px-2 py-1 text-[11px] font-bold outline-none"
+                    />
+                    <button
+                      onClick={() => handleCreate(ev._id)}
+                      className="px-2 bg-[#6D28D9] text-white border-2 border-black dark:border-white cursor-pointer"
+                      title="Create"
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setCreatingFor(ev._id)}
+                    className="mx-1 mt-0.5 px-2 py-1 border-2 border-dashed border-neutral-300 dark:border-neutral-600 text-[10px] font-bold uppercase tracking-wide text-neutral-400 hover:border-[#6D28D9] hover:text-[#6D28D9] transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <Plus size={10} /> New chat
+                  </button>
+                )
+              )}
+            </div>
+          );
+        })
       )}
     </div>
   );
@@ -176,7 +255,7 @@ function MessageCard({ message, index }: { message: any; index: number }) {
     try {
       await toggleReaction({ messageId: message._id, emoji });
     } catch (e: any) {
-      toast.error(e.message || 'Failed to react');
+      toast.error(friendlyErrorMessage(e, "Couldn't add your reaction. Please try again."));
     }
     setShowPicker(false);
   };
@@ -283,7 +362,7 @@ function EventChannelMessageCard({ message, index }: { message: any; index: numb
       const adminEmail = getAdminEmailFromSession();
       await toggleReaction({ messageId: message._id, emoji, adminEmail });
     } catch (e: any) {
-      toast.error(e.message || 'Failed to react');
+      toast.error(friendlyErrorMessage(e, "Couldn't add your reaction. Please try again."));
     }
     setShowPicker(false);
   };
@@ -390,7 +469,7 @@ function BroadcastsContent({ selectedChannel }: { selectedChannel: BroadcastChan
       setContent('');
       toast.success('Broadcast sent!');
     } catch (e: any) {
-      toast.error(e.message || 'Failed to send broadcast');
+      toast.error(friendlyErrorMessage(e, "Couldn't send the broadcast. Please try again."));
     } finally {
       setSending(false);
     }
@@ -466,11 +545,11 @@ function BroadcastsContent({ selectedChannel }: { selectedChannel: BroadcastChan
   );
 }
 
-function EventChannelsContent({ selectedEventId }: { selectedEventId: Id<"events"> | null }) {
+function EventChannelsContent({ selectedEventId, chatId }: { selectedEventId: Id<"events"> | null; chatId: Id<"event_chats"> | null }) {
   const { user } = useAuth();
   const messages = useQuery(
     api.communication.listEventChannelMessages,
-    selectedEventId ? { eventId: selectedEventId } : "skip"
+    selectedEventId ? { eventId: selectedEventId, chatId: chatId ?? undefined } : "skip"
   );
   const postMessage = useMutation(api.communication.postEventChannelMessage);
   const [content, setContent] = useState('');
@@ -497,11 +576,11 @@ function EventChannelsContent({ selectedEventId }: { selectedEventId: Id<"events
     setSending(true);
     try {
       const adminEmail = getAdminEmailFromSession();
-      await postMessage({ eventId: selectedEventId, content: trimmed, adminEmail });
+      await postMessage({ eventId: selectedEventId, content: trimmed, adminEmail, chatId: chatId ?? undefined });
       setContent('');
       toast.success('Message sent!');
     } catch (e: any) {
-      toast.error(e.message || 'Failed to send message');
+      toast.error(friendlyErrorMessage(e, "Couldn't send the message. Please try again."));
     } finally {
       setSending(false);
     }
@@ -606,7 +685,17 @@ function EventChannelsContent({ selectedEventId }: { selectedEventId: Id<"events
 export default function AdminCommunication() {
   const [activeTab, setActiveTab] = useState<Tab>('broadcasts');
   const [selectedEventId, setSelectedEventId] = useState<Id<"events"> | null>(null);
+  const [selectedChatId, setSelectedChatId] = useState<Id<"event_chats"> | null>(null);
   const [selectedChannel, setSelectedChannel] = useState<BroadcastChannel>('general');
+
+  const isAdminOrTeam = (() => {
+    if (useAuth().user?.role === 'admin') return true;
+    try {
+      const adminSession = sessionStorage.getItem('adminUser');
+      if (adminSession) return true;
+    } catch {}
+    return false;
+  })();
 
   // Get recipient ID for notifications (from Convex auth or admin session)
   const { user } = useAuth();
@@ -629,7 +718,7 @@ export default function AdminCommunication() {
       </div>
       <div className="relative z-10 flex flex-col min-h-screen">
       <AdminNavBar items={ADMIN_NAV_ITEMS} />
-      <div className="flex-1 pt-20 pb-28 px-4 md:px-8 max-w-7xl mx-auto w-full">
+      <div className="flex-1 pt-20 pb-12 px-4 md:px-8 max-w-7xl mx-auto w-full">
         <div className="flex items-center justify-between mb-6">
           <motion.h1
             initial={{ opacity: 0, y: -10 }}
@@ -654,20 +743,26 @@ export default function AdminCommunication() {
             {activeTab === 'broadcasts' ? (
               <BroadcastsSidebar selectedChannel={selectedChannel} onSelectChannel={setSelectedChannel} />
             ) : (
-              <EventChannelsSidebar selectedEventId={selectedEventId} onSelectEvent={setSelectedEventId} />
+              <EventChannelsSidebar
+                selectedEventId={selectedEventId}
+                onSelectEvent={(id, chatId) => {
+                  setSelectedEventId(id);
+                  setSelectedChatId(chatId);
+                }}
+                isAdminOrTeam={isAdminOrTeam}
+              />
             )}
           </motion.div>
           <div className="border-2 border-black dark:border-white shadow-[6px_6px_0px_0px_#000] dark:shadow-[6px_6px_0px_0px_#fff] bg-white dark:bg-neutral-900 p-6 min-h-[400px] flex">
             {activeTab === 'broadcasts' ? (
               <BroadcastsContent selectedChannel={selectedChannel} />
             ) : (
-              <EventChannelsContent selectedEventId={selectedEventId} />
+              <EventChannelsContent selectedEventId={selectedEventId} chatId={selectedChatId} />
             )}
           </div>
         </div>
       </div>
-      <Dock items={DOCK_ITEMS} className="!top-auto !bottom-4" />
-      </div>
     </div>
+  </div>
   );
 }

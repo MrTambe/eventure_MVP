@@ -5,6 +5,7 @@ import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/hooks/use-auth";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { friendlyErrorMessage } from "@/lib/friendly-error";
 import { Spinner } from "@/components/ui/spinner";
 
 export default function CompleteProfile() {
@@ -71,7 +72,7 @@ export default function CompleteProfile() {
       toast.success("Profile completed!");
       navigate("/dashboard", { replace: true });
     } catch (err: any) {
-      toast.error(err?.message || "Failed to save profile");
+      toast.error(friendlyErrorMessage(err, "Couldn't save your profile. Please try again."));
     } finally {
       setIsSubmitting(false);
     }

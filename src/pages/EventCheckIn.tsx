@@ -1,6 +1,7 @@
 /* eslint-disable */
 // @ts-nocheck
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "react-router";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -9,6 +10,7 @@ import { ADMIN_NAV_ITEMS } from "@/components/admin/admin-nav-items";
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { friendlyErrorMessage } from "@/lib/friendly-error";
 import {
   ScanLine,
   Keyboard,
@@ -124,6 +126,7 @@ function EventCheckInContent() {
 
   const events = useQuery(api.events.list);
   const markAttendance = useMutation(api.events.markAttendance);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const eventId = selectedEventId ? (selectedEventId as Id<"events">) : undefined;
   const stats = useQuery(api.events.getEventAttendanceStats, eventId ? { eventId } : "skip");
@@ -144,8 +147,9 @@ function EventCheckInContent() {
         if (result.success) { toast.success(`Checked in: ${result.userName || "Unknown"}`); setManualCode(""); }
         else toast.error(result.message);
       } catch (err: any) {
-        toast.error("Check-in failed");
-        setLastResult({ success: false, message: err?.message || "Check-in failed" });
+        const friendly = friendlyErrorMessage(err, "Check-in failed. Please try again.");
+        toast.error(friendly);
+        setLastResult({ success: false, message: friendly });
       } finally {
         setIsProcessing(false);
       }
@@ -157,6 +161,19 @@ function EventCheckInContent() {
     e.preventDefault();
     if (manualCode.trim()) handleCheckIn(manualCode);
   };
+
+  // Support QR codes that encode a URL like /admin-checkin?code=XXXXXXXX&event=...
+  // If the page was opened with a ?code= param, pre-select the event (if given)
+  // and run the check-in automatically, then clean the URL.
+  useEffect(() => {
+    const urlCode = searchParams.get("code");
+    const urlEvent = searchParams.get("event");
+    if (!urlCode) return;
+    if (urlEvent && !selectedEventId) setSelectedEventId(urlEvent);
+    handleCheckIn(urlCode);
+    setSearchParams({}, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const activeEvents = events?.filter((ev: { status: string }) => ev.status === "active") || [];
 

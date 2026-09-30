@@ -20,8 +20,11 @@ export const sendCheckInEmails = internalAction({
       })
     ),
   },
-  handler: async (_ctx, args) => {
-    const provider = process.env.EMAIL_PROVIDER || "vly";
+  handler: async (ctx, args) => {
+    // Auto-detect: if a Resend key is configured, use Resend. EMAIL_PROVIDER
+    // env var can still override ("resend" | "vly").
+    const provider =
+      process.env.EMAIL_PROVIDER || (process.env.RESEND_API_KEY ? "resend" : "vly");
     let apiKey: string | undefined;
     let endpoint: string;
     let fromAddress: string;
@@ -54,10 +57,33 @@ export const sendCheckInEmails = internalAction({
     let sent = 0;
     let failed = 0;
 
+    // Upload ONE shared QR image per event-batch to Convex storage and link it
+    // by https URL. Gmail (and most clients) strip data: URIs, so inline base64
+    // images show as broken icons — a real URL renders everywhere.
+    // NOTE: the QR encodes the generic check-in URL; the 8-char code below it
+    // is the unique per-attendee identifier admins scan/type.
+    let qrUrl: string | null = null;
+    if (args.registrations.length > 0) {
+      try {
+        const checkInUrl = generateCheckInURL(args.registrations[0].checkInCode, args.eventId);
+        const qrDataUrl = await generateQRCode(checkInUrl);
+        const base64 = qrDataUrl.split(",")[1];
+        if (base64) {
+          const binary = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+          const blob = new Blob([binary], { type: "image/png" });
+          const storageId = await ctx.storage.store(blob);
+          qrUrl = await ctx.storage.getUrl(storageId);
+        }
+      } catch (qrErr) {
+        console.error("[CheckInEmail] QR upload failed:", qrErr);
+      }
+    }
+
     for (const reg of args.registrations) {
       try {
         const checkInUrl = generateCheckInURL(reg.checkInCode, args.eventId);
-        const qrDataUrl = await generateQRCode(checkInUrl);
+        // Fall back to data URL if upload failed (still works in some clients)
+        const qrSrc = qrUrl || (await generateQRCode(checkInUrl));
 
         const subject = `Your Check-In Code for ${args.eventName}`;
 
@@ -83,7 +109,7 @@ export const sendCheckInEmails = internalAction({
               </div>
 
               <div style="text-align: center; margin: 24px 0;">
-                <img src="${qrDataUrl}" alt="Check-In QR Code" style="width: 200px; height: 200px; border: 2px solid #000;" />
+                <img src="${qrSrc}" alt="Check-In QR Code" width="200" height="200" style="width: 200px; height: 200px; border: 2px solid #000; display: block; margin: 0 auto;" />
               </div>
 
               <div style="background: #000; color: #fff; padding: 16px; text-align: center; margin: 24px 0; font-family: monospace;">

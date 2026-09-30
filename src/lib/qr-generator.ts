@@ -17,9 +17,12 @@ export async function generateQRCode(data: string): Promise<string> {
 
 /**
  * Generate a check-in URL for a given code and event.
- * Uses CONVEX_SITE_URL as the base if available, otherwise a placeholder.
+ * Prefers SITE_URL (the real frontend URL, e.g. http://localhost:5173 or the
+ * Vercel domain) so the QR actually opens the app; falls back to the Convex
+ * site URL and finally a placeholder.
  */
 export function generateCheckInURL(code: string, eventId: string): string {
-  const baseUrl = process.env.CONVEX_SITE_URL || "https://eventure.app";
-  return `${baseUrl}/checkin?code=${encodeURIComponent(code)}&event=${encodeURIComponent(eventId)}`;
+  const baseUrl =
+    process.env.SITE_URL || process.env.CONVEX_SITE_URL || "https://eventure.app";
+  return `${baseUrl}/admin-checkin?code=${encodeURIComponent(code)}&event=${encodeURIComponent(eventId)}`;
 }

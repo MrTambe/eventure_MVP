@@ -1,6 +1,6 @@
 import { Protected } from "@/lib/protected-page";
 import { Dock } from "@/components/ui/dock";
-import { Home, Calendar, User, LayoutGrid, Pencil, LogOut, Moon, Sun, Settings, Trophy, CheckCircle, Palette } from "lucide-react";
+import { Home, Calendar, User, LayoutGrid, Pencil, LogOut, Moon, Sun, Settings, Trophy, CheckCircle, Palette, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/components/theme-provider";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
+import { friendlyErrorMessage } from "@/lib/friendly-error";
 import { useNavigate } from "react-router";
 
 const AVATAR_STYLES = [
@@ -86,11 +87,18 @@ function ProfileCard({ user, onChangeAvatar }: { user: any; onChangeAvatar: () =
         </div>
         <div className="flex gap-2 flex-wrap">
           <span className="px-3 py-1 rounded-full border border-black dark:border-white bg-pink-50 dark:bg-pink-900/30 text-xs font-bold uppercase tracking-wide text-black dark:text-white">
-            Pro Member
+            {user?.role === "admin" ? "Admin" : "Member"}
           </span>
-          <span className="px-3 py-1 rounded-full border border-black dark:border-white bg-green-50 dark:bg-green-900/30 text-xs font-bold uppercase tracking-wide text-black dark:text-white">
-            Organizer
-          </span>
+          {user?.rollNo && (
+            <span className="px-3 py-1 rounded-full border border-black dark:border-white bg-green-50 dark:bg-green-900/30 text-xs font-bold uppercase tracking-wide text-black dark:text-white">
+              Roll #{user.rollNo}
+            </span>
+          )}
+          {user?.mobileNumber && (
+            <span className="px-3 py-1 rounded-full border border-black dark:border-white bg-blue-50 dark:bg-blue-900/30 text-xs font-bold uppercase tracking-wide text-black dark:text-white">
+              {user.mobileNumber}
+            </span>
+          )}
         </div>
       </div>
     </motion.div>
@@ -120,7 +128,7 @@ function ChangeAvatarModal({ user, onClose }: { user: any; onClose: () => void }
       toast.success("Avatar updated!");
       onClose();
     } catch (e: any) {
-      toast.error(e.message || "Failed to update avatar");
+      toast.error(friendlyErrorMessage(e, "Couldn't update your avatar. Please try again."));
     } finally {
       setSaving(false);
     }
@@ -226,7 +234,7 @@ function EditProfileModal({ user, onClose }: { user: any; onClose: () => void })
       toast.success("Profile updated!");
       onClose();
     } catch (e: any) {
-      toast.error(e.message || "Failed to update");
+      toast.error(friendlyErrorMessage(e, "Couldn't update your profile. Please try again."));
     } finally {
       setSaving(false);
     }
@@ -352,6 +360,7 @@ export default function Profile() {
   const dockItems = [
     { icon: <Home size={20} />, label: "Home", href: "/dashboard" },
     { icon: <Calendar size={20} />, label: "Events", href: "/events" },
+    { icon: <MessageSquare size={20} />, label: "Communication", href: "/communication" },
     { icon: <Trophy size={20} />, label: "Trophy", href: "/certificates" },
     { icon: <User size={20} />, label: "Profile", href: "/profile" },
     { icon: <Settings size={20} />, label: "Settings", href: "/settings" },
