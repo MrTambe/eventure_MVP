@@ -9,6 +9,11 @@ export const getEventInternal = internalQuery({
   handler: async (ctx, args) => ctx.db.get(args.eventId),
 });
 
+export const getAllEventsInternal = internalQuery({
+  args: {},
+  handler: async (ctx) => ctx.db.query("events").take(500),
+});
+
 export const getUserByIdInternal = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => ctx.db.get(args.userId),

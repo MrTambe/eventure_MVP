@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { v } from "convex/values";
 import { action, internalMutation } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { internal, api } from "./_generated/api";
 import bcrypt from "bcryptjs";
 
 // Secret-gated demo data seeder (same SEED_ADMIN_SECRET as admin seeding).
@@ -397,5 +397,91 @@ export const insertDummyData = internalMutation({
       summary,
       message: parts.length ? `Created: ${parts.join(", ")}` : "Nothing to create — dummy data already present",
     };
+  },
+});
+
+/**
+ * Test helper (secret-gated): creates 5 users with email + password ONLY
+ * (profile fields intentionally left blank so the app shows the
+ * "Complete Profile" flow after first login). Uses the real Password
+ * provider sign-up flow so the accounts are 100% loginable.
+ */
+export const seedTestUsers = action({
+  args: {
+    seedSecret: v.string(),
+    users: v.array(v.object({ email: v.string(), password: v.string() })),
+  },
+  handler: async (ctx, args) => {
+    const expectedSecret = process.env.SEED_ADMIN_SECRET;
+    if (!expectedSecret || args.seedSecret !== expectedSecret) {
+      return { success: false, message: "Invalid seed secret" };
+    }
+    const created: string[] = [];
+    const existing: string[] = [];
+    for (const u of args.users) {
+      try {
+        await ctx.runAction(api.auth.signIn, {
+          provider: "password",
+          params: { flow: "signUp", email: u.email, password: u.password },
+        });
+        created.push(u.email);
+      } catch (e: any) {
+        const msg = String(e?.message || e);
+        if (/already|exists|in use/i.test(msg)) {
+          existing.push(u.email);
+        } else {
+          throw e;
+        }
+      }
+    }
+    return {
+      success: true,
+      message: `Users ready. Created: ${created.join(", ") || "none"}. Already existed: ${existing.join(", ") || "none"}.`,
+    };
+  },
+});
+
+/**
+ * Test helper (secret-gated): creates an ONGOING event (started 1h ago,
+ * ends in 4h) for testing check-in flows. Reuses an event with the same
+ * name if one already exists.
+ */
+export const seedOngoingEvent = action({
+  args: { seedSecret: v.string() },
+  handler: async (ctx, args) => {
+    const expectedSecret = process.env.SEED_ADMIN_SECRET;
+    if (!expectedSecret || args.seedSecret !== expectedSecret) {
+      return { success: false, message: "Invalid seed secret" };
+    }
+    return await ctx.runMutation(internal.seed.insertOngoingEvent, {});
+  },
+});
+
+export const insertOngoingEvent = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const hours = 60 * 60 * 1000;
+    const name = "CodeSprint 2026: Hack & Roll";
+    const existing = await ctx.db
+      .query("events")
+      .filter((q) => q.eq(q.field("name"), name))
+      .first();
+    if (existing) {
+      return { success: true, eventId: (existing as any)._id, message: `Event already exists: ${name}` };
+    }
+    const now = Date.now();
+    const eventId = await ctx.db.insert("events", {
+      name,
+      description:
+        "Live ongoing coding sprint! Teams race the clock on surprise problem statements. Check-in is open at the venue — scan your QR at the entrance.",
+      venue: "Innovation Lab",
+      startDate: now - 1 * hours,
+      endDate: now + 4 * hours,
+      maxParticipants: 100,
+      createdBy: "admin@sanshit.dev",
+      status: "active",
+      eventType: "individual",
+    });
+    return { success: true, eventId, message: `Created ongoing event: ${name}` };
   },
 });

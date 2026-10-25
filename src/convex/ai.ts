@@ -190,10 +190,18 @@ export const enhanceEventDescription = action({
 /**
  * Ask Eventure's AI assistant anything about the platform / events.
  * Public action - used by the floating chat widget.
+ *
+ * Token/API-cost savers:
+ *  - Per-user rate limit: 1 request per minute, counted from the time the
+ *    user's previous response was received (aiChatLimits table).
+ *  - Off-topic guard: the system prompt tells Gemini to reply with the single
+ *    code EVENTURE_OFF_TOPIC (not a composed apology) for unrelated questions;
+ *    the widget swaps that code for a random canned apology client-side.
  */
 export const askEventure = action({
   args: {
     question: v.string(),
+    clientId: v.optional(v.string()), // guest identifier when not logged in
     history: v.optional(
       v.array(
         v.object({
@@ -203,7 +211,7 @@ export const askEventure = action({
       )
     ),
   },
-  handler: async (_ctx, args) => {
+  handler: async (ctx, args) => {
     const trimmed = args.question.trim();
     if (!trimmed) {
       return { success: false, answer: null, error: "Please type a question first." };
@@ -212,9 +220,36 @@ export const askEventure = action({
       return { success: false, answer: null, error: "That question is too long - please shorten it." };
     }
 
+    // --- Per-user rate limit: 1 request / minute from the previous response ---
+    const AI_COOLDOWN_MS = 60_000;
+    let userKey: string | null = null;
+    try {
+      const identity = await ctx.auth.getUserIdentity();
+      userKey = identity?.subject ?? `anon:${args.clientId || "unknown"}`;
+      const lastChat = await ctx.runQuery(internal.aiChatLimit.getLastChat, { userKey });
+      if (lastChat) {
+        const elapsed = Date.now() - lastChat.lastChatAt;
+        if (elapsed < AI_COOLDOWN_MS) {
+          const waitSec = Math.max(1, Math.ceil((AI_COOLDOWN_MS - elapsed) / 1000));
+          return {
+            success: false,
+            answer: null,
+            error: `You can ask 1 question per minute - try again in ${waitSec}s.`,
+          };
+        }
+      }
+    } catch (err: any) {
+      // Never hard-block chat if the limiter table is missing.
+      console.warn("[AskEventure] rate limit check failed, continuing:", String(err?.message || err).substring(0, 140));
+      userKey = null;
+    }
+
     const systemHint = `You are "Eventure AI", the friendly assistant built into Eventure - a campus event management platform. Eventure lets students: browse and register for events (some are paid, with a mock payment flow), get a unique 8-character check-in code + QR code per registration (shown via email; scan or enter it at the event to check in), download certificates for attended events, chat in per-event channels and read admin broadcasts in Communications, create support tickets, and edit their profile (name, roll no, branch, mobile). Organizers use the Admin Panel at /admin-signIn to create events, check people in, view analytics, manage tickets and communicate with attendees.
 
-Answer questions about how to use Eventure, events, check-in, certificates, and general event-help topics. Be concise (2-6 sentences unless asked for more), friendly, and practical. If asked something completely unrelated to Eventure or events, answer briefly then gently steer back to Eventure.`;
+STRICT SCOPE: Only answer questions related to Eventure, its features, events, check-in, certificates, communications, tickets, profiles, or general event/campus-event help. If the question is NOT related to Eventure or events (e.g. general knowledge, coding help, other products, chit-chat), do NOT write any explanation or apology. Instead reply with EXACTLY this single code and nothing else:
+EVENTURE_OFF_TOPIC
+
+For on-topic questions: be concise (2-6 sentences unless asked for more), friendly, and practical.`;
 
     const historyText = (args.history || [])
       .slice(-6)
@@ -227,6 +262,19 @@ Answer questions about how to use Eventure, events, check-in, certificates, and 
 
     try {
       const answer = await generateWithGemini(prompt, systemHint);
+
+      // Response received - start the 1-minute cooldown for this user.
+      if (userKey) {
+        try {
+          await ctx.runMutation(internal.aiChatLimit.recordChat, {
+            userKey,
+            ts: Date.now(),
+          });
+        } catch (err: any) {
+          console.warn("[AskEventure] failed to record chat time:", String(err?.message || err).substring(0, 140));
+        }
+      }
+
       return { success: true, answer };
     } catch (err: any) {
       console.error("[AskEventure] Error:", err);

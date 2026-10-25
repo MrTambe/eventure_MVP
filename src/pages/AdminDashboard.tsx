@@ -37,13 +37,25 @@ import { useMutation, useQuery, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { BackgroundPaths } from "@/components/ui/background-paths";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { CreateAdminModal } from '@/components/admin/CreateAdminModal';
 import { AdminNavBar } from '@/components/admin/admin-navbar';
 import { ADMIN_NAV_ITEMS } from '@/components/admin/admin-nav-items';
 import { getAdminSession } from '@/hooks/use-admin-session';
 import { MessageSquare, Megaphone, AlertTriangle, Database, ChevronDown, ExternalLink, FileSpreadsheet, Info } from 'lucide-react';
 import { friendlyErrorMessage } from '@/lib/friendly-error';
+
+// Gamified color per admin tab card (same vibe as the dashboard stat cards).
+const TAB_COLORS = [
+  'bg-yellow-400',
+  'bg-green-400',
+  'bg-blue-400',
+  'bg-red-400',
+  'bg-purple-400',
+  'bg-pink-400',
+  'bg-orange-400',
+  'bg-cyan-400',
+];
 
 function AdminDashboardContent() {
   const navigate = useNavigate();
@@ -327,6 +339,32 @@ function AdminDashboardContent() {
               </div>
             );
           })()}
+
+          {/* Quick Access: gamified clickable cards straight to every admin tab */}
+          <div className="mb-6">
+            <h2 className="text-lg md:text-xl font-black tracking-tighter uppercase mb-3">
+              Quick Access — Jump to any tab
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+              {ADMIN_NAV_ITEMS.map((item, index) => {
+                const Icon = item.icon;
+                const color = TAB_COLORS[index % TAB_COLORS.length];
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.url}
+                    className={`${color} text-black border-4 border-black dark:border-white shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff] hover:shadow-[8px_8px_0px_#000] dark:hover:shadow-[8px_8px_0px_#fff] hover:-translate-x-1 hover:-translate-y-1 transition-all duration-200 p-3 flex flex-col justify-between min-h-[92px] group cursor-pointer`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <Icon className="h-6 w-6 stroke-[3px]" />
+                      <span className="text-[10px] font-black opacity-60 group-hover:translate-x-0.5 transition-transform">→</span>
+                    </div>
+                    <p className="text-xs md:text-sm font-black tracking-tighter uppercase leading-tight mt-2">{item.name}</p>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Current Event - Left Column */}

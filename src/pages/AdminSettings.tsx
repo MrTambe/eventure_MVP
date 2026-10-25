@@ -330,9 +330,9 @@ function AdminSettingsContent() {
                 GOOGLE SHEETS BACKUP
               </h2>
               <p className="text-xs text-gray-600 font-mono mb-6">
-                Exports every participant, staff member and event stat into a formatted
-                Google Drive folder (one per event) — a readable backup DB shared
-                automatically with all admin emails.
+                Mirrors the whole database into one shared “Eventure DB” Google
+                spreadsheet — tabs: Events, Participants, Staff. You own the sheet; the
+                service account writes the data in on every sync.
               </p>
               <div className="space-y-4">
                 <div>
@@ -374,8 +374,8 @@ function AdminSettingsContent() {
                     </p>
                     {[
                       ["Participants", lastSync.participants],
-                      ["Staff & Volunteers", lastSync.staff],
-                      ["Event Overview", lastSync.overview],
+                      ["Staff", lastSync.staff],
+                      ["Events", lastSync.overview],
                     ].map(([label, url]) =>
                       url ? (
                         <a
@@ -399,8 +399,8 @@ function AdminSettingsContent() {
                 )}
                 <p className="text-[10px] text-gray-500 font-mono">
                   Requires GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_SERVICE_ACCOUNT_KEY and
-                  (optional) GOOGLE_SHEETS_ROOT_FOLDER_ID on the deployment. Admin emails
-                  from the admins table get automatic edit access.
+                  GOOGLE_SHEETS_DB_ID (a spreadsheet shared with the service account as
+                  editor). Replaces tab contents on every sync.
                 </p>
               </div>
             </div>

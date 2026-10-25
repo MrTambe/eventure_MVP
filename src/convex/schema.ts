@@ -41,6 +41,13 @@ const schema = defineSchema({
     .index("by_timestamp", ["timestamp"])
     .index("identifier", ["identifier"]),
   
+  // Per-user AI chat rate limit - max 1 request per minute per user,
+  // counted from the time their previous AI response was received.
+  aiChatLimits: defineTable({
+    userKey: v.string(), // auth identity subject, or "anon:<clientId>" for guests
+    lastChatAt: v.number(), // ms timestamp of the user's last AI response
+  }).index("by_user_key", ["userKey"]),
+
   events: defineTable({
     name: v.string(),
     description: v.string(),

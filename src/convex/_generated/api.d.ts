@@ -12,6 +12,7 @@ import type * as admin from "../admin.js";
 import type * as admin_actions from "../admin_actions.js";
 import type * as admin_creation from "../admin_creation.js";
 import type * as ai from "../ai.js";
+import type * as aiChatLimit from "../aiChatLimit.js";
 import type * as auth from "../auth.js";
 import type * as auth_emailOtp from "../auth/emailOtp.js";
 import type * as auth_emailProvider from "../auth/emailProvider.js";
@@ -53,6 +54,7 @@ declare const fullApi: ApiFromModules<{
   admin_actions: typeof admin_actions;
   admin_creation: typeof admin_creation;
   ai: typeof ai;
+  aiChatLimit: typeof aiChatLimit;
   auth: typeof auth;
   "auth/emailOtp": typeof auth_emailOtp;
   "auth/emailProvider": typeof auth_emailProvider;

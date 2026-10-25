@@ -6,6 +6,75 @@ import { Bot, X, Send, Sparkles } from "lucide-react";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
+// Must match the code the backend system prompt tells Gemini to emit for
+// unrelated questions (see src/convex/ai.ts askEventure).
+const OFF_TOPIC_CODE = "EVENTURE_OFF_TOPIC";
+
+// Canned apologies shown (at random) when the AI flags a question as off-topic.
+// Swapping a code for one of these saves API tokens vs composing an apology.
+const OFF_TOPIC_APOLOGIES = [
+  "Oops, that's outside my event-planning powers! Ask me about Eventure instead. 🙈",
+  "Sorry, I only speak Eventure! Try asking about events, check-in or certificates. 😅",
+  "That one's a bit off the map for me — I'm the Eventure helper, after all! 🗺️",
+  "I wish I could help, but that's not in my event handbook! 📔",
+  "Whoops! My brain is 100% Eventure. Ask me about registering for events! 🎪",
+  "Sorry, that's beyond my campus-event radar! 📡",
+  "I'm just a humble event assistant — that question went over my head! 🎈",
+  "Hmm, that's not really my department. Events, tickets, check-in? I've got you! ✅",
+  "Sorry, I can't help with that one — but I CAN talk about Eventure all day! 🤓",
+  "That's off my stage! I only perform on the Eventure stage. 🎭",
+  "Oof, that question broke my event-detecting sensors! 🤖",
+  "Sorry, no dice on that one. Ask me how to check in at an event though! 🎟️",
+  "I'm all out of answers for that — but never out of Eventure tips! 💡",
+  "That's outside my job description, sorry! Event stuff is my jam though. 🍇",
+  "Sorry, I don't know about that — but your next event? I know EVERYTHING. 📅",
+  "I'd love to help, but that's not on the Eventure menu! 🍽️",
+  "Sorry! My expertise begins and ends with awesome campus events. 🎉",
+  "That one's not in my toolbox — but I have plenty of event tools! 🧰",
+  "Apologies, I'm strictly Eventure-brained. Try me on events, tickets or teams! 🧠",
+  "Can't help there, sorry! Ask me about certificates instead? 🏅",
+  "Sorry, that's a no from me — but a big YES for Eventure questions! 👍",
+  "I'm blushing, but I really can't answer that. Events though? Always! 😳",
+  "Sorry, that question isn't on today's schedule! Check the Eventure agenda instead. ⏰",
+  "Oops, wrong doorway! I only open doors to Eventure answers. 🚪",
+  "That's beyond my badge level, sorry! 🎫",
+  "I'd fail that quiz — but ask me anything about Eventure and I'll ace it! 🎓",
+  "Sorry, I can't chat about that. My chat topics are 100% events! 💬",
+  "Not my circus, not my... wait, actually I DO love a good event! But no, I can't help with that. 🎪",
+  "Sorry, I'm booked solid with Eventure knowledge only! 📚",
+  "That's outside the venue, sorry! Come back inside for event help. 🏟️",
+  "I have no clue about that, but I know check-in codes inside out! 🔑",
+  "Sorry, that's not my event! Try asking about registering or certificates. 📝",
+  "Beep boop — topic not found! Eventure questions always compute though. 🤖",
+  "Sorry, can't shine a light on that one. Event questions are my spotlight! 🔦",
+  "I'm tapping out on that one — but never on Eventure questions! 🥊",
+  "Sorry, my answer drawer is empty for that topic. Full of event tips though! 🗄️",
+  "That's a bit too universal for me — I specialize in campus events! 🌍",
+  "Sorry, I don't do that kind of magic. Event magic? Absolutely. ✨",
+  "I'd better not guess! But event how-tos? I never guess, I know. 🎯",
+  "Sorry, that's not in the Eventure playbook! 🏈",
+  "That's off the guest list, sorry! Event questions are always VIP here. 🎫",
+  "I'm only wise in the ways of Eventure! Ask away about events. 🦉",
+  "Sorry, that one sails past my harbor — I'm anchored to event help! ⚓",
+  "No can do on that, sorry! But certificates, tickets, check-in? Right this way. ➡️",
+  "Sorry! If it's about Eventure or events, I'm your bot. Otherwise, I'm stumped! 🤷",
+];
+
+// Stable per-browser id so guests (not logged in) still get their own 1/min
+// AI rate limit. Logged-in users are limited by their auth identity instead.
+function getClientId(): string {
+  try {
+    let id = localStorage.getItem("eventure_client_id");
+    if (!id) {
+      id = `c_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+      localStorage.setItem("eventure_client_id", id);
+    }
+    return id;
+  } catch {
+    return "c_unknown";
+  }
+}
+
 const SUGGESTIONS = [
   "How do I check in at an event?",
   "Where do I get my certificate?",
@@ -34,9 +103,16 @@ export function AIChatWidget() {
     setMessages((m) => [...m, { role: "user", content: question }]);
     setLoading(true);
     try {
-      const result = await ask({ question, history });
+      const result = await ask({ question, clientId: getClientId(), history });
       if (result?.success && result.answer) {
-        setMessages((m) => [...m, { role: "assistant", content: result.answer! }]);
+        const answer = (result.answer || "").trim();
+        if (answer === OFF_TOPIC_CODE) {
+          // Swap the token-saving code for a random canned apology.
+          const apology = OFF_TOPIC_APOLOGIES[Math.floor(Math.random() * OFF_TOPIC_APOLOGIES.length)];
+          setMessages((m) => [...m, { role: "assistant", content: apology }]);
+        } else {
+          setMessages((m) => [...m, { role: "assistant", content: result.answer! }]);
+        }
       } else {
         setError(result?.error || "AI is unavailable right now. Please try again later.");
       }
